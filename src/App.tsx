@@ -18,7 +18,6 @@ import AdminCarDetails from "./pages/AdminCarsDetails";
 import AdminAuth from '@/pages/AdminAuth';
 import { ProtectedAdminRoute } from '@/components/ProtectedAdminRoute';
 import { Header } from '@/components/Header';
-import { DebugRole } from "@/components/DebugRole";
 
 const queryClient = new QueryClient();
 
@@ -42,7 +41,6 @@ function App() {
             <Toaster />
             <Sonner />
             <Header />
-            <DebugRole />
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/offres" element={<Offres />} />

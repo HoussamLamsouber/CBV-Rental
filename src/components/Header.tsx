@@ -1,21 +1,64 @@
-import { Car, Menu, X, LogOut, User } from "lucide-react";
+// components/Header.tsx - Version corrigée
+import { Car, Menu, X, LogOut, User, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { useAdmin } from "@/contexts/AdminContext";
 import { useToast } from "@/hooks/use-toast";
 
 export const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, role, signOut, loading } = useAuth();
   const { toast } = useToast();
+  
+  const { user, signOut, loading: authLoading, isAuthenticated, role } = useAuth();
+  const { isAdminMode, enterAdminMode, exitAdminMode, isUserAdmin } = useAdmin();
+
+  console.log("🔧 Header: État complet", { 
+    authLoading, 
+    isAuthenticated, 
+    role, 
+    isUserAdmin, 
+    isAdminMode,
+    user: user?.email 
+  });
 
   const handleSignOut = async () => {
-    await signOut();
-    toast({ title: "Déconnexion réussie", description: "À bientôt !" });
-    navigate("/");
+    try {
+      await signOut();
+      toast({
+        title: "Déconnexion réussie",
+        description: "À bientôt !",
+      });
+      navigate("/");
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Erreur lors de la déconnexion",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleAdminModeToggle = () => {
+    if (isAdminMode) {
+      exitAdminMode();
+      navigate("/");
+      toast({
+        title: "Mode client",
+        description: "Vous êtes maintenant en mode client",
+      });
+    } else {
+      enterAdminMode();
+      navigate("/admin/vehicles");
+      toast({
+        title: "Mode admin",
+        description: "Vous êtes maintenant en mode administrateur",
+      });
+    }
+    setIsMenuOpen(false);
   };
 
   return (
@@ -25,137 +68,87 @@ export const Header = () => {
           <img src="/logo-dark.webp" alt="Logo" className="h-8 md:h-16" />
         </Link>
 
-        {/* Nav desktop */}
+        {/* Navigation desktop - Toujours visible */}
         <nav className="hidden md:flex items-center gap-8">
-          <Link
-            to="/"
-            className={`text-sm font-medium transition-colors hover:text-primary ${
-              location.pathname === "/" ? "text-primary" : "text-muted-foreground"
-            }`}
-          >
+          <Link to="/" className={`text-sm font-medium transition-colors hover:text-primary ${location.pathname === "/" ? "text-primary" : "text-muted-foreground"}`}>
             Accueil
           </Link>
-          <Link
-            to="/offres"
-            className={`text-sm font-medium transition-colors hover:text-primary ${
-              location.pathname === "/offres" ? "text-primary" : "text-muted-foreground"
-            }`}
-          >
+          <Link to="/offres" className={`text-sm font-medium transition-colors hover:text-primary ${location.pathname === "/offres" ? "text-primary" : "text-muted-foreground"}`}>
             Offres
           </Link>
-          {user && (
-            <>
-              <Link
-                to="/ma-reservation"
-                className={`text-sm font-medium transition-colors hover:text-primary ${
-                  location.pathname === "/ma-reservation" ? "text-primary" : "text-muted-foreground"
-                }`}
-              >
-                Ma réservation
-              </Link>
-              <Link
-                to="/mon-compte"
-                className={`text-sm font-medium transition-colors hover:text-primary ${
-                  location.pathname === "/mon-compte" ? "text-primary" : "text-muted-foreground"
-                }`}
-              >
-                Mon compte
-              </Link>
-              {role === "admin" && (
-                <Link
-                  to="/admin/vehicles"
-                  className={`text-sm font-medium transition-colors hover:text-primary ${
-                    location.pathname === "/admin/vehicles" ? "text-primary" : "text-muted-foreground"
-                  }`}
-                >
-                  Vehicules
-                </Link>
-              )}
-            </>
+          <Link to="/ma-reservation" className={`text-sm font-medium transition-colors hover:text-primary ${location.pathname === "/ma-reservation" ? "text-primary" : "text-muted-foreground"}`}>
+            Mes réservations
+          </Link>
+
+          {isAuthenticated && (
+            <Link to="/mon-compte" className={`text-sm font-medium transition-colors hover:text-primary ${location.pathname === "/mon-compte" ? "text-primary" : "text-muted-foreground"}`}>
+              Mon compte
+            </Link>
+          )}
+
+          {isAdminMode && (
+            <Link to="/admin/vehicles" className={`text-sm font-medium transition-colors hover:text-primary ${location.pathname.startsWith("/admin") ? "text-primary" : "text-muted-foreground"}`}>
+              Administration
+            </Link>
           )}
         </nav>
 
-        {/* Boutons */}
+        {/* Boutons utilisateur */}
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="sm" className="md:hidden" onClick={() => setIsMenuOpen(!isMenuOpen)}>
             {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </Button>
 
           <div className="hidden md:flex items-center gap-4">
-            {loading ? (
-              <div className="animate-pulse bg-muted h-9 w-20 rounded-md" />
-            ) : user ? (
+            {authLoading ? (
+              // Pendant le chargement, afficher un indicateur simple
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <div className="animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full"></div>
+                Chargement...
+              </div>
+            ) : isAuthenticated ? (
+              // Utilisateur connecté
               <>
+                {isUserAdmin && (
+                  <Button
+                    variant={isAdminMode ? "default" : "outline"}
+                    size="sm"
+                    onClick={handleAdminModeToggle}
+                    className="flex items-center gap-2"
+                  >
+                    <Shield className="h-4 w-4" />
+                    {isAdminMode ? "Mode Admin" : "Mode Client"}
+                  </Button>
+                )}
+
                 <p className="text-sm text-muted-foreground">
                   <span className="font-semibold">
-                    {user.user_metadata.full_name || user.email}
+                    {user?.user_metadata?.full_name || user?.email}
+                    {isUserAdmin && " 👑"}
                   </span>
                 </p>
+
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={handleSignOut}
                   className="flex items-center gap-2"
                 >
-                  <LogOut className="h-4 w-4" /> Déconnexion
+                  <LogOut className="h-4 w-4" />
+                  Déconnexion
                 </Button>
               </>
             ) : (
+              // Utilisateur non connecté
               <Button asChild variant="default" className="flex items-center gap-2">
                 <Link to="/auth">
-                  <User className="h-4 w-4" /> Connexion
+                  <User className="h-4 w-4" />
+                  Connexion
                 </Link>
               </Button>
             )}
           </div>
         </div>
-
-        {/* Menu mobile */}
-        {isMenuOpen && (
-          <div className="md:hidden absolute top-full left-0 right-0 bg-background border-b shadow-lg">
-            <nav className="flex flex-col p-4 space-y-4">
-              <Link to="/" onClick={() => setIsMenuOpen(false)}>Accueil</Link>
-              <Link to="/offres" onClick={() => setIsMenuOpen(false)}>Offres</Link>
-              {user && (
-                <div className="flex items-center gap-2">
-                  <p className="text-sm text-muted-foreground">
-                    <span className="font-semibold">{user.user_metadata.full_name || user.email}</span>
-                  </p>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleSignOut}
-                    className="flex items-center gap-2"
-                  >
-                    <LogOut className="h-4 w-4" />
-                    Déconnexion
-                  </Button>
-                </div>
-              )}
-              {user && (
-                <>
-                  <Link to="/ma-reservation" onClick={() => setIsMenuOpen(false)}>Ma réservation</Link>
-                  <Link to="/mon-compte" onClick={() => setIsMenuOpen(false)}>Mon compte</Link>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      handleSignOut();
-                      setIsMenuOpen(false);
-                    }}
-                  >
-                    <LogOut className="h-4 w-4" /> Déconnexion
-                  </Button>
-                </>
-              )}
-              {!user && (
-                <Button asChild variant="default" onClick={() => setIsMenuOpen(false)}>
-                  <Link to="/auth">Connexion</Link>
-                </Button>
-              )}
-            </nav>
-          </div>
-        )}
       </div>
     </header>
   );

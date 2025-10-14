@@ -1,3 +1,4 @@
+// src/pages/Auth.tsx
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -8,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Car, LogIn, UserPlus } from "lucide-react";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Auth = () => {
   const [email, setEmail] = useState("");
@@ -97,7 +98,7 @@ const Auth = () => {
           title: "Connexion réussie",
           description: "Vous êtes maintenant connecté.",
         });
-        // La redirection se fera automatiquement via le hook useAuth
+        // La redirection se fera automatiquement via le AuthContext
       }
     } catch (error) {
       toast({

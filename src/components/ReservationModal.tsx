@@ -5,9 +5,10 @@ import { useToast } from "@/hooks/use-toast";
 import { Database } from "@/integrations/supabase/types";
 import { Button } from "@/components/ui/button";
 import { emailJSService } from "@/services/emailJSService";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 type Car = Database["public"]["Tables"]["cars"]["Row"];
-type ReservationInsert = Database["public"]["Tables"]["reservations"]["Insert"];
 type SearchData = {
   pickupLocation: string;
   returnLocation?: string;
@@ -39,16 +40,23 @@ export const ReservationModal = ({
   user,
   onReserved,
 }: ReservationModalProps) => {
-  const [quantity, setQuantity] = useState(1);
   const [maxAvailable, setMaxAvailable] = useState(1);
+  const [guestInfo, setGuestInfo] = useState({
+    full_name: "",
+    email: "",
+    telephone: ""
+  });
+  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
-    setQuantity(1);
-    if (isOpen && car && searchData) {
-      calculateMaxAvailable();
+    if (isOpen) {
+      setGuestInfo({ full_name: "", email: "", telephone: "" });
+      if (car && searchData) {
+        calculateMaxAvailable();
+      }
     }
-  }, [isOpen]);
+  }, [isOpen, car, searchData]);
 
   const calculateMaxAvailable = async () => {
     if (!car || !searchData?.pickupDate || !searchData?.returnDate) return;
@@ -65,27 +73,21 @@ export const ReservationModal = ({
 
       const { data: reservations } = await supabase
         .from('reservations')
-        .select('quantity')
+        .select('*')
         .eq('car_id', car.id)
         .eq('status', 'active')
         .or(`and(pickup_date.lte.${endDate},return_date.gte.${startDate})`);
 
-      const totalReserved = reservations?.reduce((sum, r) => sum + (r.quantity || 1), 0) || 0;
+      const totalReserved = reservations?.length || 0;
       const available = (carData?.quantity || 0) - totalReserved;
       
       setMaxAvailable(Math.max(0, available));
-      
-      // Ajuste automatiquement la quantité
-      if (quantity > available) {
-        setQuantity(Math.max(1, available));
-      }
     } catch (error) {
       console.error('Erreur calcul disponibilité:', error);
     }
   };
 
-  // 🔥 CORRECTION : Une seule fonction checkRealTimeAvailability
-  const checkRealTimeAvailability = async (requestedQuantity: number): Promise<boolean> => {
+  const checkRealTimeAvailability = async (): Promise<boolean> => {
     if (!car || !searchData?.pickupDate || !searchData?.returnDate) return false;
 
     const startDate = searchData.pickupDate.toISOString().split('T')[0];
@@ -102,17 +104,15 @@ export const ReservationModal = ({
 
       const { data: reservations } = await supabase
         .from('reservations')
-        .select('quantity')
+        .select('*')
         .eq('car_id', car.id)
         .eq('status', 'active')
         .or(`and(pickup_date.lte.${endDate},return_date.gte.${startDate})`);
 
-      const totalReserved = reservations?.reduce((sum, r) => sum + (r.quantity || 1), 0) || 0;
+      const totalReserved = reservations?.length || 0;
       const availableQuantity = carData.quantity - totalReserved;
 
-      console.log(`📊 Disponibilité temps réel: ${carData.quantity} - ${totalReserved} = ${availableQuantity}`);
-      
-      return requestedQuantity <= availableQuantity;
+      return availableQuantity >= 1;
       
     } catch (error) {
       console.error('Erreur vérification disponibilité:', error);
@@ -120,93 +120,138 @@ export const ReservationModal = ({
     }
   };
 
+  const calculateTotalPrice = () => {
+    if (!car || !searchData) return 0;
+    
+    const startDate = new Date(searchData.pickupDate);
+    const endDate = new Date(searchData.returnDate);
+    const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    return car.price * diffDays; // Supprimé la multiplication par quantity
+  };
+
+  const validateGuestInfo = () => {
+    if (!guestInfo.full_name.trim()) {
+      toast({
+        title: "Information manquante",
+        description: "Veuillez saisir votre nom complet.",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    if (!guestInfo.email.trim()) {
+      toast({
+        title: "Information manquante",
+        description: "Veuillez saisir votre adresse email.",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(guestInfo.email)) {
+      toast({
+        title: "Email invalide",
+        description: "Veuillez saisir une adresse email valide.",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    return true;
+  };
+
   const handleConfirm = async () => {
-    if (!user) {
-      toast({
-        title: "Connexion requise",
-        description: "Veuillez vous connecter pour réserver un véhicule.",
-        variant: "destructive",
-      });
+    if (!car || !searchData) return;
+
+    // Validation des informations invité si non connecté
+    if (!user && !validateGuestInfo()) {
       return;
     }
 
-    if (quantity < 1) {
-      toast({
-        title: "Quantité invalide",
-        description: "La quantité doit être au moins 1.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // 🔥 CORRECTION : Appel correct de la fonction
-    const isAvailable = await checkRealTimeAvailability(quantity);
+    // Vérification finale en temps réel
+    const isAvailable = await checkRealTimeAvailability();
     if (!isAvailable) {
       toast({
-        title: "Quantité non disponible",
-        description: "La quantité demandée n'est plus disponible. Veuillez réduire le nombre de véhicules.",
+        title: "Véhicule non disponible",
+        description: "Ce véhicule n'est plus disponible pour les dates sélectionnées.",
         variant: "destructive",
       });
       return;
     }
-  
+
+    setIsLoading(true);
+
     try {
-      // Récupérer le profil de l'utilisateur
-      const { data: userProfile } = await supabase
-        .from("profiles")
-        .select("full_name, telephone, email")
-        .eq("id", user.id)
-        .single();
-  
-      // Utiliser l'email du profil s'il existe, sinon l'email de l'auth
-      const clientEmail = userProfile?.email || user.email;
-      const clientName = userProfile?.full_name || user.email;
-      const clientPhone = userProfile?.telephone;
-  
-      const formatDateForDB = (date: Date) => {
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
+      const pickupDateStr = searchData.pickupDate.toISOString().split('T')[0];
+      const returnDateStr = searchData.returnDate.toISOString().split('T')[0];
+      const totalPrice = calculateTotalPrice();
+
+      const reservationData: any = {
+        car_id: car.id,
+        car_name: car.name,
+        car_image: car.image_url,
+        car_category: car.category,
+        car_price: car.price,
+        pickup_location: searchData.pickupLocation,
+        return_location: searchData.sameLocation
+          ? searchData.pickupLocation
+          : searchData.returnLocation || searchData.pickupLocation,
+        pickup_date: pickupDateStr,
+        pickup_time: searchData.pickupTime,
+        return_date: returnDateStr,
+        return_time: searchData.returnTime,
+        total_price: totalPrice,
+        status: "active",
+        date: new Date().toISOString(),
+        user_id: user?.id || null,
+        // SUPPRIMÉ: quantity: quantity
       };
-  
-      const pickupDateStr = formatDateForDB(searchData.pickupDate);
-      const returnDateStr = formatDateForDB(searchData.returnDate);
-      const totalPrice = car.price * quantity;
-  
+
+      let clientEmail = "";
+      let clientName = "";
+      let clientPhone = "";
+
+      if (user) {
+        const { data: userProfile } = await supabase
+          .from("profiles")
+          .select("full_name, telephone, email")
+          .eq("id", user.id)
+          .single();
+
+        clientEmail = userProfile?.email || user.email;
+        clientName = userProfile?.full_name || user.email;
+        clientPhone = userProfile?.telephone || "Non renseigné";
+      } else {
+        clientEmail = guestInfo.email;
+        clientName = guestInfo.full_name;
+        clientPhone = guestInfo.telephone || "Non renseigné";
+        
+        reservationData.guest_email = guestInfo.email.toLowerCase();
+        reservationData.guest_name = guestInfo.full_name;
+        reservationData.guest_phone = guestInfo.telephone;
+      }
+
       const { data: newReservation, error } = await supabase
         .from("reservations")
-        .insert([
-          {
-            user_id: user.id,
-            car_id: car.id,
-            car_name: car.name,
-            car_image: car.image_url,
-            car_category: car.category,
-            car_price: car.price,
-            pickup_location: searchData.pickupLocation,
-            return_location: searchData.sameLocation
-              ? searchData.pickupLocation
-              : searchData.returnLocation,
-            pickup_date: pickupDateStr,
-            pickup_time: searchData.pickupTime,
-            return_date: returnDateStr,
-            return_time: searchData.returnTime,
-            total_price: totalPrice,
-            status: "active",
-            date: new Date().toISOString(),
-            quantity: quantity,
-          }
-        ])
+        .insert([reservationData])
         .select()
         .single();
-  
+
       if (error) throw error;
-  
-      console.log('✅ Réservation créée:', newReservation);
-  
-      // Préparer les données pour l'email avec les bonnes informations
-      const reservationData = {
+
+      // Pour les invités : sauvegarder l'ID de réservation dans le localStorage
+      if (!user) {
+        const guestReservations = localStorage.getItem("guest_reservations");
+        const reservationsArray = guestReservations ? JSON.parse(guestReservations) : [];
+        reservationsArray.push(newReservation.id);
+        localStorage.setItem("guest_reservations", JSON.stringify(reservationsArray));
+      }
+
+      // Envoyer l'email de confirmation
+      const emailData = {
         reservationId: newReservation.id,
         clientName: clientName,
         clientEmail: clientEmail,
@@ -218,36 +263,42 @@ export const ReservationModal = ({
         returnDate: searchData.returnDate.toLocaleDateString('fr-FR'),
         returnTime: searchData.returnTime,
         pickupLocation: searchData.pickupLocation,
-        returnLocation: searchData.sameLocation ? searchData.pickupLocation : searchData.returnLocation,
-        totalPrice: totalPrice
+        returnLocation: searchData.sameLocation ? searchData.pickupLocation : (searchData.returnLocation || searchData.pickupLocation),
+        totalPrice: totalPrice,
+        // SUPPRIMÉ: quantity: quantity
       };
-  
-      console.log('📧 Données pour email:', reservationData);
-  
-      const emailResult = await emailJSService.sendNewReservationEmails(reservationData);
-      
-      if (!emailResult.success) {
-        console.warn('⚠️ Emails non envoyés mais réservation créée:', emailResult.error);
+
+      try {
+        const emailResult = await emailJSService.sendNewReservationEmails(emailData);
+        if (!emailResult.success) {
+          console.warn('⚠️ Emails non envoyés mais réservation créée:', emailResult.error);
+        }
+      } catch (emailError) {
+        console.warn('⚠️ Erreur envoi email mais réservation créée:', emailError);
       }
-  
+
       toast({
-        title: "Réservation réussie",
-        description: `${quantity} x ${car.name} réservé(s).`,
+        title: "Réservation réussie !",
+        description: `${car.name} réservé avec succès.`, // Message modifié
       });
-  
+
       onReserved();
       onClose();
-    } catch (err) {
+    } catch (err: any) {
       console.error("❌ Erreur réservation:", err);
       toast({
         title: "Erreur",
-        description: "Impossible d'effectuer la réservation.",
+        description: err.message || "Impossible d'effectuer la réservation.",
         variant: "destructive",
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
   if (!car || !searchData) return null;
+
+  const totalPrice = calculateTotalPrice();
 
   return (
     <Dialog
@@ -255,13 +306,13 @@ export const ReservationModal = ({
       onClose={onClose}
       className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40"
     >
-      <Dialog.Panel className="bg-white rounded-lg p-6 w-full max-w-md">
+      <Dialog.Panel className="bg-white rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
         <Dialog.Title className="text-lg font-semibold mb-4">
           Réserver {car.name}
         </Dialog.Title>
 
         <img
-          src={car.image_url}
+          src={car.image_url || "/placeholder-car.jpg"}
           alt={car.name}
           className="w-full h-48 object-cover rounded mb-4"
         />
@@ -269,20 +320,47 @@ export const ReservationModal = ({
         <p className="mb-2 text-sm text-gray-600">{car.category}</p>
         <p className="mb-4 font-semibold">{car.price} MAD / jour</p>
 
-        <label className="block mb-2 font-medium">
-          Quantité {maxAvailable > 0 && `(max: ${maxAvailable})`}
-        </label>
-        <input
-          type="number"
-          min={1}
-          max={maxAvailable}
-          value={quantity}
-          onChange={(e) => {
-            const newQuantity = parseInt(e.target.value) || 1;
-            setQuantity(Math.min(Math.max(1, newQuantity), maxAvailable));
-          }}
-          className="border rounded p-2 w-full mb-4"
-        />
+        {/* Informations invité */}
+        {!user && (
+          <div className="mb-4 space-y-3">
+            <h4 className="font-medium text-sm">Vos informations</h4>
+            <div>
+              <Label htmlFor="full_name">Nom complet *</Label>
+              <Input
+                id="full_name"
+                value={guestInfo.full_name}
+                onChange={(e) => setGuestInfo({...guestInfo, full_name: e.target.value})}
+                placeholder="Votre nom complet"
+                className="mt-1"
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="email">Email *</Label>
+              <Input
+                id="email"
+                type="email"
+                value={guestInfo.email}
+                onChange={(e) => setGuestInfo({...guestInfo, email: e.target.value})}
+                placeholder="votre@email.com"
+                className="mt-1"
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="telephone">Téléphone</Label>
+              <Input
+                id="telephone"
+                value={guestInfo.telephone}
+                onChange={(e) => setGuestInfo({...guestInfo, telephone: e.target.value})}
+                placeholder="Votre numéro de téléphone"
+                className="mt-1"
+              />
+            </div>
+          </div>
+        )}
+
+        {/* SUPPRIMÉ la section quantité */}
 
         {maxAvailable === 0 && (
           <p className="text-red-600 text-sm mb-4">
@@ -291,18 +369,18 @@ export const ReservationModal = ({
         )}
 
         <p className="mb-4 text-sm text-gray-700">
-          Prix total: <span className="font-semibold">{car.price * quantity} MAD</span>
+          Prix total: <span className="font-semibold">{totalPrice} MAD</span>
         </p>
 
         <div className="flex justify-end gap-2">
-          <Button variant="secondary" onClick={onClose}>
+          <Button variant="secondary" onClick={onClose} disabled={isLoading}>
             Annuler
           </Button>
           <Button 
             onClick={handleConfirm}
-            disabled={maxAvailable === 0}
+            disabled={maxAvailable === 0 || isLoading}
           >
-            {maxAvailable === 0 ? 'Indisponible' : 'Confirmer'}
+            {isLoading ? "Réservation..." : (maxAvailable === 0 ? 'Indisponible' : 'Confirmer')}
           </Button>
         </div>
       </Dialog.Panel>

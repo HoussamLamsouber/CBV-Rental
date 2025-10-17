@@ -17,20 +17,20 @@ export const useAdminAuth = () => {
 
     const checkIfUserIsAdmin = async (user: User): Promise<boolean> => {
       try {
-        // Vérifier dans la table user_roles si l'utilisateur a le rôle admin
+        // 🔹 On vérifie maintenant dans la table `profiles`
         const { data, error } = await supabase
-          .from('user_roles')
+          .from('profiles')
           .select('role')
-          .eq('user_id', user.id)
+          .eq('id', user.id)
           .eq('role', 'admin')
-          .single();
+          .maybeSingle();
 
         if (error) {
           console.error('Erreur vérification rôle admin:', error);
           return false;
         }
 
-        return !!data; // Retourne true si un enregistrement admin existe
+        return !!data; // true si l’utilisateur est admin
       } catch (error) {
         console.error('Erreur vérification admin:', error);
         return false;
@@ -42,14 +42,12 @@ export const useAdminAuth = () => {
         await supabase.auth.signOut();
         setSession(null);
         setAdminUser(null);
-        
         toast({
           title: "Accès refusé",
           description: "Vous n'avez pas les droits administrateur.",
           variant: "destructive",
         });
-        
-        navigate('/admin/login');
+        navigate('/admin');
       } catch (error) {
         console.error('Erreur déconnexion admin:', error);
       }
@@ -58,7 +56,6 @@ export const useAdminAuth = () => {
     const initializeAuth = async () => {
       try {
         const { data: { session: currentSession }, error } = await supabase.auth.getSession();
-        
         if (!mounted) return;
 
         if (error) {
@@ -69,18 +66,13 @@ export const useAdminAuth = () => {
 
         if (currentSession) {
           const isExpired = new Date(currentSession.expires_at! * 1000) < new Date();
-          
           if (isExpired) {
-            console.log('🔄 Session admin expirée, déconnexion automatique...');
             await handleSignOut();
             return;
           }
 
-          // Vérifier si l'utilisateur est un admin
           const isAdmin = await checkIfUserIsAdmin(currentSession.user);
-          
           if (!isAdmin) {
-            console.log('🚫 Utilisateur non admin, déconnexion...');
             await handleSignOut();
             return;
           }
@@ -103,17 +95,12 @@ export const useAdminAuth = () => {
       async (event, currentSession) => {
         if (!mounted) return;
 
-        console.log('🔐 Événement auth admin:', event);
-
         if (event === 'SIGNED_OUT') {
           setSession(null);
           setAdminUser(null);
-          navigate('/admin/login');
-        } 
-        else if (currentSession) {
-          // Vérifier le rôle admin à chaque changement
+          navigate('/admin');
+        } else if (currentSession) {
           const isAdmin = await checkIfUserIsAdmin(currentSession.user);
-          
           if (!isAdmin) {
             await handleSignOut();
             return;

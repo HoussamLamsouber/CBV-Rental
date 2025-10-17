@@ -10,6 +10,9 @@ import { useToast } from "@/hooks/use-toast";
 import { Dialog } from "@headlessui/react";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useAuth } from "@/contexts/AuthContext";
+import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { ArrowLeft } from "lucide-react";
 
 type CarRow = {
   id: string;
@@ -75,6 +78,32 @@ export default function AdminVehicleDetail() {
     period: "",
     price: ""
   });
+  const { authLoading, isAuthenticated } = useAuth();
+  const [accessDenied, setAccessDenied] = useState(false);
+
+
+  // Afficher la page d'erreur si accès refusé
+  if (accessDenied) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4">Accès refusé</h1>
+          <p className="text-muted-foreground mb-6">
+            Vous devez être en mode administrateur pour accéder à cette page.
+          </p>
+          <div className="flex gap-4 justify-center">
+            <Button onClick={() => navigate("/admin/vehicles")}>
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Retour aux véhicules
+            </Button>
+            <Button variant="outline" onClick={() => navigate("/")}>
+              Retour à l'accueil
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const loadOffers = async () => {
     if (!id) return;

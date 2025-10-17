@@ -1,9 +1,9 @@
 import { useAuth } from "../contexts/AuthContext";
 
 export default function Dashboard() {
-  const { user, role, loading } = useAuth();
+  const { user, isUserAdmin, authLoading } = useAuth();
 
-  if (loading) return <p>Chargement...</p>;
+  if (authLoading) return <p>Chargement...</p>;
 
   if (!user) return <p>Veuillez vous connecter</p>;
 
@@ -11,7 +11,7 @@ export default function Dashboard() {
     <div>
       <h1>Bienvenue {user.email}</h1>
 
-      {role === "admin" ? (
+      {isUserAdmin ? (
         <button>Changer la disponibilité d’un véhicule</button>
       ) : (
         <p>Vous pouvez réserver une voiture</p>

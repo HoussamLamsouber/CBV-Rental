@@ -18,7 +18,6 @@ const AdminLogin = () => {
   const { toast } = useToast();
   const { isAuthenticated } = useAdminAuth();
 
-  // Rediriger si déjà connecté en tant qu'admin
   useEffect(() => {
     if (isAuthenticated) {
       navigate("/admin/vehicles");
@@ -44,17 +43,15 @@ const AdminLogin = () => {
         return;
       }
 
-      // Vérifier si l'utilisateur est un admin via user_roles
       if (data.user) {
-        const { data: userRole, error: roleError } = await supabase
-          .from('user_roles')
+        // 🔹 Vérification du rôle admin dans `profiles`
+        const { data: profile, error: roleError } = await supabase
+          .from('profiles')
           .select('role')
-          .eq('user_id', data.user.id)
-          .eq('role', 'admin')
+          .eq('id', data.user.id)
           .single();
 
-        if (roleError || !userRole) {
-          // Déconnecter l'utilisateur non admin
+        if (roleError || !profile || profile.role !== 'admin') {
           await supabase.auth.signOut();
           toast({
             title: "Accès refusé",
@@ -116,7 +113,6 @@ const AdminLogin = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  className="bg-background"
                 />
               </div>
               <div className="space-y-2">
@@ -128,14 +124,12 @@ const AdminLogin = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  className="bg-background"
                 />
               </div>
               <Button 
                 type="submit" 
                 className="w-full" 
                 disabled={loading}
-                variant="default"
               >
                 {loading ? "Connexion..." : "Se connecter à l'administration"}
               </Button>

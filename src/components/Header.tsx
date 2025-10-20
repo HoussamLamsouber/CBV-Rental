@@ -85,7 +85,7 @@ export const Header = () => {
               </Button>
             ) : (
               <Button asChild variant="default" size="sm" onClick={() => setIsMenuOpen(false)}>
-                <Link to="/admin">
+                <Link to="/auth">
                   <User className="h-4 w-4" /> Connexion
                 </Link>
               </Button>

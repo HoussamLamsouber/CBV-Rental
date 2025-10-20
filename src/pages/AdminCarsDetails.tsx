@@ -340,17 +340,7 @@ export default function AdminVehicleDetail() {
     if (!id || !vehicle) return;
     setSaving(true);
     try {
-      // 1) Mettre à jour la quantité de base si modifiée
-      if (stockEdit !== "" && Number(stockEdit) !== vehicle.quantity) {
-        const { error: qErr } = await supabase
-          .from("cars")
-          .update({ quantity: Number(stockEdit) })
-          .eq("id", id);
-        if (qErr) throw qErr;
-        setVehicle(prev => prev ? { ...prev, quantity: Number(stockEdit) } : prev);
-      }
-
-      // 2) Upsert les overrides
+      // 1) Upsert les overrides (garder cette partie)
       const toUpsert: any[] = [];
       const toDelete: string[] = [];
       
@@ -366,14 +356,14 @@ export default function AdminVehicleDetail() {
           });
         }
       }
-
+  
       if (toUpsert.length > 0) {
         const { error: upErr } = await supabase
           .from("vehicle_availabilities")
           .upsert(toUpsert, { onConflict: "car_id,date" });
         if (upErr) throw upErr;
       }
-
+  
       for (const d of toDelete) {
         const { error: delErr } = await supabase
           .from("vehicle_availabilities")
@@ -383,7 +373,7 @@ export default function AdminVehicleDetail() {
           console.warn("delete override error:", delErr);
         }
       }
-
+  
       toast({ 
         title: "Sauvegardé", 
         description: "Disponibilités mises à jour." 
@@ -410,7 +400,7 @@ export default function AdminVehicleDetail() {
       });
       return;
     }
-
+  
     setSaving(true);
     try {
       // Vérifier si le matricule existe déjà
@@ -419,7 +409,7 @@ export default function AdminVehicleDetail() {
         .select("matricule")
         .eq("matricule", newVehicle.matricule)
         .single();
-
+  
       if (existingVehicle) {
         toast({
           title: "Matricule déjà existant",
@@ -428,7 +418,7 @@ export default function AdminVehicleDetail() {
         });
         return;
       }
-
+  
       const { data, error } = await supabase
         .from("vehicles")
         .insert([{
@@ -441,14 +431,14 @@ export default function AdminVehicleDetail() {
         }])
         .select()
         .single();
-
+  
       if (error) throw error;
-
+  
       toast({
         title: "Véhicule créé",
-        description: `Le véhicule ${newVehicle.matricule} a été ajouté.`,
+        description: `Le véhicule ${newVehicle.matricule} a été ajouté. Le stock a été mis à jour automatiquement.`,
       });
-
+  
       // Réinitialiser le formulaire
       setNewVehicle({
         matricule: "",
@@ -456,7 +446,7 @@ export default function AdminVehicleDetail() {
         date_obd: format(new Date(), "yyyy-MM-dd"),
         objet: ""
       });
-
+  
       setIsCreateVehicleModalOpen(false);
       
       // Recharger la liste des véhicules
@@ -464,9 +454,22 @@ export default function AdminVehicleDetail() {
         .from("vehicles")
         .select("*")
         .eq("car_id", id)
+        .is("is_deleted", false)
         .order("matricule");
       setVehicles(vehiclesData || []);
-
+  
+      // Recharger les données du véhicule pour avoir la quantité mise à jour
+      const { data: updatedVehicle } = await supabase
+        .from("cars")
+        .select("quantity")
+        .eq("id", id)
+        .single();
+      
+      if (updatedVehicle) {
+        setVehicle(prev => prev ? { ...prev, quantity: updatedVehicle.quantity } : prev);
+        setStockEdit(updatedVehicle.quantity);
+      }
+  
     } catch (error: any) {
       console.error("Erreur création véhicule:", error);
       toast({
@@ -541,7 +544,7 @@ export default function AdminVehicleDetail() {
     if (!confirm(`Êtes-vous sûr de vouloir archiver le véhicule "${matricule}" ? Il ne sera plus visible mais restera dans la base de données.`)) {
       return;
     }
-
+  
     try {
       const { error } = await supabase
         .from("vehicles")
@@ -550,23 +553,35 @@ export default function AdminVehicleDetail() {
           deleted_at: new Date().toISOString()
         })
         .eq("id", vehicleId);
-
+  
       if (error) throw error;
-
+  
       toast({
         title: "Véhicule archivé",
-        description: `Le véhicule ${matricule} a été archivé avec succès.`,
+        description: `Le véhicule ${matricule} a été archivé. Le stock a été mis à jour automatiquement.`,
       });
-
+  
       // Recharger la liste des véhicules
       const { data: vehiclesData } = await supabase
         .from("vehicles")
         .select("*")
         .eq("car_id", id)
-        .is("is_deleted", false) // Ne charger que les véhicules non supprimés
+        .is("is_deleted", false)
         .order("matricule");
       setVehicles(vehiclesData || []);
-
+  
+      // Recharger les données du véhicule pour avoir la quantité mise à jour
+      const { data: updatedVehicle } = await supabase
+        .from("cars")
+        .select("quantity")
+        .eq("id", id)
+        .single();
+      
+      if (updatedVehicle) {
+        setVehicle(prev => prev ? { ...prev, quantity: updatedVehicle.quantity } : prev);
+        setStockEdit(updatedVehicle.quantity);
+      }
+  
     } catch (error: any) {
       console.error("Erreur archivage véhicule:", error);
       toast({
@@ -597,13 +612,19 @@ export default function AdminVehicleDetail() {
 
             <div className="mb-4">
               <label className="block text-sm text-gray-600 mb-1">Stock total</label>
-              <Input
-                value={stockEdit}
-                onChange={(e) => setStockEdit(e.target.value === "" ? "" : Number(e.target.value))}
-                type="number"
-                min={0}
-                className="w-40"
-              />
+              <div className="flex items-center gap-2">
+                <Input
+                  value={stockEdit}
+                  onChange={(e) => setStockEdit(e.target.value === "" ? "" : Number(e.target.value))}
+                  type="number"
+                  min={0}
+                  className="w-40"
+                  disabled
+                />
+                <span className="text-sm text-gray-500">
+                  (Synchronisé automatiquement: {vehicles.length} véhicule(s) actif(s))
+                </span>
+              </div>
             </div>
 
             <div className="flex gap-2">

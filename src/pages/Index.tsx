@@ -28,8 +28,8 @@ const Index = () => {
     const fetchCars = async () => {
       try {
         const { data, error } = await supabase
-          .from('cars')
-          .select('*') as { data: Car[] | null; error: any };
+          .from("cars")
+          .select("*") as { data: Car[] | null; error: any };
 
         if (error) {
           console.error("Erreur fetch cars:", error);
@@ -45,47 +45,56 @@ const Index = () => {
     fetchCars();
   }, []);
 
-  // Auth
+  // Authentification
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       setUser(data.session?.user ?? null);
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        setUser(session?.user ?? null);
+      }
+    );
 
     return () => subscription.unsubscribe();
   }, []);
 
-  // Fonctions de disponibilité
-  const isDateInReservation = (date: string, pickupDate: string, returnDate: string) => {
+  // Vérifier la disponibilité
+  const isDateInReservation = (
+    date: string,
+    pickupDate: string,
+    returnDate: string
+  ) => {
     const currentDate = new Date(date);
     const startDate = new Date(pickupDate);
     const endDate = new Date(returnDate);
     return currentDate >= startDate && currentDate <= endDate;
   };
 
-  const getReservedQuantityForDate = async (carId: string, date: string): Promise<number> => {
+  const getReservedQuantityForDate = async (
+    carId: string,
+    date: string
+  ): Promise<number> => {
     try {
       const { data: reservations, error } = await supabase
-        .from('reservations')
-        .select('pickup_date, return_date')
-        .eq('car_id', carId)
-        .eq('status', 'active') as { data: Reservation[] | null; error: any };
+        .from("reservations")
+        .select("pickup_date, return_date")
+        .eq("car_id", carId)
+        .eq("status", "active") as { data: Reservation[] | null; error: any };
 
       if (error) {
-        console.error('Erreur récupération réservations:', error);
+        console.error("Erreur récupération réservations:", error);
         return 0;
       }
 
-      const reservedQuantity = (reservations || []).filter(reservation =>
+      const reservedQuantity = (reservations || []).filter((reservation) =>
         isDateInReservation(date, reservation.pickup_date, reservation.return_date)
       ).length;
 
       return reservedQuantity;
     } catch (err) {
-      console.error('Erreur getReservedQuantityForDate:', err);
+      console.error("Erreur getReservedQuantityForDate:", err);
       return 0;
     }
   };
@@ -104,16 +113,20 @@ const Index = () => {
     return dates;
   };
 
-  const checkPeriodAvailability = async (carId: string, startDate: string, endDate: string): Promise<boolean> => {
+  const checkPeriodAvailability = async (
+    carId: string,
+    startDate: string,
+    endDate: string
+  ): Promise<boolean> => {
     try {
       const { data: car, error: carError } = await supabase
-        .from('cars')
-        .select('quantity')
-        .eq('id', carId)
+        .from("cars")
+        .select("quantity")
+        .eq("id", carId)
         .single() as { data: Car | null; error: any };
 
       if (carError || !car) {
-        console.error('Erreur récupération véhicule:', carError);
+        console.error("Erreur récupération véhicule:", carError);
         return false;
       }
 
@@ -121,14 +134,14 @@ const Index = () => {
       const dates = getDatesInRange(new Date(startDate), new Date(endDate));
 
       for (const date of dates) {
-        const dateString = date.toISOString().split('T')[0];
+        const dateString = date.toISOString().split("T")[0];
         const reservedQuantity = await getReservedQuantityForDate(carId, dateString);
         if ((totalQuantity ?? 0) - reservedQuantity <= 0) return false;
       }
 
       return true;
     } catch (err) {
-      console.error('Erreur checkPeriodAvailability:', err);
+      console.error("Erreur checkPeriodAvailability:", err);
       return false;
     }
   };
@@ -137,16 +150,20 @@ const Index = () => {
   const handleSearch = async (data: SearchData) => {
     setSearchData(data);
 
-    const startDate = data.pickupDate?.toISOString().split('T')[0];
-    const endDate = data.returnDate?.toISOString().split('T')[0];
+    const startDate = data.pickupDate?.toISOString().split("T")[0];
+    const endDate = data.returnDate?.toISOString().split("T")[0];
 
     if (!startDate || !endDate) {
-      toast({ title: "Dates manquantes", description: "Veuillez sélectionner les dates", variant: "destructive" });
+      toast({
+        title: "Dates manquantes",
+        description: "Veuillez sélectionner les dates",
+        variant: "destructive",
+      });
       return;
     }
 
     try {
-      let query = supabase.from('cars').select('*').eq('available', true);
+      let query = supabase.from("cars").select("*").eq("available", true);
 
       const categoryMap: Record<string, string[]> = {
         all: ["Electique", "SUV", "SUV Urbain", "Berlin"],
@@ -156,58 +173,80 @@ const Index = () => {
         berlin: ["Berlin"],
       };
 
-      // Filtres conditionnels
-      if (data.carType && data.carType.toLowerCase() !== 'all') {
+      if (data.carType && data.carType.toLowerCase() !== "all") {
         const allowedCategories = categoryMap[data.carType.toLowerCase()] || [];
-        query = query.in('category', allowedCategories);
+        query = query.in("category", allowedCategories);
       }
 
-      if (data.transmission && data.transmission.toLowerCase() !== 'all') {
-        query = query.eq('transmission', data.transmission.toLowerCase());
+      if (data.transmission && data.transmission.toLowerCase() !== "all") {
+        query = query.eq("transmission", data.transmission.toLowerCase());
       }
 
-      if (data.fuel && data.fuel.toLowerCase() !== 'all') {
-        query = query.eq('fuel', data.fuel.toLowerCase());
+      if (data.fuel && data.fuel.toLowerCase() !== "all") {
+        query = query.eq("fuel", data.fuel.toLowerCase());
       }
 
-      // ✅ Exécuter le query et typer correctement
-      const { data: allCars, error } = await query as { data: Car[] | null; error: any };
+      const { data: allCars, error } = await query as {
+        data: Car[] | null;
+        error: any;
+      };
       if (error) throw error;
 
       const availableCars = await Promise.all(
-        (allCars || []).map(async car => ({
+        (allCars || []).map(async (car) => ({
           ...car,
-          isAvailable: await checkPeriodAvailability(car.id, startDate, endDate)
+          isAvailable: await checkPeriodAvailability(
+            car.id,
+            startDate,
+            endDate
+          ),
         }))
       );
 
-      const finalCars = availableCars.filter(car => car.isAvailable);
+      const finalCars = availableCars.filter((car) => car.isAvailable);
       setSearchResults(finalCars);
 
-      toast({ title: "Résultats", description: `${finalCars.length} véhicule(s) disponible(s)` });
+      toast({
+        title: "Résultats",
+        description: `${finalCars.length} véhicule(s) disponible(s)`,
+      });
     } catch (err) {
       console.error("Erreur recherche:", err);
-      toast({ title: "Erreur de recherche", description: "Une erreur est survenue", variant: "destructive" });
+      toast({
+        title: "Erreur de recherche",
+        description: "Une erreur est survenue",
+        variant: "destructive",
+      });
     }
   };
 
+  // ✅ Autoriser les réservations invitées
   const handleOpenReserve = (car: Car) => {
-    if (!user) {
-      toast({ title: "Connexion requise", description: "Vous devez être connecté", variant: "destructive" });
-      navigate("/auth");
+    if (!searchData?.pickupDate || !searchData?.returnDate) {
+      toast({
+        title: "Paramètres manquants",
+        description: "Veuillez remplir toutes les informations",
+        variant: "destructive",
+      });
       return;
     }
 
-    if (!searchData?.pickupDate || !searchData?.returnDate) {
-      toast({ title: "Paramètres manquants", description: "Veuillez remplir toutes les informations", variant: "destructive" });
-      return;
+    if (!user) {
+      toast({
+        title: "Réservation invitée",
+        description: "Vous pouvez réserver sans compte.",
+      });
     }
 
     setSelectedCar(car);
     setShowModal(true);
   };
 
-  const isSearchReady = !!searchData?.pickupLocation && !!searchData?.pickupDate && !!searchData?.returnDate && (searchData.sameLocation || !!searchData?.returnLocation);
+  const isSearchReady =
+    !!searchData?.pickupLocation &&
+    !!searchData?.pickupDate &&
+    !!searchData?.returnDate &&
+    (searchData.sameLocation || !!searchData?.returnLocation);
 
   return (
     <div className="min-h-screen bg-background">
@@ -218,9 +257,16 @@ const Index = () => {
         car={selectedCar}
         searchData={searchData}
         user={user}
-        onReserved={() => { setShowModal(false); navigate("/ma-reservation"); }}
+        onReserved={() => {
+          setShowModal(false);
+          navigate("/ma-reservation");
+        }}
       />
-      <CarGrid cars={searchResults} onReserve={handleOpenReserve} canReserve={isSearchReady} />
+      <CarGrid
+        cars={searchResults}
+        onReserve={handleOpenReserve}
+        canReserve={isSearchReady}
+      />
       <Footer />
     </div>
   );

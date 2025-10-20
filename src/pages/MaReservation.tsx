@@ -100,22 +100,57 @@ const MaReservation = () => {
             .select("*")
             .in("id", reservationIds)
             .order("created_at", { ascending: false });
-
-          if (reservationsError) throw reservationsError;
-
+    
+          if (reservationsError) {
+            console.error("Erreur chargement réservations invité:", reservationsError);
+            // Si erreur RLS, essayer une autre approche
+            await loadGuestReservationsFallback(reservationIds);
+            return;
+          }
+    
           // Pour les invités, utiliser les données guest_*
-          const reservationsWithGuestData: ReservationWithProfile[] = reservationsData.map(reservation => ({
+          const reservationsWithGuestData: ReservationWithProfile[] = (reservationsData || []).map(reservation => ({
             ...reservation,
             client_name: reservation.guest_name || "Invité",
             client_email: reservation.guest_email || "Non spécifié",
             client_phone: reservation.guest_phone
           }));
-
-          setReservations(reservationsWithGuestData || []);
+    
+          setReservations(reservationsWithGuestData);
         } else {
           setReservations([]);
         }
       } else {
+        setReservations([]);
+      }
+    };
+    
+    // Fallback si la politique RLS bloque
+    const loadGuestReservationsFallback = async (reservationIds: string[]) => {
+      try {
+        // Charger une par une pour contourner d'éventuels problèmes RLS
+        const reservations: ReservationWithProfile[] = [];
+        
+        for (const id of reservationIds) {
+          const { data: reservation, error } = await supabase
+            .from("reservations")
+            .select("*")
+            .eq("id", id)
+            .single();
+    
+          if (!error && reservation) {
+            reservations.push({
+              ...reservation,
+              client_name: reservation.guest_name || "Invité",
+              client_email: reservation.guest_email || "Non spécifié",
+              client_phone: reservation.guest_phone
+            });
+          }
+        }
+    
+        setReservations(reservations);
+      } catch (err) {
+        console.error("Erreur fallback chargement réservations:", err);
         setReservations([]);
       }
     };

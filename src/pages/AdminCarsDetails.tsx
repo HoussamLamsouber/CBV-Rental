@@ -59,10 +59,14 @@ type Vehicle = {
 };
 
 export default function AdminVehicleDetail() {
+  // 1. Hooks de routing et context
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { authLoading, isAuthenticated } = useAuth();
+  
 
+  // 2. Tous les useState
   const [vehicle, setVehicle] = useState<CarRow | null>(null);
   const [reservations, setReservations] = useState<ReservationRow[]>([]);
   const [overrides, setOverrides] = useState<Record<string, number | "">>({});
@@ -74,65 +78,19 @@ export default function AdminVehicleDetail() {
   const [activeTab, setActiveTab] = useState<'availability' | 'vehicles' | 'offers'>('availability');
   const [offers, setOffers] = useState<any[]>([]);
   const [isCreateOfferModalOpen, setIsCreateOfferModalOpen] = useState(false);
-  const [newOffer, setNewOffer] = useState({
-    period: "",
-    price: ""
-  });
-  const { authLoading, isAuthenticated } = useAuth();
-  const [accessDenied, setAccessDenied] = useState(false);
-
-
-  // Afficher la page d'erreur si accès refusé
-  if (accessDenied) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">Accès refusé</h1>
-          <p className="text-muted-foreground mb-6">
-            Vous devez être en mode administrateur pour accéder à cette page.
-          </p>
-          <div className="flex gap-4 justify-center">
-            <Button onClick={() => navigate("/admin/vehicles")}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Retour aux véhicules
-            </Button>
-            <Button variant="outline" onClick={() => navigate("/")}>
-              Retour à l'accueil
-            </Button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  const loadOffers = async () => {
-    if (!id) return;
-    
-    const { data: offersData, error } = await supabase
-      .from("offers")
-      .select("*")
-      .eq("car_id", id)
-      .is("is_deleted", false) // ✅ N'afficher que les offres non supprimées
-      .order("price", { ascending: true });
-    
-    if (error) {
-      console.error("Erreur chargement offres:", error);
-      return;
-    }
-    
-    setOffers(offersData || []);
-  };
-
-  // États pour la création de véhicules individuels
   const [isCreateVehicleModalOpen, setIsCreateVehicleModalOpen] = useState(false);
+  const [newOffer, setNewOffer] = useState({ period: "", price: "" });
   const [newVehicle, setNewVehicle] = useState({
     matricule: "",
     obd: "",
     date_obd: format(new Date(), "yyyy-MM-dd"),
-    objet: ""
+    objet: "",
+    status: "available" as 'available' | 'reserved' | 'maintenance'
   });
+  
+  const [accessDenied, setAccessDenied] = useState(false);
 
-  // Générer les dates une seule fois
+  // 3. Tous les useEffect
   useEffect(() => {
     const today = new Date();
     const nextDays = Array.from({ length: 30 }, (_, i) =>
@@ -141,7 +99,6 @@ export default function AdminVehicleDetail() {
     setDates(nextDays);
   }, []);
 
-  // Charger toutes les données en une seule fois
   useEffect(() => {
     if (!id || dates.length === 0) return;
 
@@ -219,89 +176,23 @@ export default function AdminVehicleDetail() {
     return () => { mounted = false; };
   }, [id, dates, toast]);
 
-  // Fonction pour créer une offre
-  const handleCreateOffer = async () => {
-    if (!newOffer.period || !newOffer.price) {
-      toast({
-        title: "Champs manquants",
-        description: "Veuillez remplir tous les champs de l'offre.",
-        variant: "destructive",
-      });
+  // 4. Toutes les fonctions
+  const loadOffers = async () => {
+    if (!id) return;
+    
+    const { data: offersData, error } = await supabase
+      .from("offers")
+      .select("*")
+      .eq("car_id", id)
+      .is("is_deleted", false)
+      .order("price", { ascending: true });
+    
+    if (error) {
+      console.error("Erreur chargement offres:", error);
       return;
     }
-
-    setSaving(true);
-    try {
-      const { data, error } = await supabase
-        .from("offers")
-        .insert([{
-          car_id: id,
-          period: newOffer.period,
-          price: Number(newOffer.price),
-          created_at: new Date().toISOString(),
-        }])
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      toast({
-        title: "Offre créée",
-        description: `L'offre a été ajoutée avec succès.`,
-      });
-
-      // Réinitialiser le formulaire
-      setNewOffer({
-        period: "",
-        price: ""
-      });
-
-      setIsCreateOfferModalOpen(false);
-      await loadOffers(); // Recharger la liste des offres
-
-    } catch (error: any) {
-      console.error("Erreur création offre:", error);
-      toast({
-        title: "Erreur",
-        description: error.message || "Impossible de créer l'offre.",
-        variant: "destructive",
-      });
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  // Fonction pour supprimer une offre (soft delete)
-  const handleDeleteOffer = async (offerId: string) => {
-    if (!confirm("Êtes-vous sûr de vouloir archiver cette offre ?")) {
-      return;
-    }
-
-    try {
-      const { error } = await supabase
-        .from("offers")
-        .update({
-          is_deleted: true,
-          deleted_at: new Date().toISOString()
-        })
-        .eq("id", offerId);
-
-      if (error) throw error;
-
-      toast({
-        title: "Offre archivée",
-        description: "L'offre a été archivée avec succès.",
-      });
-
-      await loadOffers(); // Recharger la liste
-    } catch (error: any) {
-      console.error("Erreur archivage offre:", error);
-      toast({
-        title: "Erreur",
-        description: error.message || "Impossible d'archiver l'offre.",
-        variant: "destructive",
-      });
-    }
+    
+    setOffers(offersData || []);
   };
 
   // Fonction pour déterminer si une date est dans une période de réservation
@@ -326,9 +217,10 @@ export default function AdminVehicleDetail() {
       return Number(override);
     }
     
-    const base = vehicle?.quantity ?? 0;
+    // Nouveau calcul : seulement les véhicules disponibles (status = 'available')
+    const availableVehiclesCount = vehicles.filter(v => v.status === 'available').length;
     const reserved = getReservedForDate(date);
-    return Math.max(0, base - reserved);
+    return Math.max(0, availableVehiclesCount - reserved);
   };
 
   const handleOverrideChange = (date: string, value: string) => {
@@ -390,7 +282,7 @@ export default function AdminVehicleDetail() {
     }
   };
 
-  // CORRECTION : Fonction pour créer un véhicule individuel (table vehicles)
+  // Fonction pour créer un véhicule individuel
   const handleCreateVehicle = async () => {
     if (!newVehicle.matricule) {
       toast({
@@ -427,6 +319,7 @@ export default function AdminVehicleDetail() {
           obd: newVehicle.obd || null,
           date_obd: newVehicle.date_obd,
           objet: newVehicle.objet || null,
+          status: newVehicle.status, // ← Ajouter le statut ici
           created_at: new Date().toISOString(),
         }])
         .select()
@@ -444,7 +337,8 @@ export default function AdminVehicleDetail() {
         matricule: "",
         obd: "",
         date_obd: format(new Date(), "yyyy-MM-dd"),
-        objet: ""
+        objet: "",
+        status: "available"
       });
   
       setIsCreateVehicleModalOpen(false);
@@ -482,63 +376,49 @@ export default function AdminVehicleDetail() {
     }
   };
 
-  // Déterminer le statut d'un véhicule individuel
+  // Fonction pour déterminer le statut d'un véhicule
   const getVehicleStatus = (vehicleItem: Vehicle) => {
-    // Vérifier si le véhicule est en maintenance
-    if (vehicleItem.status === 'maintenance') {
-      return { 
-        status: 'maintenance', 
-        text: 'Maintenance', 
-        color: 'bg-orange-100 text-orange-800' 
-      };
-    }
-
-    // Vérifier si le véhicule est réservé
-    const today = new Date().toISOString().split('T')[0];
-    const isReserved = reservations.some(reservation => {
-      const isActive = reservation.pickup_date <= today && reservation.return_date >= today;
-      return isActive;
-    });
-
-    if (isReserved) {
-      return { 
-        status: 'rented', 
+    const statusConfig = {
+      available: { 
+        text: 'Disponible', 
+        color: 'bg-green-100 text-green-800 border border-green-200',
+        icon: '✅'
+      },
+      reserved: { 
         text: 'Réservé', 
-        color: 'bg-blue-100 text-blue-800' 
-      };
-    }
-
-    return { 
-      status: 'available', 
-      text: 'Disponible', 
-      color: 'bg-green-100 text-green-800' 
+        color: 'bg-blue-100 text-blue-800 border border-blue-200',
+        icon: '🚗'
+      },
+      maintenance: { 
+        text: 'En Maintenance', 
+        color: 'bg-orange-100 text-orange-800 border border-orange-200',
+        icon: '🔧'
+      }
     };
+
+    return statusConfig[vehicleItem.status] || statusConfig.available;
+  };
+
+  // Fonction utilitaire pour obtenir le texte du statut
+  const getStatusText = (status: string) => {
+    const statusMap = {
+      available: 'Disponible',
+      reserved: 'Réservé', 
+      maintenance: 'En Maintenance'
+    };
+    return statusMap[status as keyof typeof statusMap] || status;
   };
 
   // Compter les véhicules par statut
   const getVehicleStats = () => {
     const stats = {
       total: vehicles.length,
-      available: 0,
-      rented: 0,
-      maintenance: 0
+      available: vehicles.filter(v => v.status === 'available').length,
+      reserved: vehicles.filter(v => v.status === 'reserved').length,
+      maintenance: vehicles.filter(v => v.status === 'maintenance').length
     };
-
-    vehicles.forEach(vehicle => {
-      const status = getVehicleStatus(vehicle).status;
-      if (status === 'available') stats.available++;
-      if (status === 'rented') stats.rented++;
-      if (status === 'maintenance') stats.maintenance++;
-    });
-
     return stats;
   };
-
-  if (!id) return <div><main className="container mx-auto p-6">ID manquant</main><Footer/></div>;
-  if (loading) return <div><main className="container mx-auto p-6">Chargement...</main><Footer/></div>;
-  if (!vehicle) return <div><main className="container mx-auto p-6">Véhicule introuvable</main><Footer/></div>;
-
-  const stats = getVehicleStats();
 
   const handleDeleteVehicle = async (vehicleId: string, matricule: string) => {
     if (!confirm(`Êtes-vous sûr de vouloir archiver le véhicule "${matricule}" ? Il ne sera plus visible mais restera dans la base de données.`)) {
@@ -591,6 +471,162 @@ export default function AdminVehicleDetail() {
       });
     }
   };
+
+  // Fonction pour changer le statut d'un véhicule
+  const handleChangeVehicleStatus = async (vehicleId: string, newStatus: 'available' | 'reserved' | 'maintenance') => {
+    try {
+      const { error } = await supabase
+        .from("vehicles")
+        .update({ 
+          status: newStatus,
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", vehicleId);
+
+      if (error) throw error;
+
+      // Mettre à jour l'état local
+      setVehicles(prev => 
+        prev.map(vehicle => 
+          vehicle.id === vehicleId 
+            ? { ...vehicle, status: newStatus }
+            : vehicle
+        )
+      );
+
+      // Recharger les réservations pour recalculer les disponibilités
+      const { data: reservationsData } = await supabase
+        .from("reservations")
+        .select("*")
+        .eq("car_id", id)
+        .eq("status", "active");
+      
+      setReservations(reservationsData || []);
+
+      toast({
+        title: "Statut mis à jour",
+        description: `Le véhicule est maintenant ${getStatusText(newStatus).toLowerCase()}. Les disponibilités ont été recalculées.`,
+      });
+
+    } catch (error: any) {
+      console.error("Erreur changement statut:", error);
+      toast({
+        title: "Erreur",
+        description: error.message || "Impossible de changer le statut.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Fonction pour créer une offre
+  const handleCreateOffer = async () => {
+    if (!newOffer.period || !newOffer.price) {
+      toast({
+        title: "Champs manquants",
+        description: "Veuillez remplir tous les champs de l'offre.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const { data, error } = await supabase
+        .from("offers")
+        .insert([{
+          car_id: id,
+          period: newOffer.period,
+          price: Number(newOffer.price),
+          created_at: new Date().toISOString(),
+        }])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      toast({
+        title: "Offre créée",
+        description: `L'offre a été ajoutée avec succès.`,
+      });
+
+      setNewOffer({ period: "", price: "" });
+      setIsCreateOfferModalOpen(false);
+      await loadOffers();
+
+    } catch (error: any) {
+      console.error("Erreur création offre:", error);
+      toast({
+        title: "Erreur",
+        description: error.message || "Impossible de créer l'offre.",
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Fonction pour supprimer une offre
+  const handleDeleteOffer = async (offerId: string) => {
+    if (!confirm("Êtes-vous sûr de vouloir archiver cette offre ?")) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from("offers")
+        .update({
+          is_deleted: true,
+          deleted_at: new Date().toISOString()
+        })
+        .eq("id", offerId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Offre archivée",
+        description: "L'offre a été archivée avec succès.",
+      });
+
+      await loadOffers();
+    } catch (error: any) {
+      console.error("Erreur archivage offre:", error);
+      toast({
+        title: "Erreur",
+        description: error.message || "Impossible d'archiver l'offre.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // 5. MAINTENANT les retours conditionnels peuvent aller ici
+  if (accessDenied) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4">Accès refusé</h1>
+          <p className="text-muted-foreground mb-6">
+            Vous devez être en mode administrateur pour accéder à cette page.
+          </p>
+          <div className="flex gap-4 justify-center">
+            <Button onClick={() => navigate("/admin/vehicles")}>
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Retour aux véhicules
+            </Button>
+            <Button variant="outline" onClick={() => navigate("/")}>
+              Retour à l'accueil
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!id){ return <div><main className="container mx-auto p-6">ID manquant</main><Footer/></div>;} 
+  if (loading) { return <div><main className="container mx-auto p-6">Chargement...</main><Footer/></div>;}
+  if (!vehicle) { return <div><main className="container mx-auto p-6">Véhicule introuvable</main><Footer/></div>;}
+
+  // 6. Le reste du rendu JSX
+  const stats = getVehicleStats();
 
   return (
     <>
@@ -735,63 +771,78 @@ export default function AdminVehicleDetail() {
                 <div className="text-2xl font-bold text-gray-900">{stats.total}</div>
                 <div className="text-sm text-gray-600">Total véhicules</div>
               </div>
-              <div className="bg-white p-4 rounded-lg border shadow-sm">
+              <div className="bg-white p-4 rounded-lg border shadow-sm border-green-200">
                 <div className="text-2xl font-bold text-green-600">{stats.available}</div>
                 <div className="text-sm text-gray-600">Disponibles</div>
+                <div className="text-xs text-green-600 mt-1">✅ Prêts à être réservés</div>
               </div>
-              <div className="bg-white p-4 rounded-lg border shadow-sm">
-                <div className="text-2xl font-bold text-blue-600">{stats.rented}</div>
+              <div className="bg-white p-4 rounded-lg border shadow-sm border-blue-200">
+                <div className="text-2xl font-bold text-blue-600">{stats.reserved}</div>
                 <div className="text-sm text-gray-600">Réservés</div>
+                <div className="text-xs text-blue-600 mt-1">🚗 En location</div>
               </div>
-              <div className="bg-white p-4 rounded-lg border shadow-sm">
+              <div className="bg-white p-4 rounded-lg border shadow-sm border-orange-200">
                 <div className="text-2xl font-bold text-orange-600">{stats.maintenance}</div>
                 <div className="text-sm text-gray-600">En maintenance</div>
+                <div className="text-xs text-orange-600 mt-1">🔧 Indisponibles</div>
               </div>
             </div>
 
             {/* Tableau des véhicules */}
             <div className="bg-white rounded-lg border shadow-sm overflow-hidden">
               <table className="w-full">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="p-4 text-left font-semibold">Matricule</th>
-                    <th className="p-4 text-left font-semibold">OBD</th>
-                    <th className="p-4 text-left font-semibold">Date OBD</th>
-                    <th className="p-4 text-left font-semibold">Objet</th>
-                    <th className="p-4 text-left font-semibold">Statut</th>
-                    <th className="p-4 text-left font-semibold">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {vehicles.map((vehicleItem) => {
-                    const statusInfo = getVehicleStatus(vehicleItem);
-                    
-                    return (
-                      <tr key={vehicleItem.id} className="border-b">
-                        <td className="p-4 font-mono font-semibold">{vehicleItem.matricule}</td>
-                        <td className="p-4">{vehicleItem.obd}</td>
-                        <td className="p-4">
-                          {format(new Date(vehicleItem.date_obd), "dd/MM/yyyy")}
-                        </td>
-                        <td className="p-4">{vehicleItem.objet}</td>
-                        <td className="p-4">
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusInfo.color}`}>
-                            {statusInfo.text}
-                          </span>
-                        </td>
-                        <td className="p-4">
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => handleDeleteVehicle(vehicleItem.id, vehicleItem.matricule)}
-                          >
-                            Supprimer
-                          </Button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="p-4 text-left font-semibold">Matricule</th>
+                  <th className="p-4 text-left font-semibold">OBD</th>
+                  <th className="p-4 text-left font-semibold">Date OBD</th>
+                  <th className="p-4 text-left font-semibold">Objet</th>
+                  <th className="p-4 text-left font-semibold">Statut</th>
+                  <th className="p-4 text-left font-semibold">Changer statut</th>
+                  <th className="p-4 text-left font-semibold">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {vehicles.map((vehicleItem) => {
+                  const statusInfo = getVehicleStatus(vehicleItem);
+                  
+                  return (
+                    <tr key={vehicleItem.id} className="border-b hover:bg-gray-50">
+                      <td className="p-4 font-mono font-semibold">{vehicleItem.matricule}</td>
+                      <td className="p-4">{vehicleItem.obd || '-'}</td>
+                      <td className="p-4">
+                        {vehicleItem.date_obd ? format(new Date(vehicleItem.date_obd), "dd/MM/yyyy") : '-'}
+                      </td>
+                      <td className="p-4">{vehicleItem.objet || '-'}</td>
+                      <td className="p-4">
+                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusInfo.color}`}>
+                          {statusInfo.icon} {statusInfo.text}
+                        </span>
+                      </td>
+                      <td className="p-4">
+                        <select 
+                          value={vehicleItem.status}
+                          onChange={(e) => handleChangeVehicleStatus(vehicleItem.id, e.target.value as any)}
+                          className="text-sm border rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          <option value="available">Disponible</option>
+                          <option value="reserved">Réservé</option>
+                          <option value="maintenance">Maintenance</option>
+                        </select>
+                      </td>
+                      <td className="p-4">
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => handleDeleteVehicle(vehicleItem.id, vehicleItem.matricule)}
+                        >
+                          Supprimer
+                        </Button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
               </table>
 
               {vehicles.length === 0 && (

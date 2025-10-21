@@ -63,7 +63,7 @@ export default function AdminVehicleDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { authLoading, isAuthenticated } = useAuth();
+  const { authLoading, adminLoading, isUserAdmin } = useAuth();
   
 
   // 2. Tous les useState
@@ -87,8 +87,6 @@ export default function AdminVehicleDetail() {
     objet: "",
     status: "available" as 'available' | 'reserved' | 'maintenance'
   });
-  
-  const [accessDenied, setAccessDenied] = useState(false);
 
   // 3. Tous les useEffect
   useEffect(() => {
@@ -376,6 +374,36 @@ export default function AdminVehicleDetail() {
     }
   };
 
+  // Afficher un spinner pendant le chargement de l'authentification
+  if (authLoading || adminLoading) {
+    return (
+      <LoadingSpinner message="Vérification des permissions administrateur..." />
+    );
+  }
+
+  // Vérifier les droits admin
+  if (!isUserAdmin) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4">Accès refusé</h1>
+          <p className="text-muted-foreground mb-6">
+            Vous devez être administrateur pour accéder à cette page.
+          </p>
+          <div className="flex gap-4 justify-center">
+            <Button onClick={() => navigate("/admin/vehicles")}>
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Retour aux véhicules
+            </Button>
+            <Button variant="outline" onClick={() => navigate("/")}>
+              Retour à l'accueil
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Fonction pour déterminer le statut d'un véhicule
   const getVehicleStatus = (vehicleItem: Vehicle) => {
     const statusConfig = {
@@ -598,32 +626,18 @@ export default function AdminVehicleDetail() {
     }
   };
 
-  // 5. MAINTENANT les retours conditionnels peuvent aller ici
-  if (accessDenied) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">Accès refusé</h1>
-          <p className="text-muted-foreground mb-6">
-            Vous devez être en mode administrateur pour accéder à cette page.
-          </p>
-          <div className="flex gap-4 justify-center">
-            <Button onClick={() => navigate("/admin/vehicles")}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Retour aux véhicules
-            </Button>
-            <Button variant="outline" onClick={() => navigate("/")}>
-              Retour à l'accueil
-            </Button>
-          </div>
-        </div>
-      </div>
-    );
+  // 5. RETOURS CONDITIONNELS FINAUX
+  if (!id) { 
+    return <div><main className="container mx-auto p-6">ID manquant</main><Footer/></div>;
+  } 
+  
+  if (loading) { 
+    return <div><main className="container mx-auto p-6">Chargement...</main><Footer/></div>;
   }
-
-  if (!id){ return <div><main className="container mx-auto p-6">ID manquant</main><Footer/></div>;} 
-  if (loading) { return <div><main className="container mx-auto p-6">Chargement...</main><Footer/></div>;}
-  if (!vehicle) { return <div><main className="container mx-auto p-6">Véhicule introuvable</main><Footer/></div>;}
+  
+  if (!vehicle) { 
+    return <div><main className="container mx-auto p-6">Véhicule introuvable</main><Footer/></div>;
+  }
 
   // 6. Le reste du rendu JSX
   const stats = getVehicleStats();

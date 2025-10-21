@@ -46,7 +46,7 @@ function App() {
               <Route 
                 path="/admin/vehicles" 
                 element={
-                  <ProtectedRoute adminOnly>
+                  <ProtectedRoute adminOnly={true}>
                     <AdminVehicles />
                   </ProtectedRoute>
                 } 
@@ -54,7 +54,7 @@ function App() {
               <Route 
                 path="/admin/vehicle/:id" 
                 element={
-                  <ProtectedRoute adminOnly>
+                  <ProtectedRoute adminOnly={true}>
                     <AdminCarDetails />
                   </ProtectedRoute>
                 } 

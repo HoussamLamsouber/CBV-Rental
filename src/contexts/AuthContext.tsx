@@ -7,6 +7,7 @@ interface AuthContextType {
   isUserAdmin: boolean;
   isAuthenticated: boolean;
   authLoading: boolean;
+  adminLoading: boolean;
   signOut: () => Promise<void>;
 }
 
@@ -16,6 +17,7 @@ const AuthContext = createContext<AuthContextType>({
   isUserAdmin: false,
   isAuthenticated: false,
   authLoading: true,
+  adminLoading: true,
   signOut: async () => {},
 });
 
@@ -23,64 +25,90 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<any>(null);
   const [role, setRole] = useState<string | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
+  const [adminLoading, setAdminLoading] = useState(true);
 
-  // 🔹 Charger la session initiale
+  // ✅ Charger la session initiale
   useEffect(() => {
-    const loadSession = async () => {
-      const { data, error } = await supabase.auth.getSession();
-      if (error) {
-        console.error("Erreur récupération session:", error);
-        setAuthLoading(false);
-        return;
-      }
+    let isMounted = true;
 
-      const sessionUser = data.session?.user ?? null;
-      setUser(sessionUser);
-      setAuthLoading(false);
+    const loadUserAndRole = async () => {
+      try {
+        const { data, error } = await supabase.auth.getSession();
+
+        if (error) throw error;
+
+        const sessionUser = data?.session?.user ?? null;
+        if (!isMounted) return;
+
+        setUser(sessionUser);
+        setAuthLoading(false);
+
+        if (sessionUser) {
+          setAdminLoading(true);
+
+          // Récupérer le rôle dans la table profiles
+          const { data: profile, error: profileError } = await supabase
+            .from("profiles")
+            .select("role")
+            .eq("id", sessionUser.id)
+            .single();
+
+          if (profileError) {
+            console.warn("⚠️ Erreur lors du chargement du rôle:", profileError.message);
+            setRole("user"); // rôle par défaut
+          } else {
+            setRole(profile?.role || "user");
+          }
+
+          setAdminLoading(false);
+        } else {
+          setRole(null);
+          setAdminLoading(false);
+        }
+      } catch (err) {
+        console.error("❌ Erreur AuthContext:", err);
+        if (isMounted) {
+          setAuthLoading(false);
+          setAdminLoading(false);
+        }
+      }
     };
 
-    loadSession();
+    loadUserAndRole();
 
-    // 🔄 Écoute des changements d'authentification
+    // 🔄 Écoute les changements d'authentification
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
+      const sessionUser = session?.user ?? null;
+      setUser(sessionUser);
+      setAuthLoading(false);
+
+      if (sessionUser) {
+        setAdminLoading(true);
+        supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", sessionUser.id)
+          .single()
+          .then(({ data, error }) => {
+            if (error) {
+              console.warn("⚠️ Erreur onAuthStateChange:", error.message);
+              setRole("user");
+            } else {
+              setRole(data?.role || "user");
+            }
+            setAdminLoading(false);
+          });
+      } else {
+        setRole(null);
+        setAdminLoading(false);
+      }
     });
 
     return () => {
+      isMounted = false;
       listener.subscription.unsubscribe();
     };
   }, []);
-
-  // 🧠 Charger le rôle depuis la table `profiles`
-  useEffect(() => {
-    const fetchUserRole = async () => {
-      if (!user) {
-        setRole(null);
-        return;
-      }
-
-      try {
-        const { data: profile, error } = await supabase
-          .from("profiles")
-          .select("role")
-          .eq("id", user.id)
-          .single();
-
-        if (error) {
-          console.warn("Erreur lors du chargement du rôle:", error.message);
-          setRole(null);
-          return;
-        }
-
-        setRole(profile?.role || null);
-      } catch (err) {
-        console.error("Erreur inconnue:", err);
-        setRole(null);
-      }
-    };
-
-    fetchUserRole();
-  }, [user]);
 
   // 🚪 Déconnexion
   const signOut = async () => {
@@ -104,6 +132,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         isUserAdmin,
         isAuthenticated,
         authLoading,
+        adminLoading,
         signOut,
       }}
     >

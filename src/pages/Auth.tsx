@@ -219,6 +219,18 @@ const Auth = () => {
               </Tabs>
             </CardContent>
           </Card>
+
+          <div className="text-center mt-6">
+            <p className="text-sm text-muted-foreground">
+              Vous êtes administrateur ?{" "}
+              <button
+                onClick={() => navigate("/admin")}
+                className="text-primary hover:underline"
+              >
+                Accéder au panneau admin
+              </button>
+            </p>
+          </div>
         </div>
       </div>
     </div>

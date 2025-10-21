@@ -29,7 +29,8 @@ const Index = () => {
       try {
         const { data, error } = await supabase
           .from("cars")
-          .select("*") as { data: Car[] | null; error: any };
+          .select("*") 
+          .is("is_deleted", false) as { data: Car[] | null; error: any };
 
         if (error) {
           console.error("Erreur fetch cars:", error);

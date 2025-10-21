@@ -32,7 +32,10 @@ const Offres = () => {
   // Charger les voitures depuis Supabase
   useEffect(() => {
     const fetchCars = async () => {
-      const { data, error } = await supabase.from("cars").select("*");
+      const { data, error } = await supabase
+        .from("cars")
+        .select("*")
+        .is("is_deleted", false);
       if (error) {
         console.error("Erreur fetch cars:", error);
         return;

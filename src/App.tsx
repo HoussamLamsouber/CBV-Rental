@@ -17,6 +17,8 @@ import AdminAuth from './pages/AdminAuth';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { Header } from './components/Header';
 import { AuthProvider } from './contexts/AuthContext';
+import AdminUsers from "./pages/AdminUsers";
+import AdminReservations from "./pages/AdminReservations";
 
 const queryClient = new QueryClient();
 
@@ -56,6 +58,22 @@ function App() {
                 element={
                   <ProtectedRoute adminOnly={true}>
                     <AdminCarDetails />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/admin/reservations" 
+                element={
+                  <ProtectedRoute adminOnly={true}>
+                    <AdminReservations />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/admin/users" 
+                element={
+                  <ProtectedRoute adminOnly={true}>
+                    <AdminUsers />
                   </ProtectedRoute>
                 } 
               />

@@ -1,4 +1,4 @@
-// src/pages/AdminUsers.tsx (version simplifiée sans réservations)
+// src/pages/AdminUsers.tsx (version corrigée)
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -18,7 +18,9 @@ import {
   Calendar,
   Users,
   UserCog,
-  UserX
+  UserX,
+  Eye,
+  Trash2
 } from "lucide-react";
 import { Dialog } from "@headlessui/react";
 import { Badge } from "@/components/ui/badge";
@@ -38,14 +40,6 @@ export default function AdminUsers() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { authLoading, adminLoading, isUserAdmin, user, role } = useAuth();
-  
-  console.log("🔐 Auth Debug:", {
-    user: user?.email,
-    role,
-    isUserAdmin,
-    authLoading,
-    adminLoading
-  });
 
   const [activeTab, setActiveTab] = useState<'admins' | 'clients'>('admins');
   const [profiles, setProfiles] = useState<Profile[]>([]);
@@ -60,6 +54,8 @@ export default function AdminUsers() {
     password: ""
   });
   const [showPassword, setShowPassword] = useState(false);
+  const [allEmails, setAllEmails] = useState<{email: string, full_name: string | null}[]>([]);
+  const [selectedEmail, setSelectedEmail] = useState("");
 
   // Vérification des permissions admin
   if (authLoading || adminLoading) {
@@ -90,8 +86,8 @@ export default function AdminUsers() {
     const filtered = profiles.filter(profile => {
       const matchesSearch = 
         profile.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        profile.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        profile.telephone?.includes(searchTerm);
+        (profile.full_name && profile.full_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (profile.telephone && profile.telephone.includes(searchTerm));
 
       if (activeTab === 'admins') {
         return matchesSearch && profile.role === 'admin';
@@ -102,169 +98,175 @@ export default function AdminUsers() {
     setFilteredProfiles(filtered);
   }, [searchTerm, profiles, activeTab]);
 
-  const loadProfiles = async () => {
-    try {
-      setLoading(true);
-      
-      console.log("🔍 Début du chargement des profils...");
-      
-      // Récupérer tous les profils
-      const { data: profilesData, error: profilesError, count } = await supabase
-        .from("profiles")
-        .select("*", { count: 'exact' })
-        .order("created_at", { ascending: false });
+const loadProfiles = async () => {
+  try {
+    setLoading(true);
+    console.log("🔄 Chargement de tous les profils...");
+    
+    const { data: profilesData, error: profilesError } = await supabase
+      .from("profiles")
+      .select("*")
+      .order("created_at", { ascending: false });
 
-      if (profilesError) {
-        console.error("❌ Erreur profiles:", profilesError);
-        throw profilesError;
-      }
-
-      console.log("✅ Profils chargés:", profilesData);
-
-      if (!profilesData || profilesData.length === 0) {
-        console.log("ℹ️ Aucun profil trouvé");
-        setProfiles([]);
-        setFilteredProfiles([]);
-        return;
-      }
-
-      setProfiles(profilesData);
-      setFilteredProfiles(profilesData);
-
-    } catch (error: any) {
-      console.error("💥 Erreur chargement profils:", error);
-      toast({
-        title: "Erreur",
-        description: "Impossible de charger les utilisateurs.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleAddAdmin = async () => {
-    if (!newAdmin.email || !newAdmin.password) {
-      toast({
-        title: "Champs manquants",
-        description: "Veuillez saisir l'email et le mot de passe.",
-        variant: "destructive",
-      });
-      return;
+    if (profilesError) {
+      console.error("❌ Erreur profils:", profilesError);
+      throw profilesError;
     }
 
-    if (newAdmin.password.length < 6) {
-      toast({
-        title: "Mot de passe trop court",
-        description: "Le mot de passe doit contenir au moins 6 caractères.",
-        variant: "destructive",
-      });
-      return;
+    console.log("✅ Profils chargés:", profilesData);
+    setProfiles(profilesData || []);
+    setFilteredProfiles(profilesData || []);
+
+  } catch (error: any) {
+    console.error("💥 Erreur chargement profils:", error);
+    toast({
+      title: "Erreur",
+      description: "Impossible de charger les utilisateurs.",
+      variant: "destructive",
+    });
+  } finally {
+    setLoading(false);
+  }
+};
+
+  // Charger tous les emails au montage du composant
+  useEffect(() => {
+    loadAllEmails();
+  }, []);
+
+  // Modifiez la fonction loadAllEmails pour ne charger que les clients
+const loadAllEmails = async () => {
+  try {
+    console.log("🔄 Chargement des clients...");
+    
+    const { data: profiles, error } = await supabase
+      .from("profiles")
+      .select("email, full_name, role")
+      .eq("role", "client")
+      .order("email");
+
+    if (error) {
+      console.error("❌ Erreur chargement clients:", error);
+      throw error;
     }
 
-    try {
-      // Vérifier si l'utilisateur existe déjà dans profiles
-      const { data: existingProfile } = await supabase
-        .from("profiles")
-        .select("id, email, full_name, telephone, role")
-        .eq("email", newAdmin.email.toLowerCase())
-        .single();
+    console.log("📋 Clients chargés:", profiles);
+    setAllEmails(profiles || []);
 
-      if (existingProfile) {
-        // Mettre à jour le rôle en admin
-        const { error } = await supabase
-          .from("profiles")
-          .update({ 
-            role: "admin",
-            full_name: newAdmin.full_name || existingProfile.full_name,
-            telephone: newAdmin.telephone || existingProfile.telephone
-          })
-          .eq("id", existingProfile.id);
+  } catch (error) {
+    console.error("💥 Erreur chargement emails:", error);
+  }
+};
 
-        if (error) throw error;
+const handleAddAdmin = async () => {
+  if (!selectedEmail) return;
 
-        toast({
-          title: "Administrateur ajouté",
-          description: `${newAdmin.email} est maintenant administrateur.`,
-        });
-      } else {
-        // Créer un nouvel utilisateur via l'API d'inscription standard
-        const { data: authData, error: authError } = await supabase.auth.signUp({
-          email: newAdmin.email,
-          password: newAdmin.password,
-          options: {
-            data: {
-              full_name: newAdmin.full_name,
-              telephone: newAdmin.telephone
-            }
-          }
-        });
+  try {
+    const cleanEmail = selectedEmail.trim().toLowerCase();
+    
+    console.log("🔍 Promotion via fonction stockée:", cleanEmail);
 
-        if (authError) throw authError;
+    // Utiliser la fonction stockée
+    const { error } = await supabase.rpc('promote_to_admin', {
+      user_email: cleanEmail
+    });
 
-        if (authData.user) {
-          // Créer le profil avec rôle admin
-          const { error: profileError } = await supabase
-            .from("profiles")
-            .insert([{
-              id: authData.user.id,
-              email: newAdmin.email.toLowerCase(),
-              full_name: newAdmin.full_name || null,
-              telephone: newAdmin.telephone || null,
-              role: "admin"
-            }]);
+    if (error) {
+      console.error("❌ Erreur fonction stockée:", error);
+      throw error;
+    }
 
-          if (profileError) {
-            console.error("Erreur création profil:", profileError);
-            // Essayer la mise à jour si l'insertion échoue
-            const { error: updateError } = await supabase
-              .from("profiles")
-              .update({ 
-                role: "admin",
-                full_name: newAdmin.full_name || null,
-                telephone: newAdmin.telephone || null
-              })
-              .eq("id", authData.user.id);
+    console.log("✅ Fonction stockée exécutée");
 
-            if (updateError) throw updateError;
-          }
+    // Vérifier le résultat
+    const { data: verificationData } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("email", cleanEmail)
+      .single();
 
-          toast({
-            title: "Administrateur créé",
-            description: `Un compte administrateur a été créé pour ${newAdmin.email}.`,
-          });
-        }
-      }
+    console.log("🔍 Rôle après promotion:", verificationData?.role);
 
-      // Réinitialiser le formulaire
-      setNewAdmin({ email: "", full_name: "", telephone: "", password: "" });
-      setIsAddAdminModalOpen(false);
-      
-      // Recharger la liste
+    if (verificationData?.role === 'admin') {
+      toast({
+        title: "Promotion réussie",
+        description: `${cleanEmail} est maintenant administrateur.`,
+      });
+    } else {
+      toast({
+        title: "Aucun changement",
+        description: `${cleanEmail} n'était pas un client ou n'existe pas.`,
+        variant: "default",
+      });
+    }
+
+    setSelectedEmail("");
+    setIsAddAdminModalOpen(false);
+    
+    setTimeout(async () => {
       await loadProfiles();
+      await loadAllEmails();
+    }, 1000);
 
-    } catch (error: any) {
-      console.error("Erreur ajout admin:", error);
+  } catch (error: any) {
+    console.error("💥 Erreur:", error);
+    toast({
+      title: "Erreur",
+      description: "Impossible de promouvoir l'utilisateur.",
+      variant: "destructive",
+    });
+  }
+};
+
+const handleRemoveAdmin = async (profileId: string, email: string) => {
+  if (!confirm(`Êtes-vous sûr de vouloir retirer les droits administrateur à ${email} ?`)) {
+    return;
+  }
+
+  try {
+    console.log("🔍 Retrait des droits admin pour:", email);
+
+    // Approche directe d'abord
+    const { error } = await supabase
+      .from("profiles")
+      .update({ role: "client" })
+      .eq("id", profileId);
+
+    if (error) {
+      console.error("❌ Erreur retrait admin:", error);
+      throw error;
+    }
+
+    // Vérification
+    const { data: verificationData } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", profileId)
+      .single();
+
+    console.log("🔍 Rôle après retrait:", verificationData?.role);
+
+    if (verificationData?.role === 'client') {
       toast({
-        title: "Erreur",
-        description: error.message || "Impossible d'ajouter l'administrateur.",
-        variant: "destructive",
+        title: "Droits retirés",
+        description: `${email} n'est plus administrateur.`,
       });
-    }
-  };
-
-  const handleRemoveAdmin = async (profileId: string, email: string) => {
-    if (!confirm(`Êtes-vous sûr de vouloir retirer les droits administrateur à ${email} ?`)) {
-      return;
+    } else {
+      throw new Error("Le retrait n'a pas fonctionné");
     }
 
+    await loadProfiles();
+
+  } catch (error: any) {
+    console.error("Erreur retrait admin:", error);
+    
+    // Si l'approche directe échoue, utiliser une fonction stockée
     try {
-      const { error } = await supabase
-        .from("profiles")
-        .update({ role: "client" })
-        .eq("id", profileId);
+      const { error: rpcError } = await supabase.rpc('demote_admin', {
+        user_id: profileId
+      });
 
-      if (error) throw error;
+      if (rpcError) throw rpcError;
 
       toast({
         title: "Droits retirés",
@@ -273,15 +275,82 @@ export default function AdminUsers() {
 
       await loadProfiles();
 
-    } catch (error: any) {
-      console.error("Erreur retrait admin:", error);
+    } catch (rpcError: any) {
       toast({
         title: "Erreur",
-        description: error.message || "Impossible de retirer les droits administrateur.",
+        description: "Impossible de retirer les droits administrateur.",
         variant: "destructive",
       });
     }
-  };
+  }
+};
+
+const handleDeleteUser = async (profileId: string, email: string, userRole: string) => {
+  if (!confirm(`Êtes-vous sûr de vouloir supprimer définitivement ${email} (${userRole}) ? Cette action est irréversible.`)) {
+    return;
+  }
+
+  try {
+    console.log("🗑️ Suppression de l'utilisateur:", email);
+
+    // Essayer de supprimer d'abord les réservations
+    const { error: reservationsError } = await supabase
+      .from("reservations")
+      .delete()
+      .eq("user_id", profileId);
+
+    if (reservationsError) {
+      console.warn("⚠️ Erreur suppression réservations:", reservationsError);
+      // On continue quand même
+    }
+
+    // Supprimer le profil
+    const { error: profileError } = await supabase
+      .from("profiles")
+      .delete()
+      .eq("id", profileId);
+
+    if (profileError) {
+      console.error("❌ Erreur suppression profil:", profileError);
+      throw profileError;
+    }
+
+    console.log("✅ Utilisateur supprimé");
+
+    toast({
+      title: "Utilisateur supprimé",
+      description: `${email} a été supprimé définitivement.`,
+    });
+
+    await loadProfiles();
+
+  } catch (error: any) {
+    console.error("Erreur suppression utilisateur:", error);
+    
+    // Si l'approche directe échoue, utiliser une fonction stockée
+    try {
+      const { error: rpcError } = await supabase.rpc('delete_user_profile', {
+        user_id: profileId
+      });
+
+      if (rpcError) throw rpcError;
+
+      toast({
+        title: "Utilisateur supprimé",
+        description: `${email} a été supprimé définitivement.`,
+      });
+
+      await loadProfiles();
+
+    } catch (rpcError: any) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de supprimer l'utilisateur.",
+        variant: "destructive",
+      });
+    }
+  }
+};
 
   const formatDateTime = (dateString: string | null) => {
     if (!dateString) return "Jamais";
@@ -315,12 +384,10 @@ export default function AdminUsers() {
             </div>
           </div>
           
-          <div className="flex gap-2">
-            <Button onClick={() => setIsAddAdminModalOpen(true)}>
-              <UserPlus className="h-4 w-4 mr-2" />
-              Ajouter un admin
-            </Button>
-          </div>
+          <Button onClick={() => setIsAddAdminModalOpen(true)}>
+            <UserPlus className="h-4 w-4 mr-2" />
+            Ajouter un admin
+          </Button>
         </div>
 
         {/* Onglets */}
@@ -383,18 +450,46 @@ export default function AdminUsers() {
                         {profile.role === 'admin' && (
                           <Badge variant="default">Admin</Badge>
                         )}
+                        {profile.role === 'client' && (
+                          <Badge variant="secondary">Client</Badge>
+                        )}
                       </CardTitle>
                     </div>
                     
-                    {activeTab === 'admins' && profile.role === 'admin' && (
+                    {/* Boutons d'actions */}
+                    <div className="flex gap-1">
+                      {/* Bouton Voir réservations */}
                       <Button
-                        variant="destructive"
+                        variant="ghost"
                         size="sm"
-                        onClick={() => handleRemoveAdmin(profile.id, profile.email)}
+                        onClick={() => navigate(`/admin/reservations?user=${profile.id}`)}
+                        title="Voir les réservations"
                       >
-                        <UserX className="h-4 w-4" />
+                        <Eye className="h-4 w-4" />
                       </Button>
-                    )}
+                      
+                      {/* Bouton Supprimer pour tous les utilisateurs */}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDeleteUser(profile.id, profile.email, profile.role)}
+                        title={`Supprimer ${profile.role === 'admin' ? "l'administrateur" : "le client"}`}
+                      >
+                        <Trash2 className="h-4 w-4 text-red-600" />
+                      </Button>
+                      
+                      {/* Bouton Retirer admin (uniquement pour les admins) */}
+                      {activeTab === 'admins' && profile.role === 'admin' && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleRemoveAdmin(profile.id, profile.email)}
+                          title="Retirer les droits administrateur"
+                        >
+                          <UserX className="h-4 w-4 text-orange-600" />
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </CardHeader>
                 
@@ -415,19 +510,6 @@ export default function AdminUsers() {
                     <Calendar className="h-4 w-4" />
                     <span>Inscrit le: {formatDateTime(profile.created_at)}</span>
                   </div>
-
-                  {profile.role === 'client' && (
-                    <div className="pt-2">
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="w-full"
-                        onClick={() => navigate(`/admin/reservations?user=${profile.id}`)}
-                      >
-                        Voir ses réservations
-                      </Button>
-                    </div>
-                  )}
                 </CardContent>
               </Card>
             ))}
@@ -455,84 +537,87 @@ export default function AdminUsers() {
           </Card>
         )}
 
-        {/* Modal d'ajout d'admin */}
-        <Dialog open={isAddAdminModalOpen} onClose={() => setIsAddAdminModalOpen(false)} className="relative z-50">
-          <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
-          <div className="fixed inset-0 flex items-center justify-center p-4">
-            <Dialog.Panel className="bg-white rounded-lg p-6 w-full max-w-md">
-              <Dialog.Title className="text-lg font-semibold mb-4">
-                Ajouter un administrateur
-              </Dialog.Title>
 
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="email">Email *</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={newAdmin.email}
-                    onChange={(e) => setNewAdmin({...newAdmin, email: e.target.value})}
-                    placeholder="email@exemple.com"
-                    required
-                  />
-                </div>
+{/* Modal d'ajout d'admin */}
+<Dialog open={isAddAdminModalOpen} onClose={() => setIsAddAdminModalOpen(false)} className="relative z-50">
+  <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
+  <div className="fixed inset-0 flex items-center justify-center p-4">
+    <Dialog.Panel className="bg-white rounded-lg p-6 w-full max-w-md">
+      <Dialog.Title className="text-lg font-semibold mb-4">
+        Promouvoir un client en administrateur
+      </Dialog.Title>
 
-                <div>
-                  <Label htmlFor="password">Mot de passe *</Label>
-                  <div className="relative">
-                    <Input
-                      id="password"
-                      type={showPassword ? "text" : "password"}
-                      value={newAdmin.password}
-                      onChange={(e) => setNewAdmin({...newAdmin, password: e.target.value})}
-                      placeholder="Minimum 6 caractères"
-                      required
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                      onClick={() => setShowPassword(!showPassword)}
-                    >
-                      {showPassword ? "Masquer" : "Afficher"}
-                    </Button>
-                  </div>
-                  <p className="text-xs text-gray-500 mt-1">Le mot de passe doit contenir au moins 6 caractères</p>
-                </div>
+      <div className="space-y-4 mb-4">
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+          <p className="text-sm text-blue-800">
+            <strong>Information :</strong> Sélectionnez un client pour lui donner les droits administrateur.
+          </p>
+        </div>
 
-                <div>
-                  <Label htmlFor="full_name">Nom complet</Label>
-                  <Input
-                    id="full_name"
-                    value={newAdmin.full_name}
-                    onChange={(e) => setNewAdmin({...newAdmin, full_name: e.target.value})}
-                    placeholder="Nom et prénom"
-                  />
-                </div>
+        <div>
+          <Label htmlFor="user-select">Sélectionner un client *</Label>
+          <select
+            id="user-select"
+            value={selectedEmail}
+            onChange={(e) => setSelectedEmail(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            required
+          >
+            <option value="">Choisir un client...</option>
+            {allEmails.length === 0 ? (
+              <option value="" disabled>Aucun client disponible</option>
+            ) : (
+              allEmails.map((profile) => (
+                <option key={profile.email} value={profile.email}>
+                  {profile.email} {profile.full_name ? `(${profile.full_name})` : ''}
+                </option>
+              ))
+            )}
+          </select>
+          <p className="text-xs text-gray-500 mt-1">
+            {allEmails.length} client(s) disponible(s) pour promotion
+          </p>
+        </div>
 
-                <div>
-                  <Label htmlFor="telephone">Téléphone</Label>
-                  <Input
-                    id="telephone"
-                    value={newAdmin.telephone}
-                    onChange={(e) => setNewAdmin({...newAdmin, telephone: e.target.value})}
-                    placeholder="+212 6 00 00 00 00"
-                  />
-                </div>
-              </div>
+        <div>
+          <Label htmlFor="full_name">Nouveau nom complet (optionnel)</Label>
+          <Input
+            id="full_name"
+            value={newAdmin.full_name}
+            onChange={(e) => setNewAdmin({...newAdmin, full_name: e.target.value})}
+            placeholder="Laisser vide pour conserver le nom actuel"
+          />
+        </div>
 
-              <div className="flex justify-end gap-2 mt-6">
-                <Button variant="secondary" onClick={() => setIsAddAdminModalOpen(false)}>
-                  Annuler
-                </Button>
-                <Button onClick={handleAddAdmin}>
-                  Créer l'administrateur
-                </Button>
-              </div>
-            </Dialog.Panel>
-          </div>
-        </Dialog>
+        <div>
+          <Label htmlFor="telephone">Nouveau téléphone (optionnel)</Label>
+          <Input
+            id="telephone"
+            value={newAdmin.telephone}
+            onChange={(e) => setNewAdmin({...newAdmin, telephone: e.target.value})}
+            placeholder="Laisser vide pour conserver le téléphone actuel"
+          />
+        </div>
+      </div>
+
+      <div className="flex justify-end gap-2 mt-6">
+        <Button variant="secondary" onClick={() => {
+          setIsAddAdminModalOpen(false);
+          setSelectedEmail("");
+          setNewAdmin({ email: "", full_name: "", telephone: "", password: "" });
+        }}>
+          Annuler
+        </Button>
+        <Button 
+          onClick={handleAddAdmin}
+          disabled={!selectedEmail || allEmails.length === 0}
+        >
+          Promouvoir en admin
+        </Button>
+      </div>
+    </Dialog.Panel>
+  </div>
+</Dialog>
       </main>
       
       <Footer />

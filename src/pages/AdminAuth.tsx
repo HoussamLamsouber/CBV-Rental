@@ -65,7 +65,7 @@ const AdminLogin = () => {
           title: "Connexion admin réussie",
           description: "Bienvenue dans l'administration.",
         });
-        navigate("/admin/vehicles");
+        navigate("/");
       }
     } catch (error) {
       toast({

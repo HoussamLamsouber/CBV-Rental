@@ -45,6 +45,15 @@ type ReservationRow = {
   } | null;
   guest_name?: string | null;
   guest_email?: string | null;
+  guest_phone?: string | null;
+  car_category?: string;
+  car_price?: number;
+  car_image?: string | null;
+  pickup_time?: string;
+  return_time?: string;
+  total_price?: number;
+  date?: string;
+  created_at?: string;
 };
 
 type Vehicle = {
@@ -114,8 +123,11 @@ export default function AdminVehicleDetail() {
 
         setVehicles(vehiclesData || []);
 
-        // 3. Charger TOUTES les réservations
-        const { data: allReservationsData } = await supabase
+        // 3. Charger TOUTES les réservations - APPROCHE CORRIGÉE
+        console.log("🔄 Chargement des réservations...");
+        
+        // Option 1: Charger sans la relation profiles d'abord
+        const { data: allReservationsData, error: reservationsError } = await supabase
           .from("reservations")
           .select(`
             *,
@@ -127,7 +139,50 @@ export default function AdminVehicleDetail() {
           .eq("car_id", id)
           .order("created_at", { ascending: false });
 
-        setAllReservations(allReservationsData || []);
+        if (reservationsError) {
+          console.error("❌ Erreur avec jointure profiles:", reservationsError);
+          
+          // Option 2: Charger sans la relation si elle échoue
+          const { data: simpleReservationsData } = await supabase
+            .from("reservations")
+            .select("*")
+            .eq("car_id", id)
+            .order("created_at", { ascending: false });
+            
+          console.log("✅ Réservations chargées (sans profiles):", simpleReservationsData?.length);
+          setAllReservations(simpleReservationsData as ReservationRow[] || []);
+        } else {
+          console.log("✅ Réservations chargées (avec profiles):", allReservationsData?.length);
+          
+          // Nettoyer les données pour s'assurer qu'elles correspondent au type
+          const cleanedReservations = allReservationsData?.map(reservation => ({
+            id: reservation.id,
+            car_id: reservation.car_id,
+            pickup_date: reservation.pickup_date,
+            return_date: reservation.return_date,
+            status: reservation.status,
+            pickup_location: reservation.pickup_location,
+            return_location: reservation.return_location,
+            car_name: reservation.car_name,
+            user_id: reservation.user_id,
+            profiles: reservation.profiles && !('error' in reservation.profiles) 
+              ? reservation.profiles 
+              : null,
+            guest_name: reservation.guest_name,
+            guest_email: reservation.guest_email,
+            guest_phone: reservation.guest_phone,
+            car_category: reservation.car_category,
+            car_price: reservation.car_price,
+            car_image: reservation.car_image,
+            pickup_time: reservation.pickup_time,
+            return_time: reservation.return_time,
+            total_price: reservation.total_price,
+            date: reservation.date,
+            created_at: reservation.created_at
+          })) as ReservationRow[];
+          
+          setAllReservations(cleanedReservations || []);
+        }
         
         // 4. Charger les réservations acceptées
         const { data: acceptedReservations } = await supabase

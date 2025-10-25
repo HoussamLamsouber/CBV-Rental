@@ -66,28 +66,39 @@ export const ReservationModal = ({
   const checkRealTimeAvailability = async (): Promise<boolean> => {
     if (!car || !searchData?.pickupDate || !searchData?.returnDate) return false;
 
-    const startDate = searchData.pickupDate.toISOString().split('T')[0];
-    const endDate = searchData.returnDate.toISOString().split('T')[0];
-
     try {
-      const { data: carData } = await supabase
+      // Vérifier d'abord si le modèle de voiture est disponible
+      const { data: carData, error } = await supabase
         .from('cars')
-        .select('quantity')
+        .select('available, quantity')
         .eq('id', car.id)
+        .is('is_deleted', false)
         .single();
 
-      if (!carData) return false;
+      if (error) throw error;
 
-      const { data: reservations } = await supabase
+      // Si le modèle n'est pas disponible, retourner false immédiatement
+      if (!carData.available) {
+        return false;
+      }
+
+      // Vérifier s'il y a des conflits de réservation pour cette période
+      const startDate = searchData.pickupDate.toISOString().split('T')[0];
+      const endDate = searchData.returnDate.toISOString().split('T')[0];
+
+      const { data: reservations, error: reservationsError } = await supabase
         .from('reservations')
-        .select('*')
+        .select('id')
         .eq('car_id', car.id)
-        .eq('status', 'active')
+        .eq('status', 'accepted') // Seulement les réservations acceptées
         .or(`and(pickup_date.lte.${endDate},return_date.gte.${startDate})`);
+
+      if (reservationsError) throw reservationsError;
 
       const totalReserved = reservations?.length || 0;
       const availableQuantity = carData.quantity - totalReserved;
 
+      // Retourner true s'il reste au moins une voiture disponible
       return availableQuantity >= 1;
       
     } catch (error) {
@@ -165,89 +176,77 @@ export const ReservationModal = ({
       let clientEmail = "";
       let clientName = "";
       let clientPhone = "";
-  
+
+      // Préparer les données de réservation communes
+      const reservationData: any = {
+        car_id: car.id,
+        car_name: car.name,
+        car_category: car.category || 'Non spécifié',
+        car_price: car.price,
+        car_image: car.image_url || null,
+        pickup_location: searchData.pickupLocation,
+        return_location: searchData.sameLocation
+          ? searchData.pickupLocation
+          : searchData.returnLocation || searchData.pickupLocation,
+        pickup_date: pickupDateStr,
+        pickup_time: searchData.pickupTime,
+        return_date: returnDateStr,
+        return_time: searchData.returnTime,
+        total_price: totalPrice,
+        status: "pending", // Statut initial en attente
+        date: new Date().toISOString().split('T')[0],
+      };
+
       if (user) {
-        // Utilisateur connecté - insertion normale
-        const reservationData = {
-          car_id: car.id,
-          car_name: car.name,
-          car_category: car.category || 'Non spécifié',
-          car_price: car.price,
-          car_image: car.image_url || null,
-          pickup_location: searchData.pickupLocation,
-          return_location: searchData.sameLocation
-            ? searchData.pickupLocation
-            : searchData.returnLocation || searchData.pickupLocation,
-          pickup_date: pickupDateStr,
-          pickup_time: searchData.pickupTime,
-          return_date: returnDateStr,
-          return_time: searchData.returnTime,
-          total_price: totalPrice,
-          status: "active",
-          date: new Date().toISOString().split('T')[0],
-          user_id: user.id,
-        };
-  
+        // Utilisateur connecté
+        reservationData.user_id = user.id;
+        
         const { data: newReservation, error } = await supabase
           .from("reservations")
           .insert([reservationData])
           .select()
           .single();
-  
+
         if (error) throw error;
         newReservationId = newReservation.id;
-  
+
         // Récupérer les infos utilisateur
         const { data: userProfile } = await supabase
           .from("profiles")
           .select("full_name, telephone, email")
           .eq("id", user.id)
           .single();
-  
+
         clientEmail = userProfile?.email || user.email;
         clientName = userProfile?.full_name || user.email;
         clientPhone = userProfile?.telephone || "Non renseigné";
-  
+
       } else {
-        // Utilisateur non connecté - utiliser la fonction RPC
-        const { data: reservationId, error } = await supabase.rpc(
-          'create_guest_reservation' as any, // Bypass TypeScript temporairement
-          {
-            p_car_id: car.id,
-            p_car_name: car.name,
-            p_car_category: car.category || 'Non spécifié',
-            p_car_price: car.price,
-            p_pickup_location: searchData.pickupLocation,
-            p_return_location: searchData.sameLocation
-              ? searchData.pickupLocation
-              : searchData.returnLocation || searchData.pickupLocation,
-            p_pickup_date: pickupDateStr,
-            p_pickup_time: searchData.pickupTime,
-            p_return_date: returnDateStr,
-            p_return_time: searchData.returnTime,
-            p_total_price: totalPrice,
-            p_guest_email: guestInfo.email.toLowerCase(),
-            p_guest_name: guestInfo.full_name,
-            p_guest_phone: guestInfo.telephone || '',
-            p_car_image: car.image_url || null,
-            p_date: new Date().toISOString().split('T')[0]
-          }
-        );
-  
+        // Utilisateur non connecté - ajouter les infos invité
+        reservationData.guest_name = guestInfo.full_name;
+        reservationData.guest_email = guestInfo.email.toLowerCase();
+        reservationData.guest_phone = guestInfo.telephone || '';
+
+        const { data: newReservation, error } = await supabase
+          .from("reservations")
+          .insert([reservationData])
+          .select()
+          .single();
+
         if (error) throw error;
-        newReservationId = reservationId;
-  
+        newReservationId = newReservation.id;
+
         clientEmail = guestInfo.email;
         clientName = guestInfo.full_name;
         clientPhone = guestInfo.telephone || "Non renseigné";
-  
-        // Stocker dans localStorage
+
+        // Stocker dans localStorage pour le suivi
         const guestReservations = localStorage.getItem("guest_reservations");
         const reservationsArray = guestReservations ? JSON.parse(guestReservations) : [];
         reservationsArray.push(newReservationId);
         localStorage.setItem("guest_reservations", JSON.stringify(reservationsArray));
       }
-  
+
       // Envoyer l'email de confirmation
       await emailJSService.sendNewReservationEmails({
         reservationId: newReservationId,
@@ -264,12 +263,12 @@ export const ReservationModal = ({
         returnLocation: searchData.sameLocation ? searchData.pickupLocation : (searchData.returnLocation || searchData.pickupLocation),
         totalPrice,
       });
-  
+
       toast({
-        title: "Réservation réussie !",
-        description: `${car.name} réservé avec succès.`,
+        title: "Réservation envoyé !",
+        description: `Vous recevrez une confirmation par email.`,
       });
-  
+
       onReserved();
       onClose();
     } catch (err: any) {
@@ -307,6 +306,14 @@ export const ReservationModal = ({
 
         <p className="mb-2 text-sm text-gray-600">{car.category}</p>
         <p className="mb-4 font-semibold">{car.price} MAD / jour</p>
+
+        {/* Détails de la réservation */}
+        <div className="mb-4 space-y-2 text-sm">
+          <p><strong>Lieu de prise:</strong> {searchData.pickupLocation}</p>
+          <p><strong>Lieu de retour:</strong> {searchData.sameLocation ? searchData.pickupLocation : (searchData.returnLocation || searchData.pickupLocation)}</p>
+          <p><strong>Date de prise:</strong> {searchData.pickupDate.toLocaleDateString('fr-FR')} à {searchData.pickupTime}</p>
+          <p><strong>Date de retour:</strong> {searchData.returnDate.toLocaleDateString('fr-FR')} à {searchData.returnTime}</p>
+        </div>
 
         {/* Informations invité */}
         {!user && (
@@ -349,14 +356,21 @@ export const ReservationModal = ({
         )}
 
         {!isAvailable && (
-          <p className="text-red-600 text-sm mb-4">
-            Ce véhicule n'est plus disponible pour les dates sélectionnées.
-          </p>
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded">
+            <p className="text-red-600 text-sm">
+              ⚠️ Ce véhicule n'est plus disponible pour les dates sélectionnées.
+            </p>
+          </div>
         )}
 
-        <p className="mb-4 text-sm text-gray-700">
-          Prix total: <span className="font-semibold">{totalPrice} MAD</span>
-        </p>
+        <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded">
+          <p className="text-blue-700 text-sm">
+            <strong>Prix total:</strong> <span className="font-semibold text-lg">{totalPrice} MAD</span>
+          </p>
+          <p className="text-blue-600 text-xs mt-1">
+            Votre réservation sera confirmée après validation par notre équipe.
+          </p>
+        </div>
 
         <div className="flex justify-end gap-2">
           <Button variant="secondary" onClick={onClose} disabled={isLoading}>
@@ -365,8 +379,9 @@ export const ReservationModal = ({
           <Button 
             onClick={handleConfirm}
             disabled={!isAvailable || isLoading}
+            className="bg-green-600 hover:bg-green-700"
           >
-            {isLoading ? "Réservation..." : (!isAvailable ? 'Indisponible' : 'Confirmer')}
+            {isLoading ? "Réservation..." : (!isAvailable ? 'Indisponible' : 'Confirmer la réservation')}
           </Button>
         </div>
       </Dialog.Panel>

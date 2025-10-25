@@ -32,25 +32,20 @@ interface Reservation {
   pickup_location: string;
   return_location: string;
   created_at: string;
-  available: boolean;
+  status: string; // Ajout du statut
   car_name: string;
   car_image: string;
   car_category: string;
   car_price: number;
   date: string;
-}
-
-interface AvailabilityOverride {
-  id: string;
-  car_id: string;
-  date: string;
-  available_quantity: number;
+  guest_name?: string;
+  guest_email?: string;
+  guest_phone?: string;
 }
 
 export default function AdminVehicles() {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [reservations, setReservations] = useState<Reservation[]>([]);
-  const [overrides, setOverrides] = useState<AvailabilityOverride[]>([]);
   const [dates, setDates] = useState<string[]>([]);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -79,23 +74,33 @@ export default function AdminVehicles() {
   }, []);
 
   const fetchData = async () => {
-    const { data: carsData } = await supabase
-      .from("cars")
-      .select("*")
-      .is("is_deleted", false);
-    
-    setVehicles((carsData as Vehicle[]) || []);
+    try {
+      // Charger les véhicules
+      const { data: carsData, error: carsError } = await supabase
+        .from("cars")
+        .select("*")
+        .is("is_deleted", false);
+      
+      if (carsError) throw carsError;
+      setVehicles((carsData as Vehicle[]) || []);
 
-    // 🔥 CHANGEMENT : Ne charger que les réservations ACCEPTÉES
-    const { data: resData } = await supabase
-      .from("reservations")
-      .select("*")
-      .eq("status", "accepted"); // ← Seulement les réservations acceptées
+      // Charger les réservations ACCEPTÉES seulement
+      const { data: resData, error: resError } = await supabase
+        .from("reservations")
+        .select("*")
+        .eq("status", "accepted");
 
-    setReservations((resData as Reservation[]) || []);
+      if (resError) throw resError;
+      setReservations((resData as Reservation[]) || []);
 
-    const { data: overridesData } = await supabase.from("vehicle_availabilities").select("*");
-    setOverrides((overridesData as AvailabilityOverride[]) || []);
+    } catch (error) {
+      console.error("Erreur chargement données:", error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de charger les données",
+        variant: "destructive",
+      });
+    }
   };
 
   const isDateInReservation = (date: string, reservation: Reservation) => {
@@ -116,18 +121,16 @@ export default function AdminVehicles() {
     const car = vehicles.find((c) => c.id === carId);
     if (!car) return 0;
 
-    let stock = car.quantity;
-
-    const override = overrides.find((o) => o.car_id === carId && o.date === date);
-    if (override) {
-      stock = override.available_quantity;
+    // Vérifier si le véhicule est disponible globalement
+    if (!car.available) {
+      return 0;
     }
 
     const reserved = getReservedCountForDate(carId, date);
-    return Math.max(0, stock - reserved);
+    return Math.max(0, car.quantity - reserved);
   };
 
-  // FONCTION CORRIGÉE POUR CRÉER UN MODÈLE
+  // FONCTION POUR CRÉER UN MODÈLE
   const handleCreateVehicle = async () => {
     if (!newVehicle.name || !newVehicle.category || !newVehicle.price || !newVehicle.quantity) {
       toast({
@@ -166,7 +169,7 @@ export default function AdminVehicles() {
       const { data, error } = await supabase
         .from("cars")
         .insert([{
-          id: generatedId, // ← ID généré automatiquement
+          id: generatedId,
           name: newVehicle.name,
           category: newVehicle.category,
           price: Number(newVehicle.price),
@@ -323,7 +326,7 @@ export default function AdminVehicles() {
                         className={`p-2 border font-semibold ${
                           available > 0 ? "text-green-600" : "text-red-600"
                         }`}
-                        title={`Réservations actives: ${reserved}, Disponible: ${available}`}
+                        title={`Réservations acceptées: ${reserved}, Disponible: ${available}`}
                       >
                         {available}
                       </td>

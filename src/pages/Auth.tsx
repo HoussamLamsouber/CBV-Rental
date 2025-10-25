@@ -12,8 +12,10 @@ import { Car, LogIn, UserPlus } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 const Auth = () => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+  const [signupEmail, setSignupEmail] = useState("");
+  const [signupPassword, setSignupPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -21,7 +23,6 @@ const Auth = () => {
   const { isAuthenticated } = useAuth();
 
   useEffect(() => {
-    // Rediriger si déjà connecté
     if (isAuthenticated) {
       navigate("/");
     }
@@ -29,22 +30,85 @@ const Auth = () => {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!fullName.trim()) {
+      toast({
+        title: "Champ manquant",
+        description: "Veuillez saisir votre nom complet.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!signupEmail.trim()) {
+      toast({
+        title: "Champ manquant",
+        description: "Veuillez saisir votre adresse email.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (signupPassword.length < 6) {
+      toast({
+        title: "Mot de passe trop court",
+        description: "Le mot de passe doit contenir au moins 6 caractères.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
+      console.log("Tentative d'inscription pour:", signupEmail);
+      
+      // Inscription sans confirmation d'email pour le développement
+      const { data, error } = await supabase.auth.signUp({
+        email: signupEmail.trim(),
+        password: signupPassword.trim(),
         options: {
-          emailRedirectTo: `${window.location.origin}/auth-callback`,
+          // Note: emailRedirectTo est supprimé pour éviter l'erreur d'envoi d'email
           data: {
-            full_name: fullName,
+            full_name: fullName.trim(),
           },
         }
       });
 
+      console.log("Réponse Supabase:", { data, error });
+
       if (error) {
-        if (error.message.includes("already registered")) {
+        console.error("Erreur d'inscription:", error);
+        
+        if (error.message?.includes("already registered") || error.code === 'user_already_exists') {
+          toast({
+            title: "Compte existant",
+            description: "Cette adresse email est déjà utilisée. Essayez de vous connecter.",
+            variant: "destructive",
+          });
+        } else if (error.message?.includes("password")) {
+          toast({
+            title: "Mot de passe invalide",
+            description: "Le mot de passe doit contenir au moins 6 caractères.",
+            variant: "destructive",
+          });
+        } else if (error.message?.includes("email")) {
+          toast({
+            title: "Email invalide",
+            description: "Veuillez saisir une adresse email valide.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Erreur d'inscription",
+            description: error.message || "Une erreur est survenue lors de l'inscription.",
+            variant: "destructive",
+          });
+        }
+      } else {
+        console.log("Inscription réussie, données:", data);
+        
+        if (data.user && data.user.identities && data.user.identities.length === 0) {
           toast({
             title: "Compte existant",
             description: "Cette adresse email est déjà utilisée. Essayez de vous connecter.",
@@ -52,24 +116,29 @@ const Auth = () => {
           });
         } else {
           toast({
-            title: "Erreur d'inscription",
-            description: error.message,
-            variant: "destructive",
+            title: "Inscription réussie !",
+            description: "Votre compte a été créé avec succès. Vous pouvez maintenant vous connecter.",
           });
+          
+          // Réinitialiser le formulaire
+          setSignupEmail("");
+          setSignupPassword("");
+          setFullName("");
+          
+          // Basculer vers l'onglet connexion
+          setTimeout(() => {
+            const loginTrigger = document.querySelector('[value="login"]') as HTMLElement;
+            if (loginTrigger) {
+              loginTrigger.click();
+            }
+          }, 1000);
         }
-      } else {
-        toast({
-          title: "Inscription réussie",
-          description: "Vérifiez votre email pour confirmer votre compte.",
-        });
-        setEmail("");
-        setPassword("");
-        setFullName("");
       }
-    } catch (error) {
+    } catch (error: any) {
+      console.error("Erreur inattendue:", error);
       toast({
-        title: "Erreur",
-        description: "Une erreur inattendue s'est produite.",
+        title: "Erreur inattendue",
+        description: error.message || "Une erreur inattendue s'est produite.",
         variant: "destructive",
       });
     } finally {
@@ -79,36 +148,76 @@ const Auth = () => {
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!loginEmail.trim() || !loginPassword.trim()) {
+      toast({
+        title: "Champs manquants",
+        description: "Veuillez saisir votre email et mot de passe.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+      console.log("Tentative de connexion pour:", loginEmail);
+      
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: loginEmail.trim(),
+        password: loginPassword.trim(),
       });
 
+      console.log("Réponse connexion Supabase:", { data, error });
+
       if (error) {
-        toast({
-          title: "Erreur de connexion",
-          description: error.message,
-          variant: "destructive",
-        });
+        console.error("Erreur de connexion:", error);
+        
+        if (error.message?.includes("Invalid login credentials")) {
+          toast({
+            title: "Identifiants incorrects",
+            description: "Email ou mot de passe incorrect.",
+            variant: "destructive",
+          });
+        } else if (error.message?.includes("Email not confirmed")) {
+          toast({
+            title: "Email non confirmé",
+            description: "Veuillez vérifier vos emails et confirmer votre compte.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Erreur de connexion",
+            description: error.message || "Une erreur est survenue lors de la connexion.",
+            variant: "destructive",
+          });
+        }
       } else {
+        console.log("Connexion réussie:", data);
         toast({
-          title: "Connexion réussie",
-          description: "Vous êtes maintenant connecté.",
+          title: "Connexion réussie !",
+          description: `Bienvenue ${data.user?.email || ''}`,
         });
-        // La redirection se fera automatiquement via le AuthContext
       }
-    } catch (error) {
+    } catch (error: any) {
+      console.error("Erreur inattendue:", error);
       toast({
         title: "Erreur",
-        description: "Une erreur inattendue s'est produite.",
+        description: error.message || "Une erreur inattendue s'est produite.",
         variant: "destructive",
       });
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleTabChange = (value: string) => {
+    // Réinitialiser les champs quand on change d'onglet
+    setLoginEmail("");
+    setLoginPassword("");
+    setSignupEmail("");
+    setSignupPassword("");
+    setFullName("");
   };
 
   return (
@@ -133,7 +242,7 @@ const Auth = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Tabs defaultValue="login" className="w-full">
+              <Tabs defaultValue="login" onValueChange={handleTabChange} className="w-full">
                 <TabsList className="grid w-full grid-cols-2">
                   <TabsTrigger value="login" className="flex items-center gap-2">
                     <LogIn className="h-4 w-4" />
@@ -148,25 +257,27 @@ const Auth = () => {
                 <TabsContent value="login" className="space-y-4">
                   <form onSubmit={handleSignIn} className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="email">Email</Label>
+                      <Label htmlFor="login-email">Email</Label>
                       <Input
-                        id="email"
+                        id="login-email"
                         type="email"
                         placeholder="votre@email.com"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
+                        value={loginEmail}
+                        onChange={(e) => setLoginEmail(e.target.value)}
                         required
+                        disabled={loading}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="password">Mot de passe</Label>
+                      <Label htmlFor="login-password">Mot de passe</Label>
                       <Input
-                        id="password"
+                        id="login-password"
                         type="password"
                         placeholder="••••••••"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
+                        value={loginPassword}
+                        onChange={(e) => setLoginPassword(e.target.value)}
                         required
+                        disabled={loading}
                       />
                     </div>
                     <Button type="submit" className="w-full" disabled={loading}>
@@ -178,7 +289,7 @@ const Auth = () => {
                 <TabsContent value="signup" className="space-y-4">
                   <form onSubmit={handleSignUp} className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="signup-fullname">Nom complet</Label>
+                      <Label htmlFor="signup-fullname">Nom complet *</Label>
                       <Input
                         id="signup-fullname"
                         type="text"
@@ -186,30 +297,36 @@ const Auth = () => {
                         value={fullName}
                         onChange={(e) => setFullName(e.target.value)}
                         required
+                        disabled={loading}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="signup-email">Email</Label>
+                      <Label htmlFor="signup-email">Email *</Label>
                       <Input
                         id="signup-email"
                         type="email"
                         placeholder="votre@email.com"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
+                        value={signupEmail}
+                        onChange={(e) => setSignupEmail(e.target.value)}
                         required
+                        disabled={loading}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="signup-password">Mot de passe</Label>
+                      <Label htmlFor="signup-password">Mot de passe *</Label>
                       <Input
                         id="signup-password"
                         type="password"
-                        placeholder="••••••••"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="Au moins 6 caractères"
+                        value={signupPassword}
+                        onChange={(e) => setSignupPassword(e.target.value)}
                         required
                         minLength={6}
+                        disabled={loading}
                       />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Le mot de passe doit contenir au moins 6 caractères
+                      </p>
                     </div>
                     <Button type="submit" className="w-full" disabled={loading}>
                       {loading ? "Inscription..." : "S'inscrire"}

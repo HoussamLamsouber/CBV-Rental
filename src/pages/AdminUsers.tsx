@@ -33,7 +33,10 @@ type Profile = {
   telephone: string | null;
   role: string;
   created_at: string;
-  last_sign_in_at: string | null;
+  last_sign_in_at?: string | null;
+  adresse?: string | null;
+  dateNaissance?: string | null;
+  updated_at?: string | null;
 };
 
 export default function AdminUsers() {

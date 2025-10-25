@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { format, addDays } from "date-fns";
+import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog } from "@headlessui/react";
 import { Label } from "@/components/ui/label";
@@ -38,13 +38,13 @@ type ReservationRow = {
   pickup_location: string;
   return_location: string;
   car_name: string;
-};
-
-type AvailabilityRow = {
-  id: string;
-  car_id: string;
-  date: string;
-  available_quantity: number;
+  user_id: string;
+  profiles?: {
+    full_name: string | null;
+    email: string;
+  } | null;
+  guest_name?: string | null;
+  guest_email?: string | null;
 };
 
 type Vehicle = {
@@ -59,23 +59,18 @@ type Vehicle = {
 };
 
 export default function AdminVehicleDetail() {
-  // 1. Hooks de routing et context
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { authLoading, adminLoading, isUserAdmin } = useAuth();
   
-
-  // 2. Tous les useState
   const [vehicle, setVehicle] = useState<CarRow | null>(null);
   const [reservations, setReservations] = useState<ReservationRow[]>([]);
-  const [overrides, setOverrides] = useState<Record<string, number | "">>({});
-  const [dates, setDates] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [stockEdit, setStockEdit] = useState<number | "">("");
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-  const [activeTab, setActiveTab] = useState<'availability' | 'vehicles' | 'offers'>('availability');
+  const [activeTab, setActiveTab] = useState<'availability' | 'vehicles' | 'offers' | 'reservations'>('availability');
   const [offers, setOffers] = useState<any[]>([]);
   const [isCreateOfferModalOpen, setIsCreateOfferModalOpen] = useState(false);
   const [isCreateVehicleModalOpen, setIsCreateVehicleModalOpen] = useState(false);
@@ -87,18 +82,10 @@ export default function AdminVehicleDetail() {
     objet: "",
     status: "available" as 'available' | 'reserved' | 'maintenance'
   });
-
-  // 3. Tous les useEffect
-  useEffect(() => {
-    const today = new Date();
-    const nextDays = Array.from({ length: 30 }, (_, i) =>
-      format(addDays(today, i), "yyyy-MM-dd")
-    );
-    setDates(nextDays);
-  }, []);
+  const [allReservations, setAllReservations] = useState<ReservationRow[]>([]);
 
   useEffect(() => {
-    if (!id || dates.length === 0) return;
+    if (!id) return;
 
     let mounted = true;
     const load = async () => {
@@ -127,36 +114,32 @@ export default function AdminVehicleDetail() {
 
         setVehicles(vehiclesData || []);
 
-        // 3. Charger TOUTES les réservations pour ce véhicule
-        const { data: reservationsData } = await supabase
+        // 3. Charger TOUTES les réservations
+        const { data: allReservationsData } = await supabase
+          .from("reservations")
+          .select(`
+            *,
+            profiles:user_id (
+              full_name,
+              email
+            )
+          `)
+          .eq("car_id", id)
+          .order("created_at", { ascending: false });
+
+        setAllReservations(allReservationsData || []);
+        
+        // 4. Charger les réservations acceptées
+        const { data: acceptedReservations } = await supabase
           .from("reservations")
           .select("*")
           .eq("car_id", id)
-          .eq("status", "active");
+          .eq("status", "accepted");
 
-        setReservations(reservationsData || []);
-
-        // 4. Charger les overrides (vehicle_availabilities)
-        const { data: oData } = await supabase
-          .from("vehicle_availabilities")
-          .select("*")
-          .eq("car_id", id)
-          .in("date", dates);
-
-        const mapOverrides: Record<string, number | ""> = {};
-        (oData || []).forEach((o: AvailabilityRow) => {
-          mapOverrides[o.date] = o.available_quantity;
-        });
+        setReservations(acceptedReservations || []);
 
         // 5. Charger les offres du véhicule
         await loadOffers();
-        
-        // Initialiser les dates manquantes
-        dates.forEach(d => {
-          if (mapOverrides[d] === undefined) mapOverrides[d] = "";
-        });
-
-        setOverrides(mapOverrides);
 
       } catch (err: any) {
         console.error("Erreur load vehicle detail:", err);
@@ -172,9 +155,8 @@ export default function AdminVehicleDetail() {
 
     load();
     return () => { mounted = false; };
-  }, [id, dates, toast]);
+  }, [id, toast]);
 
-  // 4. Toutes les fonctions
   const loadOffers = async () => {
     if (!id) return;
     
@@ -193,94 +175,42 @@ export default function AdminVehicleDetail() {
     setOffers(offersData || []);
   };
 
-  // Fonction pour déterminer si une date est dans une période de réservation
-  const isDateInReservation = (date: string, reservation: ReservationRow) => {
-    const reservationDate = new Date(date);
-    const pickupDate = new Date(reservation.pickup_date);
-    const returnDate = new Date(reservation.return_date);
-    
-    return reservationDate >= pickupDate && reservationDate <= returnDate;
-  };
-
-  // Calculer les réservations par date
-  const getReservedForDate = (date: string) => {
-    return reservations
-      .filter(r => isDateInReservation(date, r))
-      .length;
-  };
-
-  const getAvailabilityForDate = (date: string) => {
-    const override = overrides[date];
-    if (override !== undefined && override !== "" && override !== null) {
-      return Number(override);
+  // Fonction pour obtenir les informations du client
+  const getClientInfo = (reservation: ReservationRow) => {
+    if (reservation.profiles) {
+      return {
+        name: reservation.profiles.full_name || "Non renseigné",
+        email: reservation.profiles.email,
+        type: "Utilisateur enregistré"
+      };
     }
     
-    // Nouveau calcul : seulement les véhicules disponibles (status = 'available')
-    const availableVehiclesCount = vehicles.filter(v => v.status === 'available').length;
-    const reserved = getReservedForDate(date);
-    return Math.max(0, availableVehiclesCount - reserved);
-  };
-
-  const handleOverrideChange = (date: string, value: string) => {
-    const parsed = value === "" ? "" : Number(value);
-    setOverrides(prev => ({ ...prev, [date]: parsed }));
-  };
-
-  const handleSave = async () => {
-    if (!id || !vehicle) return;
-    setSaving(true);
-    try {
-      // 1) Upsert les overrides (garder cette partie)
-      const toUpsert: any[] = [];
-      const toDelete: string[] = [];
-      
-      for (const d of dates) {
-        const val = overrides[d];
-        if (val === "" || val === null || val === undefined) {
-          toDelete.push(d);
-        } else {
-          toUpsert.push({
-            car_id: id,
-            date: d,
-            available_quantity: Number(val),
-          });
-        }
-      }
-  
-      if (toUpsert.length > 0) {
-        const { error: upErr } = await supabase
-          .from("vehicle_availabilities")
-          .upsert(toUpsert, { onConflict: "car_id,date" });
-        if (upErr) throw upErr;
-      }
-  
-      for (const d of toDelete) {
-        const { error: delErr } = await supabase
-          .from("vehicle_availabilities")
-          .delete()
-          .match({ car_id: id, date: d });
-        if (delErr) {
-          console.warn("delete override error:", delErr);
-        }
-      }
-  
-      toast({ 
-        title: "Sauvegardé", 
-        description: "Disponibilités mises à jour." 
-      });
-    } catch (err: any) {
-      console.error("Erreur save overrides:", err);
-      toast({ 
-        title: "Erreur", 
-        description: String(err.message || err), 
-        variant: "destructive" 
-      });
-    } finally {
-      setSaving(false);
+    if (reservation.guest_name || reservation.guest_email) {
+      return {
+        name: reservation.guest_name || "Non renseigné",
+        email: reservation.guest_email || "Non renseigné",
+        type: "Invité"
+      };
     }
+    
+    return {
+      name: "Non spécifié",
+      email: "Non spécifié",
+      type: "Inconnu"
+    };
   };
 
-  // Fonction pour créer un véhicule individuel
+  // Fonction pour obtenir les statistiques de réservations
+  const getReservationStats = () => {
+    const stats = {
+      total: allReservations.length,
+      accepted: allReservations.filter(r => r.status === 'accepted').length,
+      pending: allReservations.filter(r => r.status === 'pending').length,
+      refused: allReservations.filter(r => r.status === 'refused').length
+    };
+    return stats;
+  };
+
   const handleCreateVehicle = async () => {
     if (!newVehicle.matricule) {
       toast({
@@ -293,7 +223,6 @@ export default function AdminVehicleDetail() {
   
     setSaving(true);
     try {
-      // Vérifier si le matricule existe déjà
       const { data: existingVehicle } = await supabase
         .from("vehicles")
         .select("matricule")
@@ -317,7 +246,7 @@ export default function AdminVehicleDetail() {
           obd: newVehicle.obd || null,
           date_obd: newVehicle.date_obd,
           objet: newVehicle.objet || null,
-          status: newVehicle.status, // ← Ajouter le statut ici
+          status: newVehicle.status,
           created_at: new Date().toISOString(),
         }])
         .select()
@@ -327,10 +256,9 @@ export default function AdminVehicleDetail() {
   
       toast({
         title: "Véhicule créé",
-        description: `Le véhicule ${newVehicle.matricule} a été ajouté. Le stock a été mis à jour automatiquement.`,
+        description: `Le véhicule ${newVehicle.matricule} a été ajouté.`,
       });
   
-      // Réinitialiser le formulaire
       setNewVehicle({
         matricule: "",
         obd: "",
@@ -341,7 +269,6 @@ export default function AdminVehicleDetail() {
   
       setIsCreateVehicleModalOpen(false);
       
-      // Recharger la liste des véhicules
       const { data: vehiclesData } = await supabase
         .from("vehicles")
         .select("*")
@@ -350,7 +277,6 @@ export default function AdminVehicleDetail() {
         .order("matricule");
       setVehicles(vehiclesData || []);
   
-      // Recharger les données du véhicule pour avoir la quantité mise à jour
       const { data: updatedVehicle } = await supabase
         .from("cars")
         .select("quantity")
@@ -424,7 +350,7 @@ export default function AdminVehicleDetail() {
       }
     };
 
-    return statusConfig[vehicleItem.status] || statusConfig.available;
+    return statusConfig[vehicleItem.status as keyof typeof statusConfig] || statusConfig.available;
   };
 
   // Fonction utilitaire pour obtenir le texte du statut
@@ -522,18 +448,9 @@ export default function AdminVehicleDetail() {
         )
       );
 
-      // Recharger les réservations pour recalculer les disponibilités
-      const { data: reservationsData } = await supabase
-        .from("reservations")
-        .select("*")
-        .eq("car_id", id)
-        .eq("status", "active");
-      
-      setReservations(reservationsData || []);
-
       toast({
         title: "Statut mis à jour",
-        description: `Le véhicule est maintenant ${getStatusText(newStatus).toLowerCase()}. Les disponibilités ont été recalculées.`,
+        description: `Le véhicule est maintenant ${getStatusText(newStatus).toLowerCase()}.`,
       });
 
     } catch (error: any) {
@@ -626,7 +543,7 @@ export default function AdminVehicleDetail() {
     }
   };
 
-  // 5. RETOURS CONDITIONNELS FINAUX
+  // RETOURS CONDITIONNELS FINAUX
   if (!id) { 
     return <div><main className="container mx-auto p-6">ID manquant</main><Footer/></div>;
   } 
@@ -639,7 +556,7 @@ export default function AdminVehicleDetail() {
     return <div><main className="container mx-auto p-6">Véhicule introuvable</main><Footer/></div>;
   }
 
-  // 6. Le reste du rendu JSX
+  // Le reste du rendu JSX
   const stats = getVehicleStats();
 
   return (
@@ -679,9 +596,6 @@ export default function AdminVehicleDetail() {
 
             <div className="flex gap-2">
               <Button onClick={() => navigate("/admin/vehicles")}>Retour</Button>
-              <Button onClick={handleSave} disabled={saving}>
-                {saving ? "Enregistrement..." : "Sauvegarder modifications"}
-              </Button>
             </div>
           </div>
         </div>
@@ -690,82 +604,138 @@ export default function AdminVehicleDetail() {
 
         {/* Onglets */}
         <div className="border-b mb-6">
-        <div className="flex space-x-8">
-          <button
-            className={`py-2 px-1 font-medium text-sm border-b-2 transition-colors ${
-              activeTab === 'availability'
-                ? 'border-primary text-primary'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
-            }`}
-            onClick={() => setActiveTab('availability')}
-          >
-            Disponibilités par date
-          </button>
-          <button
-            className={`py-2 px-1 font-medium text-sm border-b-2 transition-colors ${
-              activeTab === 'vehicles'
-                ? 'border-primary text-primary'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
-            }`}
-            onClick={() => setActiveTab('vehicles')}
-          >
-            Véhicules individuels ({vehicles.length})
-          </button>
-          <button
-            className={`py-2 px-1 font-medium text-sm border-b-2 transition-colors ${
-              activeTab === 'offers'
-                ? 'border-primary text-primary'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
-            }`}
-            onClick={() => setActiveTab('offers')}
-          >
-            Offres spéciales ({offers.length})
-          </button>
+          <div className="flex space-x-8">
+            <button
+              className={`py-2 px-1 font-medium text-sm border-b-2 transition-colors ${
+                activeTab === 'availability'
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
+              }`}
+              onClick={() => setActiveTab('availability')}
+            >
+              Disponibilité en temps réel
+            </button>
+            <button
+              className={`py-2 px-1 font-medium text-sm border-b-2 transition-colors ${
+                activeTab === 'vehicles'
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
+              }`}
+              onClick={() => setActiveTab('vehicles')}
+            >
+              Véhicules individuels ({vehicles.length})
+            </button>
+            <button
+              className={`py-2 px-1 font-medium text-sm border-b-2 transition-colors ${
+                activeTab === 'offers'
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
+              }`}
+              onClick={() => setActiveTab('offers')}
+            >
+              Offres spéciales ({offers.length})
+            </button>
+            <button
+              className={`py-2 px-1 font-medium text-sm border-b-2 transition-colors ${
+                activeTab === 'reservations'
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
+              }`}
+              onClick={() => setActiveTab('reservations')}
+            >
+              Toutes les réservations ({allReservations.length})
+            </button>
+          </div>
         </div>
-      </div>
 
         {/* Contenu des onglets */}
         {activeTab === 'availability' && (
           <>
-            <h2 className="text-xl font-semibold mb-3">Disponibilités (30 jours)</h2>
-            <p className="text-sm text-muted-foreground mb-4">
-              Saisis une valeur pour forcer la disponibilité ce jour-là (laisser vide pour utiliser stock - réservations).
-            </p>
+            <h2 className="text-xl font-semibold mb-3">Disponibilité en temps réel</h2>
+            
+            {/* Cartes de statut */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg">Véhicules disponibles</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-green-600">
+                    {vehicles.filter(v => v.status === 'available').length}
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Prêts à être réservés
+                  </p>
+                </CardContent>
+              </Card>
 
-            <div className="overflow-x-auto">
-              <table className="w-full table-auto border-collapse text-sm">
-                <thead>
-                  <tr>
-                    <th className="p-2 border text-left">Date</th>
-                    <th className="p-2 border text-left">Réservations actives</th>
-                    <th className="p-2 border text-left">Override (disponible)</th>
-                    <th className="p-2 border text-left">Calcul (affiché)</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {dates.map(d => {
-                    const reserved = getReservedForDate(d);
-                    const override = overrides[d];
-                    const calc = getAvailabilityForDate(d);
-                    return (
-                      <tr key={d}>
-                        <td className="p-2 border">{format(new Date(d), "dd/MM/yyyy (EEE)")}</td>
-                        <td className="p-2 border">{reserved}</td>
-                        <td className="p-2 border">
-                          <Input
-                            type="number"
-                            min={0}
-                            className="w-24"
-                            value={override === "" ? "" : String(override)}
-                            onChange={(e) => handleOverrideChange(d, e.target.value)}
-                          />
-                        </td>
-                        <td className="p-2 border font-semibold">{calc}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg">Véhicules réservés</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-blue-600">
+                    {vehicles.filter(v => v.status === 'reserved').length}
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Actuellement en location
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg">En maintenance</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-orange-600">
+                    {vehicles.filter(v => v.status === 'maintenance').length}
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Indisponibles temporairement
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Statistiques des réservations */}
+            <Card className="mb-6">
+              <CardHeader>
+                <CardTitle>Statistiques des réservations</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold">{getReservationStats().total}</div>
+                    <div className="text-sm text-muted-foreground">Total</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-green-600">{getReservationStats().accepted}</div>
+                    <div className="text-sm text-muted-foreground">Acceptées</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-yellow-600">{getReservationStats().pending}</div>
+                    <div className="text-sm text-muted-foreground">En attente</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-red-600">{getReservationStats().refused}</div>
+                    <div className="text-sm text-muted-foreground">Refusées</div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-start">
+                <div className="text-blue-600 mr-3 mt-1">💡</div>
+                <div>
+                  <h3 className="font-semibold text-blue-800">Nouveau système de disponibilité</h3>
+                  <p className="text-blue-700 text-sm mt-1">
+                    La disponibilité est maintenant gérée par le statut de chaque véhicule individuel. 
+                    Modifiez les statuts dans l'onglet "Véhicules individuels" pour contrôler la disponibilité.
+                  </p>
+                </div>
+              </div>
             </div>
           </>
         )}
@@ -805,58 +775,58 @@ export default function AdminVehicleDetail() {
             {/* Tableau des véhicules */}
             <div className="bg-white rounded-lg border shadow-sm overflow-hidden">
               <table className="w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="p-4 text-left font-semibold">Matricule</th>
-                  <th className="p-4 text-left font-semibold">OBD</th>
-                  <th className="p-4 text-left font-semibold">Date OBD</th>
-                  <th className="p-4 text-left font-semibold">Objet</th>
-                  <th className="p-4 text-left font-semibold">Statut</th>
-                  <th className="p-4 text-left font-semibold">Changer statut</th>
-                  <th className="p-4 text-left font-semibold">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {vehicles.map((vehicleItem) => {
-                  const statusInfo = getVehicleStatus(vehicleItem);
-                  
-                  return (
-                    <tr key={vehicleItem.id} className="border-b hover:bg-gray-50">
-                      <td className="p-4 font-mono font-semibold">{vehicleItem.matricule}</td>
-                      <td className="p-4">{vehicleItem.obd || '-'}</td>
-                      <td className="p-4">
-                        {vehicleItem.date_obd ? format(new Date(vehicleItem.date_obd), "dd/MM/yyyy") : '-'}
-                      </td>
-                      <td className="p-4">{vehicleItem.objet || '-'}</td>
-                      <td className="p-4">
-                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusInfo.color}`}>
-                          {statusInfo.icon} {statusInfo.text}
-                        </span>
-                      </td>
-                      <td className="p-4">
-                        <select 
-                          value={vehicleItem.status}
-                          onChange={(e) => handleChangeVehicleStatus(vehicleItem.id, e.target.value as any)}
-                          className="text-sm border rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        >
-                          <option value="available">Disponible</option>
-                          <option value="reserved">Réservé</option>
-                          <option value="maintenance">Maintenance</option>
-                        </select>
-                      </td>
-                      <td className="p-4">
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => handleDeleteVehicle(vehicleItem.id, vehicleItem.matricule)}
-                        >
-                          Supprimer
-                        </Button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="p-4 text-left font-semibold">Matricule</th>
+                    <th className="p-4 text-left font-semibold">OBD</th>
+                    <th className="p-4 text-left font-semibold">Date OBD</th>
+                    <th className="p-4 text-left font-semibold">Objet</th>
+                    <th className="p-4 text-left font-semibold">Statut</th>
+                    <th className="p-4 text-left font-semibold">Changer statut</th>
+                    <th className="p-4 text-left font-semibold">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {vehicles.map((vehicleItem) => {
+                    const statusInfo = getVehicleStatus(vehicleItem);
+                    
+                    return (
+                      <tr key={vehicleItem.id} className="border-b hover:bg-gray-50">
+                        <td className="p-4 font-mono font-semibold">{vehicleItem.matricule}</td>
+                        <td className="p-4">{vehicleItem.obd || '-'}</td>
+                        <td className="p-4">
+                          {vehicleItem.date_obd ? format(new Date(vehicleItem.date_obd), "dd/MM/yyyy") : '-'}
+                        </td>
+                        <td className="p-4">{vehicleItem.objet || '-'}</td>
+                        <td className="p-4">
+                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusInfo.color}`}>
+                            {statusInfo.icon} {statusInfo.text}
+                          </span>
+                        </td>
+                        <td className="p-4">
+                          <select 
+                            value={vehicleItem.status}
+                            onChange={(e) => handleChangeVehicleStatus(vehicleItem.id, e.target.value as any)}
+                            className="text-sm border rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          >
+                            <option value="available">Disponible</option>
+                            <option value="reserved">Réservé</option>
+                            <option value="maintenance">Maintenance</option>
+                          </select>
+                        </td>
+                        <td className="p-4">
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => handleDeleteVehicle(vehicleItem.id, vehicleItem.matricule)}
+                          >
+                            Supprimer
+                          </Button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
               </table>
 
               {vehicles.length === 0 && (
@@ -918,6 +888,71 @@ export default function AdminVehicleDetail() {
                 ))}
               </div>
             )}
+          </>
+        )}
+
+        {/* Contenu de l'onglet réservations */}
+        {activeTab === 'reservations' && (
+          <>
+            <h2 className="text-xl font-semibold mb-3">Toutes les réservations</h2>
+            
+            <div className="bg-white rounded-lg border shadow-sm overflow-hidden">
+              <table className="w-full">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="p-4 text-left">ID</th>
+                    <th className="p-4 text-left">Client</th>
+                    <th className="p-4 text-left">Période</th>
+                    <th className="p-4 text-left">Statut</th>
+                    <th className="p-4 text-left">Lieux</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {allReservations.map((reservation) => {
+                    const clientInfo = getClientInfo(reservation);
+                    
+                    return (
+                      <tr key={reservation.id} className="border-b hover:bg-gray-50">
+                        <td className="p-4 font-mono text-sm">{reservation.id.slice(0, 8)}...</td>
+                        <td className="p-4">
+                          <div className="space-y-1">
+                            <div className="font-medium">{clientInfo.name}</div>
+                            <div className="text-sm text-gray-600">{clientInfo.email}</div>
+                            <div className="text-xs text-gray-500">{clientInfo.type}</div>
+                          </div>
+                        </td>
+                        <td className="p-4">
+                          {format(new Date(reservation.pickup_date), "dd/MM/yyyy")} - {" "}
+                          {format(new Date(reservation.return_date), "dd/MM/yyyy")}
+                        </td>
+                        <td className="p-4">
+                          <span className={`px-2 py-1 rounded text-xs font-medium ${
+                            reservation.status === 'accepted' 
+                              ? 'bg-green-100 text-green-800' 
+                              : reservation.status === 'pending'
+                              ? 'bg-yellow-100 text-yellow-800'
+                              : 'bg-red-100 text-red-800'
+                          }`}>
+                            {reservation.status === 'accepted' ? '✅ Acceptée' : 
+                            reservation.status === 'pending' ? '⏳ En attente' : 
+                            '❌ Refusée'}
+                          </span>
+                        </td>
+                        <td className="p-4 text-sm">
+                          {reservation.pickup_location} → {reservation.return_location}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+              
+              {allReservations.length === 0 && (
+                <div className="p-8 text-center text-gray-500">
+                  Aucune réservation pour ce véhicule
+                </div>
+              )}
+            </div>
           </>
         )}
 

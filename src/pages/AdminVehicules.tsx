@@ -79,15 +79,19 @@ export default function AdminVehicles() {
   }, []);
 
   const fetchData = async () => {
-
     const { data: carsData } = await supabase
-    .from("cars")
-    .select("*")
-    .is("is_deleted", false);
-  
+      .from("cars")
+      .select("*")
+      .is("is_deleted", false);
+    
     setVehicles((carsData as Vehicle[]) || []);
 
-    const { data: resData } = await supabase.from("reservations").select("*");
+    // 🔥 CHANGEMENT : Ne charger que les réservations ACCEPTÉES
+    const { data: resData } = await supabase
+      .from("reservations")
+      .select("*")
+      .eq("status", "accepted"); // ← Seulement les réservations acceptées
+
     setReservations((resData as Reservation[]) || []);
 
     const { data: overridesData } = await supabase.from("vehicle_availabilities").select("*");

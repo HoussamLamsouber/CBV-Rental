@@ -71,7 +71,7 @@ export const Header = () => {
                   <Link to="/admin/reservations">Gestion des réservations</Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link to="/admin/users">Liste des administrateurs</Link>
+                  <Link to="/admin/users">Gestion des utilisateurs</Link>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -124,7 +124,7 @@ export const Header = () => {
                 <span className="font-semibold text-sm text-muted-foreground mt-2">Administration</span>
                 <Link to="/admin/vehicles" onClick={() => setIsMenuOpen(false)}>Gestion des véhicules</Link>
                 <Link to="/admin/reservations" onClick={() => setIsMenuOpen(false)}>Gestion des réservations</Link>
-                <Link to="/admin/users" onClick={() => setIsMenuOpen(false)}>Liste des administrateurs</Link>
+                <Link to="/admin/users" onClick={() => setIsMenuOpen(false)}>Gestion des utilisateurs</Link>
               </div>
             )}
 

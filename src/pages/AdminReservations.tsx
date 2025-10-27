@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Search, Filter, X, ArrowLeft } from "lucide-react";
 import { useSearchParams, useNavigate } from "react-router-dom";
+import { emailJSService } from "@/services/emailJSService";
+import { toast } from "@/hooks/use-toast";
 
 export default function ReservationsAdmin() {
   const [reservations, setReservations] = useState([]);
@@ -300,6 +302,116 @@ export default function ReservationsAdmin() {
       </div>
     );
   }
+
+  // Fonction pour accepter une réservation
+  const handleAcceptReservation = async (reservation: any) => {
+    try {
+      console.log("📧 Données réservation pour acceptation:", reservation);
+      
+      // Mettre à jour le statut dans la base de données
+      const { error } = await supabase
+        .from("reservations")
+        .update({ status: "accepted" })
+        .eq("id", reservation.id);
+
+      if (error) throw error;
+
+      // Préparer les données pour l'email - CORRECTION ICI
+      const emailData = {
+        reservationId: reservation.id,
+        clientName: reservation.guest_name || reservation.profiles?.full_name || "Utilisateur",
+        clientEmail: reservation.guest_email || reservation.profiles?.email,
+        clientPhone: reservation.guest_phone || reservation.profiles?.telephone || "Non renseigné",
+        carName: reservation.car_name,
+        carCategory: reservation.car_category,
+        pickupDate: new Date(reservation.pickup_date).toLocaleDateString('fr-FR'),
+        pickupTime: reservation.pickup_time || "14:00", // Valeur par défaut si manquant
+        returnDate: new Date(reservation.return_date).toLocaleDateString('fr-FR'),
+        returnTime: reservation.return_time || "14:00", // Valeur par défaut si manquant
+        pickupLocation: reservation.pickup_location,
+        returnLocation: reservation.return_location,
+        totalPrice: reservation.total_price,
+      };
+
+      console.log("📨 Données email acceptation:", emailData);
+
+      // Vérifier que l'email client existe
+      if (!emailData.clientEmail) {
+        throw new Error("Email du client non trouvé");
+      }
+
+      // Envoyer l'email de confirmation au client
+      const emailResult = await emailJSService.sendReservationAcceptedEmail(emailData);
+      
+      if (!emailResult.success) {
+        throw new Error("Échec de l'envoi de l'email");
+      }
+
+      toast({
+        title: "Réservation acceptée",
+        description: "Le client a été notifié par email.",
+      });
+
+      // Recharger les données
+      fetchReservations();
+    } catch (error: any) {
+      console.error("❌ Erreur acceptation réservation:", error);
+      toast({
+        title: "Erreur",
+        description: error.message || "Impossible d'accepter la réservation.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Fonction pour refuser une réservation
+  const handleRejectReservation = async (reservation: any) => {
+
+    try {
+      // Mettre à jour le statut dans la base de données
+      const { error } = await supabase
+        .from("reservations")
+        .update({ status: "refused" })
+        .eq("id", reservation.id);
+
+      if (error) throw error;
+
+      // Préparer les données pour l'email
+      const emailData = {
+        reservationId: reservation.id,
+        clientName: reservation.guest_name || reservation.profiles?.full_name || "Utilisateur",
+        clientEmail: reservation.guest_email || reservation.profiles?.email,
+        clientPhone: reservation.guest_phone || reservation.profiles?.telephone || "Non renseigné",
+        carName: reservation.car_name,
+        carCategory: reservation.car_category,
+        pickupDate: new Date(reservation.pickup_date).toLocaleDateString('fr-FR'),
+        pickupTime: reservation.pickup_time,
+        returnDate: new Date(reservation.return_date).toLocaleDateString('fr-FR'),
+        returnTime: reservation.return_time,
+        pickupLocation: reservation.pickup_location,
+        returnLocation: reservation.return_location,
+        totalPrice: reservation.total_price,
+      };
+
+      // Envoyer l'email de refus au client
+      await emailJSService.sendReservationRejectedEmail(emailData);
+
+      toast({
+        title: "Réservation refusée",
+        description: "Le client a été notifié par email.",
+      });
+
+      // Recharger les données
+      fetchReservations();
+    } catch (error: any) {
+      console.error("Erreur refus réservation:", error);
+      toast({
+        title: "Erreur",
+        description: error.message || "Impossible de refuser la réservation.",
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -621,13 +733,13 @@ export default function ReservationsAdmin() {
                     {reservation.status === "pending" && (
                       <div className="flex gap-3">
                         <button
-                          onClick={() => handleStatusChange(reservation.id, "accepted")}
+                          onClick={() => handleAcceptReservation(reservation)}
                           className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors font-medium text-sm"
                         >
                           Accepter la réservation
                         </button>
                         <button
-                          onClick={() => handleStatusChange(reservation.id, "refused")}
+                          onClick={() => handleRejectReservation(reservation)}
                           className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors font-medium text-sm"
                         >
                           Refuser la réservation
@@ -637,7 +749,7 @@ export default function ReservationsAdmin() {
                     
                     {reservation.status !== "pending" && (
                       <div className="text-sm text-gray-500 italic">
-                        Réservation {reservation.status === "accepted" ? "acceptée" : "refusée"}
+                        Réservation {reservation.status === "accepted" ? "acceptée" : "refusée"} le {formatDateTime(reservation.updated_at || reservation.created_at)}
                       </div>
                     )}
                   </div>

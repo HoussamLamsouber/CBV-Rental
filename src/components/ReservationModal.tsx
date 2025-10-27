@@ -150,138 +150,138 @@ export const ReservationModal = ({
     return true;
   };
 
-  const handleConfirm = async () => {
-    if (!car || !searchData) return;
-  
-    if (!user && !validateGuestInfo()) return;
-  
-    const isAvailable = await checkRealTimeAvailability();
-    if (!isAvailable) {
-      toast({
-        title: "Véhicule non disponible",
-        description: "Ce véhicule n'est plus disponible pour les dates sélectionnées.",
-        variant: "destructive",
-      });
-      return;
+const handleConfirm = async () => {
+  if (!car || !searchData) return;
+
+  if (!user && !validateGuestInfo()) return;
+
+  const isAvailable = await checkRealTimeAvailability();
+  if (!isAvailable) {
+    toast({
+      title: "Véhicule non disponible",
+      description: "Ce véhicule n'est plus disponible pour les dates sélectionnées.",
+      variant: "destructive",
+    });
+    return;
+  }
+
+  setIsLoading(true);
+
+  try {
+    const pickupDateStr = searchData.pickupDate.toISOString().split('T')[0];
+    const returnDateStr = searchData.returnDate.toISOString().split('T')[0];
+    const totalPrice = calculateTotalPrice();
+
+    let newReservationId;
+    let clientEmail = "";
+    let clientName = "";
+    let clientPhone = "";
+
+    // Préparer les données de réservation communes
+    const reservationData: any = {
+      car_id: car.id,
+      car_name: car.name,
+      car_category: car.category || 'Non spécifié',
+      car_price: car.price,
+      car_image: car.image_url || null,
+      pickup_location: searchData.pickupLocation,
+      return_location: searchData.sameLocation
+        ? searchData.pickupLocation
+        : searchData.returnLocation || searchData.pickupLocation,
+      pickup_date: pickupDateStr,
+      pickup_time: searchData.pickupTime,
+      return_date: returnDateStr,
+      return_time: searchData.returnTime,
+      total_price: totalPrice,
+      status: "pending", // Statut initial en attente
+      date: new Date().toISOString().split('T')[0],
+    };
+
+    if (user) {
+      // Utilisateur connecté
+      reservationData.user_id = user.id;
+      
+      const { data: newReservation, error } = await supabase
+        .from("reservations")
+        .insert([reservationData])
+        .select()
+        .single();
+
+      if (error) throw error;
+      newReservationId = newReservation.id;
+
+      // Récupérer les infos utilisateur
+      const { data: userProfile } = await supabase
+        .from("profiles")
+        .select("full_name, telephone, email")
+        .eq("id", user.id)
+        .single();
+
+      clientEmail = userProfile?.email || user.email;
+      clientName = userProfile?.full_name || user.email;
+      clientPhone = userProfile?.telephone || "Non renseigné";
+
+    } else {
+      // Utilisateur non connecté - ajouter les infos invité
+      reservationData.guest_name = guestInfo.full_name;
+      reservationData.guest_email = guestInfo.email.toLowerCase();
+      reservationData.guest_phone = guestInfo.telephone || '';
+
+      const { data: newReservation, error } = await supabase
+        .from("reservations")
+        .insert([reservationData])
+        .select()
+        .single();
+
+      if (error) throw error;
+      newReservationId = newReservation.id;
+
+      clientEmail = guestInfo.email;
+      clientName = guestInfo.full_name;
+      clientPhone = guestInfo.telephone || "Non renseigné";
+
+      // Stocker dans localStorage pour le suivi
+      const guestReservations = localStorage.getItem("guest_reservations");
+      const reservationsArray = guestReservations ? JSON.parse(guestReservations) : [];
+      reservationsArray.push(newReservationId);
+      localStorage.setItem("guest_reservations", JSON.stringify(reservationsArray));
     }
-  
-    setIsLoading(true);
-  
-    try {
-      const pickupDateStr = searchData.pickupDate.toISOString().split('T')[0];
-      const returnDateStr = searchData.returnDate.toISOString().split('T')[0];
-      const totalPrice = calculateTotalPrice();
-  
-      let newReservationId;
-      let clientEmail = "";
-      let clientName = "";
-      let clientPhone = "";
 
-      // Préparer les données de réservation communes
-      const reservationData: any = {
-        car_id: car.id,
-        car_name: car.name,
-        car_category: car.category || 'Non spécifié',
-        car_price: car.price,
-        car_image: car.image_url || null,
-        pickup_location: searchData.pickupLocation,
-        return_location: searchData.sameLocation
-          ? searchData.pickupLocation
-          : searchData.returnLocation || searchData.pickupLocation,
-        pickup_date: pickupDateStr,
-        pickup_time: searchData.pickupTime,
-        return_date: returnDateStr,
-        return_time: searchData.returnTime,
-        total_price: totalPrice,
-        status: "pending", // Statut initial en attente
-        date: new Date().toISOString().split('T')[0],
-      };
+    // 🔥 MODIFICATION : Envoyer SEULEMENT l'email à l'admin
+    await emailJSService.sendNewReservationAdminEmail({
+      reservationId: newReservationId,
+      clientName,
+      clientEmail,
+      clientPhone,
+      carName: car.name,
+      carCategory: car.category,
+      pickupDate: searchData.pickupDate.toLocaleDateString('fr-FR'),
+      pickupTime: searchData.pickupTime,
+      returnDate: searchData.returnDate.toLocaleDateString('fr-FR'),
+      returnTime: searchData.returnTime,
+      pickupLocation: searchData.pickupLocation,
+      returnLocation: searchData.sameLocation ? searchData.pickupLocation : (searchData.returnLocation || searchData.pickupLocation),
+      totalPrice,
+    });
 
-      if (user) {
-        // Utilisateur connecté
-        reservationData.user_id = user.id;
-        
-        const { data: newReservation, error } = await supabase
-          .from("reservations")
-          .insert([reservationData])
-          .select()
-          .single();
+    toast({
+      title: "Demande envoyée !",
+      description: "Votre demande a été transmise à notre équipe. Vous recevrez une confirmation par email après traitement.",
+    });
 
-        if (error) throw error;
-        newReservationId = newReservation.id;
-
-        // Récupérer les infos utilisateur
-        const { data: userProfile } = await supabase
-          .from("profiles")
-          .select("full_name, telephone, email")
-          .eq("id", user.id)
-          .single();
-
-        clientEmail = userProfile?.email || user.email;
-        clientName = userProfile?.full_name || user.email;
-        clientPhone = userProfile?.telephone || "Non renseigné";
-
-      } else {
-        // Utilisateur non connecté - ajouter les infos invité
-        reservationData.guest_name = guestInfo.full_name;
-        reservationData.guest_email = guestInfo.email.toLowerCase();
-        reservationData.guest_phone = guestInfo.telephone || '';
-
-        const { data: newReservation, error } = await supabase
-          .from("reservations")
-          .insert([reservationData])
-          .select()
-          .single();
-
-        if (error) throw error;
-        newReservationId = newReservation.id;
-
-        clientEmail = guestInfo.email;
-        clientName = guestInfo.full_name;
-        clientPhone = guestInfo.telephone || "Non renseigné";
-
-        // Stocker dans localStorage pour le suivi
-        const guestReservations = localStorage.getItem("guest_reservations");
-        const reservationsArray = guestReservations ? JSON.parse(guestReservations) : [];
-        reservationsArray.push(newReservationId);
-        localStorage.setItem("guest_reservations", JSON.stringify(reservationsArray));
-      }
-
-      // Envoyer l'email de confirmation
-      await emailJSService.sendNewReservationEmails({
-        reservationId: newReservationId,
-        clientName,
-        clientEmail,
-        clientPhone,
-        carName: car.name,
-        carCategory: car.category,
-        pickupDate: searchData.pickupDate.toLocaleDateString('fr-FR'),
-        pickupTime: searchData.pickupTime,
-        returnDate: searchData.returnDate.toLocaleDateString('fr-FR'),
-        returnTime: searchData.returnTime,
-        pickupLocation: searchData.pickupLocation,
-        returnLocation: searchData.sameLocation ? searchData.pickupLocation : (searchData.returnLocation || searchData.pickupLocation),
-        totalPrice,
-      });
-
-      toast({
-        title: "Réservation envoyé !",
-        description: `Vous recevrez une confirmation par email.`,
-      });
-
-      onReserved();
-      onClose();
-    } catch (err: any) {
-      console.error("❌ Erreur réservation:", err);
-      toast({
-        title: "Erreur",
-        description: err.message || "Impossible d'effectuer la réservation.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    onReserved();
+    onClose();
+  } catch (err: any) {
+    console.error("❌ Erreur réservation:", err);
+    toast({
+      title: "Erreur",
+      description: err.message || "Impossible d'effectuer la réservation.",
+      variant: "destructive",
+    });
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   if (!car || !searchData) return null;
 

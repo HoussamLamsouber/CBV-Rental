@@ -1,34 +1,31 @@
+// services/emailJSService.ts
 import emailjs from '@emailjs/browser';
 
-// Configuration Premier compte (réservations)
 const EMAILJS_CONFIG = {
-    PUBLIC_KEY: import.meta.env.VITE_EMAILJS_PUBLIC_KEY,
-    SERVICE_ID: import.meta.env.VITE_EMAILJS_SERVICE_ID,
-    TEMPLATES: {
-      NEW_RESERVATION_ADMIN: import.meta.env.VITE_EMAILJS_TEMPLATE_ADMIN,
-      CONFIRMATION_CLIENT: import.meta.env.VITE_EMAILJS_TEMPLATE_CLIENT,
-    }
-  };
-  
-  // Configuration Deuxième compte (annulations)
-  const EMAILJS_CONFIG_CANCEL = {
-    PUBLIC_KEY: import.meta.env.VITE_EMAILJS_PUBLIC_KEY_CANCEL,
-    SERVICE_ID: import.meta.env.VITE_EMAILJS_SERVICE_ID_CANCEL,
-    TEMPLATES: {
-      CANCELLATION_ADMIN: import.meta.env.VITE_EMAILJS_TEMPLATE_CANCEL_ADMIN,
-      CANCELLATION_CLIENT: import.meta.env.VITE_EMAILJS_TEMPLATE_CANCEL_CLIENT,
-    }
-  };
+  PUBLIC_KEY: import.meta.env.VITE_EMAILJS_PUBLIC_KEY,
+  SERVICE_ID: import.meta.env.VITE_EMAILJS_SERVICE_ID,
+  TEMPLATES: {
+    NEW_RESERVATION_ADMIN: import.meta.env.VITE_EMAILJS_TEMPLATE_ADMIN,
+    RESERVATION_STATUS: import.meta.env.VITE_EMAILJS_TEMPLATE_CLIENT_ACCEPTED,
+  }
+};
 
-// Initialisation des deux comptes
+const EMAILJS_CONFIG_CANCEL = {
+  PUBLIC_KEY: import.meta.env.VITE_EMAILJS_PUBLIC_KEY_CANCEL,
+  SERVICE_ID: import.meta.env.VITE_EMAILJS_SERVICE_ID_CANCEL,
+  TEMPLATES: {
+    CANCELLATION_ADMIN: import.meta.env.VITE_EMAILJS_TEMPLATE_CANCEL_ADMIN,
+    CANCELLATION_CLIENT: import.meta.env.VITE_EMAILJS_TEMPLATE_CANCEL_CLIENT,
+  }
+};
+
+// Initialisation
 emailjs.init(EMAILJS_CONFIG.PUBLIC_KEY);
-// Le deuxième compte sera initialisé dans les fonctions d'annulation
 
 export const emailJSService = {
-  async sendNewReservationEmails(reservationData: any) {
-    // Utilise le PREMIER compte (réservations)
+  // Email à l'admin pour nouvelle réservation
+  async sendNewReservationAdminEmail(reservationData: any) {
     try {
-      // Email admin
       const adminResult = await emailjs.send(
         EMAILJS_CONFIG.SERVICE_ID,
         EMAILJS_CONFIG.TEMPLATES.NEW_RESERVATION_ADMIN,
@@ -47,46 +44,108 @@ export const emailJSService = {
           return_location: reservationData.returnLocation,
           total_price: `${reservationData.totalPrice} Dhs`,
           reservation_id: reservationData.reservationId,
+          admin_url: `${window.location.origin}/admin/reservations`
         }
       );
 
-      // Email client
-      const clientResult = await emailjs.send(
-        EMAILJS_CONFIG.SERVICE_ID,
-        EMAILJS_CONFIG.TEMPLATES.CONFIRMATION_CLIENT,
-        {
-          to_email: reservationData.clientEmail,
-          to_name: reservationData.clientName,
-          client_name: reservationData.clientName,
-          client_email: reservationData.clientEmail,
-          client_phone: reservationData.clientPhone || 'Non spécifié',
-          car_name: reservationData.carName,
-          car_category: reservationData.carCategory,
-          pickup_date: reservationData.pickupDate,
-          pickup_time: reservationData.pickupTime,
-          return_date: reservationData.returnDate,
-          return_time: reservationData.returnTime,
-          pickup_location: reservationData.pickupLocation,
-          return_location: reservationData.returnLocation,
-          total_price: `${reservationData.totalPrice} Dhs`,
-          reservation_id: reservationData.reservationId,
-        }
-      );
-
-      return { success: true, adminResult, clientResult };
+      return { success: true, adminResult };
     } catch (error) {
-      console.error('❌ Erreur emails réservation:', error);
+      console.error('❌ Erreur email admin réservation:', error);
       return { success: false, error };
     }
   },
 
-  async sendCancellationEmails(reservationData: any) {
-    // Utilise le DEUXIÈME compte (annulations)
+  // Email au client pour réservation acceptée
+  async sendReservationAcceptedEmail(reservationData: any) {
     try {
-      // Initialisation du deuxième compte
+      console.log("🚀 ENVOI EMAIL ACCEPTATION");
+      
+      const templateParams = {
+        to_email: reservationData.clientEmail,
+        to_name: reservationData.clientName,
+        client_name: reservationData.clientName,
+        client_email: reservationData.clientEmail,
+        client_phone: reservationData.clientPhone || 'Non spécifié',
+        car_name: reservationData.carName,
+        car_category: reservationData.carCategory,
+        pickup_date: reservationData.pickupDate,
+        pickup_time: reservationData.pickupTime,
+        return_date: reservationData.returnDate,
+        return_time: reservationData.returnTime,
+        pickup_location: reservationData.pickupLocation,
+        return_location: reservationData.returnLocation,
+        total_price: `${reservationData.totalPrice} Dhs`,
+        reservation_id: reservationData.reservationId,
+        // Variables pour le template conditionnel
+        reservation_status: 'accepted',
+        is_accepted: true,
+        is_rejected: false
+      };
+
+      console.log("📤 Paramètres email acceptation:", templateParams);
+
+      const clientResult = await emailjs.send(
+        EMAILJS_CONFIG.SERVICE_ID,
+        EMAILJS_CONFIG.TEMPLATES.RESERVATION_STATUS,
+        templateParams
+      );
+
+      console.log("✅ EMAIL ACCEPTATION ENVOYÉ");
+      return { success: true, clientResult };
+    } catch (error) {
+      console.error('❌ ERREUR EMAIL ACCEPTATION:', error);
+      return { success: false, error };
+    }
+  },
+
+  // Email au client pour réservation refusée
+  async sendReservationRejectedEmail(reservationData: any) {
+    try {
+      console.log("🚀 ENVOI EMAIL REFUS");
+      
+      const templateParams = {
+        to_email: reservationData.clientEmail,
+        to_name: reservationData.clientName,
+        client_name: reservationData.clientName,
+        client_email: reservationData.clientEmail,
+        client_phone: reservationData.clientPhone || 'Non spécifié',
+        car_name: reservationData.carName,
+        car_category: reservationData.carCategory,
+        pickup_date: reservationData.pickupDate,
+        pickup_time: reservationData.pickupTime,
+        return_date: reservationData.returnDate,
+        return_time: reservationData.returnTime,
+        pickup_location: reservationData.pickupLocation,
+        return_location: reservationData.returnLocation,
+        total_price: `${reservationData.totalPrice} Dhs`,
+        reservation_id: reservationData.reservationId,
+        // Variables pour le template conditionnel
+        reservation_status: 'rejected',
+        is_accepted: false,
+        is_rejected: true
+      };
+
+      console.log("📤 Paramètres email refus:", templateParams);
+
+      const clientResult = await emailjs.send(
+        EMAILJS_CONFIG.SERVICE_ID,
+        EMAILJS_CONFIG.TEMPLATES.RESERVATION_STATUS,
+        templateParams
+      );
+
+      console.log("✅ EMAIL REFUS ENVOYÉ");
+      return { success: true, clientResult };
+    } catch (error) {
+      console.error('❌ ERREUR EMAIL REFUS:', error);
+      return { success: false, error };
+    }
+  },
+
+  // Fonctions d'annulation existantes
+  async sendCancellationEmails(reservationData: any) {
+    try {
       emailjs.init(EMAILJS_CONFIG_CANCEL.PUBLIC_KEY);
 
-      // Email annulation admin
       const adminResult = await emailjs.send(
         EMAILJS_CONFIG_CANCEL.SERVICE_ID,
         EMAILJS_CONFIG_CANCEL.TEMPLATES.CANCELLATION_ADMIN,
@@ -105,7 +164,6 @@ export const emailJSService = {
         }
       );
 
-      // Email annulation client
       const clientResult = await emailjs.send(
         EMAILJS_CONFIG_CANCEL.SERVICE_ID,
         EMAILJS_CONFIG_CANCEL.TEMPLATES.CANCELLATION_CLIENT,

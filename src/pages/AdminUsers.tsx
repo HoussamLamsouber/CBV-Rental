@@ -1,4 +1,4 @@
-// src/pages/AdminUsers.tsx (version corrigée)
+// src/pages/AdminUsers.tsx (version mobile optimisée)
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,7 +20,9 @@ import {
   UserCog,
   UserX,
   Eye,
-  Trash2
+  Trash2,
+  Shield,
+  User as UserIcon
 } from "lucide-react";
 import { Dialog } from "@headlessui/react";
 import { Badge } from "@/components/ui/badge";
@@ -67,10 +69,10 @@ export default function AdminUsers() {
 
   if (!isUserAdmin) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center p-4">
         <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">Accès refusé</h1>
-          <p className="text-muted-foreground mb-6">
+          <h1 className="text-xl sm:text-2xl font-bold mb-4">Accès refusé</h1>
+          <p className="text-muted-foreground mb-6 text-sm sm:text-base">
             Vous devez être administrateur pour accéder à cette page.
           </p>
           <Button onClick={() => navigate("/")}>Retour à l'accueil</Button>
@@ -371,147 +373,179 @@ const handleDeleteUser = async (profileId: string, email: string, userRole: stri
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <main className="container mx-auto px-4 py-8">
-        {/* En-tête */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
-          <div className="flex items-center gap-4">
-            <Button variant="outline" onClick={() => navigate("/admin")}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Retour
+      <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-8">
+        {/* En-tête mobile optimisé */}
+        <div className="flex flex-col gap-4 mb-6">
+          <div className="flex items-center gap-3">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => navigate("/admin")}
+              className="flex-shrink-0"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              <span className="sr-only sm:not-sr-only sm:ml-2">Retour</span>
             </Button>
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Gestion des Utilisateurs</h1>
-              <p className="text-gray-600 mt-1">
+            <div className="min-w-0 flex-1">
+              <h1 className="text-xl sm:text-3xl font-bold text-gray-900 truncate">
+                Gestion des Utilisateurs
+              </h1>
+              <p className="text-gray-600 text-sm sm:text-base">
                 {adminsCount} admin(s) • {clientsCount} client(s)
               </p>
             </div>
           </div>
           
-          <Button onClick={() => setIsAddAdminModalOpen(true)}>
-            <UserPlus className="h-4 w-4 mr-2" />
-            Ajouter un admin
+          <Button 
+            onClick={() => setIsAddAdminModalOpen(true)}
+            size="sm"
+            className="w-full sm:w-auto flex items-center justify-center gap-2"
+          >
+            <UserPlus className="h-4 w-4" />
+            <span>Ajouter un admin</span>
           </Button>
         </div>
 
-        {/* Onglets */}
-        <div className="border-b mb-6">
-          <div className="flex space-x-8">
+        {/* Onglets mobile avec scroll */}
+        <div className="border-b mb-6 overflow-x-auto">
+          <div className="flex min-w-max">
             <button
-              className={`py-2 px-1 font-medium text-sm border-b-2 transition-colors flex items-center gap-2 ${
+              className={`py-3 px-4 font-medium text-sm border-b-2 transition-colors flex items-center gap-2 whitespace-nowrap ${
                 activeTab === 'admins'
                   ? 'border-primary text-primary'
                   : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}
               onClick={() => setActiveTab('admins')}
             >
-              <UserCog className="h-4 w-4" />
-              Administrateurs ({adminsCount})
+              <Shield className="h-4 w-4" />
+              <span>Admins</span>
+              <span className={`px-2 py-1 rounded-full text-xs min-w-6 ${
+                activeTab === 'admins' 
+                  ? "bg-blue-100 text-blue-600" 
+                  : "bg-gray-100 text-gray-600"
+              }`}>
+                {adminsCount}
+              </span>
             </button>
             <button
-              className={`py-2 px-1 font-medium text-sm border-b-2 transition-colors flex items-center gap-2 ${
+              className={`py-3 px-4 font-medium text-sm border-b-2 transition-colors flex items-center gap-2 whitespace-nowrap ${
                 activeTab === 'clients'
                   ? 'border-primary text-primary'
                   : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}
               onClick={() => setActiveTab('clients')}
             >
-              <Users className="h-4 w-4" />
-              Clients ({clientsCount})
+              <UserIcon className="h-4 w-4" />
+              <span>Clients</span>
+              <span className={`px-2 py-1 rounded-full text-xs min-w-6 ${
+                activeTab === 'clients' 
+                  ? "bg-blue-100 text-blue-600" 
+                  : "bg-gray-100 text-gray-600"
+              }`}>
+                {clientsCount}
+              </span>
             </button>
           </div>
         </div>
 
-        {/* Barre de recherche */}
+        {/* Barre de recherche mobile */}
         <Card className="mb-6">
-          <CardContent className="p-4">
+          <CardContent className="p-3 sm:p-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <Input
                 placeholder={`Rechercher par email, nom ou téléphone...`}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className="pl-10 text-sm sm:text-base"
               />
             </div>
           </CardContent>
         </Card>
 
-        {/* Liste */}
+        {/* Liste des utilisateurs - Version mobile optimisée */}
         {loading ? (
-          <div className="flex justify-center py-12">
+          <div className="flex justify-center py-8">
             <LoadingSpinner message="Chargement des utilisateurs..." />
           </div>
         ) : (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-3 sm:gap-4">
             {filteredProfiles.map((profile) => (
               <Card key={profile.id} className="relative">
-                <CardHeader className="pb-3">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <CardTitle className="flex items-center gap-2 text-lg">
-                        {profile.full_name || "Non renseigné"}
+                <CardContent className="p-4 sm:p-6">
+                  {/* En-tête mobile */}
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="font-semibold text-gray-900 truncate text-sm sm:text-base">
+                          {profile.full_name || "Non renseigné"}
+                        </h3>
                         {profile.role === 'admin' && (
-                          <Badge variant="default">Admin</Badge>
+                          <Badge variant="default" className="text-xs">Admin</Badge>
                         )}
                         {profile.role === 'client' && (
-                          <Badge variant="secondary">Client</Badge>
+                          <Badge variant="secondary" className="text-xs">Client</Badge>
                         )}
-                      </CardTitle>
+                      </div>
+                      
+                      {/* Email */}
+                      <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
+                        <Mail className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                        <span className="truncate">{profile.email}</span>
+                      </div>
                     </div>
                     
-                    {/* Boutons d'actions */}
-                    <div className="flex gap-1">
-                      {/* Bouton Voir réservations */}
+                    {/* Actions groupées */}
+                    <div className="flex gap-1 ml-2 flex-shrink-0">
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => navigate(`/admin/reservations?user=${profile.id}`)}
                         title="Voir les réservations"
+                        className="h-8 w-8 p-0"
                       >
-                        <Eye className="h-4 w-4" />
+                        <Eye className="h-3 w-3 sm:h-4 sm:w-4" />
                       </Button>
                       
-                      {/* Bouton Supprimer pour tous les utilisateurs */}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDeleteUser(profile.id, profile.email, profile.role)}
-                        title={`Supprimer ${profile.role === 'admin' ? "l'administrateur" : "le client"}`}
-                      >
-                        <Trash2 className="h-4 w-4 text-red-600" />
-                      </Button>
-                      
-                      {/* Bouton Retirer admin (uniquement pour les admins) */}
                       {activeTab === 'admins' && profile.role === 'admin' && (
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => handleRemoveAdmin(profile.id, profile.email)}
                           title="Retirer les droits administrateur"
+                          className="h-8 w-8 p-0"
                         >
-                          <UserX className="h-4 w-4 text-orange-600" />
+                          <UserX className="h-3 w-3 sm:h-4 sm:w-4 text-orange-600" />
                         </Button>
                       )}
+                      
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDeleteUser(profile.id, profile.email, profile.role)}
+                        title={`Supprimer ${profile.role === 'admin' ? "l'administrateur" : "le client"}`}
+                        className="h-8 w-8 p-0"
+                      >
+                        <Trash2 className="h-3 w-3 sm:h-4 sm:w-4 text-red-600" />
+                      </Button>
                     </div>
                   </div>
-                </CardHeader>
-                
-                <CardContent className="space-y-3">
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <Mail className="h-4 w-4" />
-                    <span className="truncate">{profile.email}</span>
-                  </div>
-                  
-                  {profile.telephone && (
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                      <Phone className="h-4 w-4" />
-                      <span>{profile.telephone}</span>
+
+                  {/* Détails supplémentaires */}
+                  <div className="space-y-2 text-sm">
+                    {profile.telephone && (
+                      <div className="flex items-center gap-2 text-gray-600">
+                        <Phone className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                        <span className="truncate">{profile.telephone}</span>
+                      </div>
+                    )}
+                    
+                    <div className="flex items-center gap-2 text-gray-600">
+                      <Calendar className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                      <span className="text-xs sm:text-sm">
+                        Inscrit le: {formatDateTime(profile.created_at)}
+                      </span>
                     </div>
-                  )}
-                  
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <Calendar className="h-4 w-4" />
-                    <span>Inscrit le: {formatDateTime(profile.created_at)}</span>
                   </div>
                 </CardContent>
               </Card>
@@ -522,17 +556,22 @@ const handleDeleteUser = async (profileId: string, email: string, userRole: stri
         {/* Message si aucun résultat */}
         {!loading && filteredProfiles.length === 0 && (
           <Card>
-            <CardContent className="py-12 text-center">
-              <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+            <CardContent className="py-8 sm:py-12 text-center">
+              <Users className="h-8 w-8 sm:h-12 sm:w-12 text-gray-400 mx-auto mb-3 sm:mb-4" />
+              <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">
                 Aucun {activeTab === 'admins' ? 'administrateur' : 'client'} trouvé
               </h3>
-              <p className="text-gray-600 mb-4">
+              <p className="text-gray-600 text-sm sm:text-base mb-4 max-w-sm mx-auto">
                 {searchTerm ? "Aucun résultat pour votre recherche." : 
                  activeTab === 'admins' ? "Commencez par ajouter un administrateur." : "Aucun client inscrit."}
               </p>
               {activeTab === 'admins' && (
-                <Button onClick={() => setIsAddAdminModalOpen(true)}>
+                <Button 
+                  onClick={() => setIsAddAdminModalOpen(true)}
+                  size="sm"
+                  className="flex items-center gap-2 mx-auto"
+                >
+                  <UserPlus className="h-4 w-4" />
                   Ajouter un administrateur
                 </Button>
               )}
@@ -540,87 +579,93 @@ const handleDeleteUser = async (profileId: string, email: string, userRole: stri
           </Card>
         )}
 
+        {/* Modal d'ajout d'admin optimisé mobile */}
+        <Dialog open={isAddAdminModalOpen} onClose={() => setIsAddAdminModalOpen(false)} className="relative z-50">
+          <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
+          <div className="fixed inset-0 flex items-center justify-center p-4">
+            <Dialog.Panel className="bg-white rounded-lg p-4 sm:p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
+              <Dialog.Title className="text-lg font-semibold mb-4">
+                Promouvoir un client en administrateur
+              </Dialog.Title>
 
-{/* Modal d'ajout d'admin */}
-<Dialog open={isAddAdminModalOpen} onClose={() => setIsAddAdminModalOpen(false)} className="relative z-50">
-  <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
-  <div className="fixed inset-0 flex items-center justify-center p-4">
-    <Dialog.Panel className="bg-white rounded-lg p-6 w-full max-w-md">
-      <Dialog.Title className="text-lg font-semibold mb-4">
-        Promouvoir un client en administrateur
-      </Dialog.Title>
+              <div className="space-y-4 mb-4">
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  <p className="text-sm text-blue-800">
+                    <strong>Information :</strong> Sélectionnez un client pour lui donner les droits administrateur.
+                  </p>
+                </div>
 
-      <div className="space-y-4 mb-4">
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-          <p className="text-sm text-blue-800">
-            <strong>Information :</strong> Sélectionnez un client pour lui donner les droits administrateur.
-          </p>
-        </div>
+                <div>
+                  <Label htmlFor="user-select" className="text-sm">Sélectionner un client *</Label>
+                  <select
+                    id="user-select"
+                    value={selectedEmail}
+                    onChange={(e) => setSelectedEmail(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    required
+                  >
+                    <option value="">Choisir un client...</option>
+                    {allEmails.length === 0 ? (
+                      <option value="" disabled>Aucun client disponible</option>
+                    ) : (
+                      allEmails.map((profile) => (
+                        <option key={profile.email} value={profile.email}>
+                          {profile.email} {profile.full_name ? `(${profile.full_name})` : ''}
+                        </option>
+                      ))
+                    )}
+                  </select>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {allEmails.length} client(s) disponible(s) pour promotion
+                  </p>
+                </div>
 
-        <div>
-          <Label htmlFor="user-select">Sélectionner un client *</Label>
-          <select
-            id="user-select"
-            value={selectedEmail}
-            onChange={(e) => setSelectedEmail(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            required
-          >
-            <option value="">Choisir un client...</option>
-            {allEmails.length === 0 ? (
-              <option value="" disabled>Aucun client disponible</option>
-            ) : (
-              allEmails.map((profile) => (
-                <option key={profile.email} value={profile.email}>
-                  {profile.email} {profile.full_name ? `(${profile.full_name})` : ''}
-                </option>
-              ))
-            )}
-          </select>
-          <p className="text-xs text-gray-500 mt-1">
-            {allEmails.length} client(s) disponible(s) pour promotion
-          </p>
-        </div>
+                <div>
+                  <Label htmlFor="full_name" className="text-sm">Nouveau nom complet (optionnel)</Label>
+                  <Input
+                    id="full_name"
+                    value={newAdmin.full_name}
+                    onChange={(e) => setNewAdmin({...newAdmin, full_name: e.target.value})}
+                    placeholder="Laisser vide pour conserver le nom actuel"
+                    className="text-sm"
+                  />
+                </div>
 
-        <div>
-          <Label htmlFor="full_name">Nouveau nom complet (optionnel)</Label>
-          <Input
-            id="full_name"
-            value={newAdmin.full_name}
-            onChange={(e) => setNewAdmin({...newAdmin, full_name: e.target.value})}
-            placeholder="Laisser vide pour conserver le nom actuel"
-          />
-        </div>
+                <div>
+                  <Label htmlFor="telephone" className="text-sm">Nouveau téléphone (optionnel)</Label>
+                  <Input
+                    id="telephone"
+                    value={newAdmin.telephone}
+                    onChange={(e) => setNewAdmin({...newAdmin, telephone: e.target.value})}
+                    placeholder="Laisser vide pour conserver le téléphone actuel"
+                    className="text-sm"
+                  />
+                </div>
+              </div>
 
-        <div>
-          <Label htmlFor="telephone">Nouveau téléphone (optionnel)</Label>
-          <Input
-            id="telephone"
-            value={newAdmin.telephone}
-            onChange={(e) => setNewAdmin({...newAdmin, telephone: e.target.value})}
-            placeholder="Laisser vide pour conserver le téléphone actuel"
-          />
-        </div>
-      </div>
-
-      <div className="flex justify-end gap-2 mt-6">
-        <Button variant="secondary" onClick={() => {
-          setIsAddAdminModalOpen(false);
-          setSelectedEmail("");
-          setNewAdmin({ email: "", full_name: "", telephone: "", password: "" });
-        }}>
-          Annuler
-        </Button>
-        <Button 
-          onClick={handleAddAdmin}
-          disabled={!selectedEmail || allEmails.length === 0}
-        >
-          Promouvoir en admin
-        </Button>
-      </div>
-    </Dialog.Panel>
-  </div>
-</Dialog>
+              <div className="flex flex-col sm:flex-row justify-end gap-2 mt-6">
+                <Button 
+                  variant="secondary" 
+                  onClick={() => {
+                    setIsAddAdminModalOpen(false);
+                    setSelectedEmail("");
+                    setNewAdmin({ email: "", full_name: "", telephone: "", password: "" });
+                  }}
+                  className="flex-1 sm:flex-none"
+                >
+                  Annuler
+                </Button>
+                <Button 
+                  onClick={handleAddAdmin}
+                  disabled={!selectedEmail || allEmails.length === 0}
+                  className="flex-1 sm:flex-none"
+                >
+                  Promouvoir en admin
+                </Button>
+              </div>
+            </Dialog.Panel>
+          </div>
+        </Dialog>
       </main>
       
       <Footer />

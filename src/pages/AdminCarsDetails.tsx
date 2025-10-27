@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Plus, Car, Calendar, Tag, Users } from "lucide-react";
 
 type CarRow = {
   id: string;
@@ -365,13 +365,13 @@ export default function AdminVehicleDetail() {
   // Vérifier les droits admin
   if (!isUserAdmin) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center p-4">
         <div className="text-center">
           <h1 className="text-2xl font-bold mb-4">Accès refusé</h1>
           <p className="text-muted-foreground mb-6">
             Vous devez être administrateur pour accéder à cette page.
           </p>
-          <div className="flex gap-4 justify-center">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button onClick={() => navigate("/admin/vehicles")}>
               <ArrowLeft className="h-4 w-4 mr-2" />
               Retour aux véhicules
@@ -600,15 +600,15 @@ export default function AdminVehicleDetail() {
 
   // RETOURS CONDITIONNELS FINAUX
   if (!id) { 
-    return <div><main className="container mx-auto p-6">ID manquant</main><Footer/></div>;
+    return <div><main className="container mx-auto p-4">ID manquant</main><Footer/></div>;
   } 
   
   if (loading) { 
-    return <div><main className="container mx-auto p-6">Chargement...</main><Footer/></div>;
+    return <div><main className="container mx-auto p-4">Chargement...</main><Footer/></div>;
   }
   
   if (!vehicle) { 
-    return <div><main className="container mx-auto p-6">Véhicule introuvable</main><Footer/></div>;
+    return <div><main className="container mx-auto p-4">Véhicule introuvable</main><Footer/></div>;
   }
 
   // Le reste du rendu JSX
@@ -616,89 +616,106 @@ export default function AdminVehicleDetail() {
 
   return (
     <>
-      <main className="container mx-auto p-6">
-        {/* En-tête du véhicule */}
-        <div className="flex items-start gap-6 mb-6">
-          <div className="w-48">
+      <main className="container mx-auto p-4">
+        {/* En-tête du véhicule - Version mobile */}
+        <div className="flex flex-col sm:flex-row items-start gap-4 mb-6">
+          <div className="w-full sm:w-32 flex-shrink-0">
             {vehicle.image_url ? (
-              <img src={vehicle.image_url} alt={vehicle.name} className="w-full h-auto object-cover rounded-lg" />
+              <img 
+                src={vehicle.image_url} 
+                alt={vehicle.name} 
+                className="w-full h-32 sm:h-24 object-cover rounded-lg" 
+              />
             ) : (
-              <div className="w-full h-32 bg-gray-100 rounded-lg flex items-center justify-center">No image</div>
+              <div className="w-full h-32 sm:h-24 bg-gray-100 rounded-lg flex items-center justify-center">
+                <Car className="h-8 w-8 text-gray-400" />
+              </div>
             )}
           </div>
 
-          <div className="flex-1">
-            <h1 className="text-2xl font-bold">{vehicle.name}</h1>
-            <p className="text-muted-foreground mb-2">{vehicle.category}</p>
-            <p className="mb-2">Prix: <strong>{vehicle.price} / jour</strong></p>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-start justify-between mb-2">
+              <h1 className="text-xl font-bold truncate">{vehicle.name}</h1>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => navigate("/admin/vehicles")}
+                className="flex-shrink-0 ml-2"
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+            </div>
+            
+            <p className="text-muted-foreground text-sm mb-2">{vehicle.category}</p>
+            <p className="mb-2 text-sm">Prix: <strong>{vehicle.price} / jour</strong></p>
 
-            <div className="mb-4">
-              <label className="block text-sm text-gray-600 mb-1">Stock total</label>
+            <div className="mb-3">
+              <label className="block text-xs text-gray-600 mb-1">Stock total</label>
               <div className="flex items-center gap-2">
                 <Input
                   value={stockEdit}
                   onChange={(e) => setStockEdit(e.target.value === "" ? "" : Number(e.target.value))}
                   type="number"
                   min={0}
-                  className="w-40"
+                  className="w-24 text-sm"
                   disabled
                 />
-                <span className="text-sm text-gray-500">
-                  (Synchronisé automatiquement: {vehicles.length} véhicule(s) actif(s))
+                <span className="text-xs text-gray-500">
+                  ({vehicles.length} véhicule(s) actif(s))
                 </span>
               </div>
-            </div>
-
-            <div className="flex gap-2">
-              <Button onClick={() => navigate("/admin/vehicles")}>Retour</Button>
             </div>
           </div>
         </div>
 
         <hr className="my-4" />
 
-        {/* Onglets */}
-        <div className="border-b mb-6">
-          <div className="flex space-x-8">
+        {/* Onglets - Version mobile avec scroll horizontal */}
+        <div className="border-b mb-6 overflow-x-auto">
+          <div className="flex space-x-4 min-w-max">
             <button
-              className={`py-2 px-1 font-medium text-sm border-b-2 transition-colors ${
+              className={`py-3 px-2 font-medium text-sm border-b-2 transition-colors whitespace-nowrap flex items-center gap-2 ${
                 activeTab === 'availability'
                   ? 'border-primary text-primary'
                   : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}
               onClick={() => setActiveTab('availability')}
             >
-              Disponibilité en temps réel
+              <Calendar className="h-4 w-4" />
+              Disponibilité
             </button>
             <button
-              className={`py-2 px-1 font-medium text-sm border-b-2 transition-colors ${
+              className={`py-3 px-2 font-medium text-sm border-b-2 transition-colors whitespace-nowrap flex items-center gap-2 ${
                 activeTab === 'vehicles'
                   ? 'border-primary text-primary'
                   : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}
               onClick={() => setActiveTab('vehicles')}
             >
-              Véhicules individuels ({vehicles.length})
+              <Car className="h-4 w-4" />
+              Véhicules ({vehicles.length})
             </button>
             <button
-              className={`py-2 px-1 font-medium text-sm border-b-2 transition-colors ${
+              className={`py-3 px-2 font-medium text-sm border-b-2 transition-colors whitespace-nowrap flex items-center gap-2 ${
                 activeTab === 'offers'
                   ? 'border-primary text-primary'
                   : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}
               onClick={() => setActiveTab('offers')}
             >
-              Offres spéciales ({offers.length})
+              <Tag className="h-4 w-4" />
+              Offres ({offers.length})
             </button>
             <button
-              className={`py-2 px-1 font-medium text-sm border-b-2 transition-colors ${
+              className={`py-3 px-2 font-medium text-sm border-b-2 transition-colors whitespace-nowrap flex items-center gap-2 ${
                 activeTab === 'reservations'
                   ? 'border-primary text-primary'
                   : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}
               onClick={() => setActiveTab('reservations')}
             >
-              Toutes les réservations ({allReservations.length})
+              <Users className="h-4 w-4" />
+              Réservations ({allReservations.length})
             </button>
           </div>
         </div>
@@ -706,88 +723,89 @@ export default function AdminVehicleDetail() {
         {/* Contenu des onglets */}
         {activeTab === 'availability' && (
           <>
-            <h2 className="text-xl font-semibold mb-3">Disponibilité en temps réel</h2>
+            <h2 className="text-lg font-semibold mb-4">Disponibilité en temps réel</h2>
             
-            {/* Cartes de statut */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-lg">Véhicules disponibles</CardTitle>
+            {/* Cartes de statut - Version mobile */}
+            <div className="grid grid-cols-2 gap-3 mb-6">
+              <Card className="text-center">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm">Disponibles</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold text-green-600">
+                  <div className="text-xl font-bold text-green-600">
                     {vehicles.filter(v => v.status === 'available').length}
                   </div>
-                  <p className="text-sm text-muted-foreground mt-2">
-                    Prêts à être réservés
-                  </p>
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-lg">Véhicules réservés</CardTitle>
+              <Card className="text-center">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm">Réservés</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold text-blue-600">
+                  <div className="text-xl font-bold text-blue-600">
                     {vehicles.filter(v => v.status === 'reserved').length}
                   </div>
-                  <p className="text-sm text-muted-foreground mt-2">
-                    Actuellement en location
-                  </p>
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-lg">En maintenance</CardTitle>
+              <Card className="text-center">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm">Maintenance</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold text-orange-600">
+                  <div className="text-xl font-bold text-orange-600">
                     {vehicles.filter(v => v.status === 'maintenance').length}
                   </div>
-                  <p className="text-sm text-muted-foreground mt-2">
-                    Indisponibles temporairement
-                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="text-center">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm">Total</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-xl font-bold text-gray-600">
+                    {vehicles.length}
+                  </div>
                 </CardContent>
               </Card>
             </div>
 
-            {/* Statistiques des réservations */}
+            {/* Statistiques des réservations - Version mobile */}
             <Card className="mb-6">
-              <CardHeader>
-                <CardTitle>Statistiques des réservations</CardTitle>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">Statistiques des réservations</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 gap-4">
                   <div className="text-center">
-                    <div className="text-2xl font-bold">{getReservationStats().total}</div>
-                    <div className="text-sm text-muted-foreground">Total</div>
+                    <div className="text-lg font-bold">{getReservationStats().total}</div>
+                    <div className="text-xs text-muted-foreground">Total</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-green-600">{getReservationStats().accepted}</div>
-                    <div className="text-sm text-muted-foreground">Acceptées</div>
+                    <div className="text-lg font-bold text-green-600">{getReservationStats().accepted}</div>
+                    <div className="text-xs text-muted-foreground">Acceptées</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-yellow-600">{getReservationStats().pending}</div>
-                    <div className="text-sm text-muted-foreground">En attente</div>
+                    <div className="text-lg font-bold text-yellow-600">{getReservationStats().pending}</div>
+                    <div className="text-xs text-muted-foreground">En attente</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-red-600">{getReservationStats().refused}</div>
-                    <div className="text-sm text-muted-foreground">Refusées</div>
+                    <div className="text-lg font-bold text-red-600">{getReservationStats().refused}</div>
+                    <div className="text-xs text-muted-foreground">Refusées</div>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
               <div className="flex items-start">
-                <div className="text-blue-600 mr-3 mt-1">💡</div>
+                <div className="text-blue-600 mr-2 mt-0.5">💡</div>
                 <div>
-                  <h3 className="font-semibold text-blue-800">Nouveau système de disponibilité</h3>
-                  <p className="text-blue-700 text-sm mt-1">
-                    La disponibilité est maintenant gérée par le statut de chaque véhicule individuel. 
-                    Modifiez les statuts dans l'onglet "Véhicules individuels" pour contrôler la disponibilité.
+                  <h3 className="font-semibold text-blue-800 text-sm">Nouveau système de disponibilité</h3>
+                  <p className="text-blue-700 text-xs mt-1">
+                    La disponibilité est maintenant gérée par le statut de chaque véhicule individuel.
                   </p>
                 </div>
               </div>
@@ -797,104 +815,110 @@ export default function AdminVehicleDetail() {
 
         {activeTab === 'vehicles' && (
           <>
-            <div className="flex justify-between items-center mb-3">
-              <h2 className="text-xl font-semibold">Véhicules individuels</h2>
-              <Button onClick={() => setIsCreateVehicleModalOpen(true)}>
-                + Ajouter un véhicule
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-semibold">Véhicules individuels</h2>
+              <Button 
+                onClick={() => setIsCreateVehicleModalOpen(true)}
+                size="sm"
+                className="flex items-center gap-1"
+              >
+                <Plus className="h-4 w-4" />
+                <span className="hidden sm:inline">Ajouter</span>
               </Button>
             </div>
             
-            {/* Statistiques rapides */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-              <div className="bg-white p-4 rounded-lg border shadow-sm">
-                <div className="text-2xl font-bold text-gray-900">{stats.total}</div>
-                <div className="text-sm text-gray-600">Total véhicules</div>
+            {/* Statistiques rapides - Version mobile */}
+            <div className="grid grid-cols-2 gap-3 mb-6">
+              <div className="bg-white p-3 rounded-lg border shadow-sm">
+                <div className="text-lg font-bold text-gray-900">{stats.total}</div>
+                <div className="text-xs text-gray-600">Total</div>
               </div>
-              <div className="bg-white p-4 rounded-lg border shadow-sm border-green-200">
-                <div className="text-2xl font-bold text-green-600">{stats.available}</div>
-                <div className="text-sm text-gray-600">Disponibles</div>
-                <div className="text-xs text-green-600 mt-1">✅ Prêts à être réservés</div>
+              <div className="bg-white p-3 rounded-lg border shadow-sm border-green-200">
+                <div className="text-lg font-bold text-green-600">{stats.available}</div>
+                <div className="text-xs text-gray-600">Disponibles</div>
               </div>
-              <div className="bg-white p-4 rounded-lg border shadow-sm border-blue-200">
-                <div className="text-2xl font-bold text-blue-600">{stats.reserved}</div>
-                <div className="text-sm text-gray-600">Réservés</div>
-                <div className="text-xs text-blue-600 mt-1">🚗 En location</div>
+              <div className="bg-white p-3 rounded-lg border shadow-sm border-blue-200">
+                <div className="text-lg font-bold text-blue-600">{stats.reserved}</div>
+                <div className="text-xs text-gray-600">Réservés</div>
               </div>
-              <div className="bg-white p-4 rounded-lg border shadow-sm border-orange-200">
-                <div className="text-2xl font-bold text-orange-600">{stats.maintenance}</div>
-                <div className="text-sm text-gray-600">En maintenance</div>
-                <div className="text-xs text-orange-600 mt-1">🔧 Indisponibles</div>
+              <div className="bg-white p-3 rounded-lg border shadow-sm border-orange-200">
+                <div className="text-lg font-bold text-orange-600">{stats.maintenance}</div>
+                <div className="text-xs text-gray-600">Maintenance</div>
               </div>
             </div>
 
-            {/* Tableau des véhicules */}
-            <div className="bg-white rounded-lg border shadow-sm overflow-hidden">
-              <table className="w-full">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="p-4 text-left font-semibold">Matricule</th>
-                    <th className="p-4 text-left font-semibold">OBD</th>
-                    <th className="p-4 text-left font-semibold">Date OBD</th>
-                    <th className="p-4 text-left font-semibold">Objet</th>
-                    <th className="p-4 text-left font-semibold">Statut</th>
-                    <th className="p-4 text-left font-semibold">Changer statut</th>
-                    <th className="p-4 text-left font-semibold">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {vehicles.map((vehicleItem) => {
-                    const statusInfo = getVehicleStatus(vehicleItem);
-                    
-                    return (
-                      <tr key={vehicleItem.id} className="border-b hover:bg-gray-50">
-                        <td className="p-4 font-mono font-semibold">{vehicleItem.matricule}</td>
-                        <td className="p-4">{vehicleItem.obd || '-'}</td>
-                        <td className="p-4">
-                          {vehicleItem.date_obd ? format(new Date(vehicleItem.date_obd), "dd/MM/yyyy") : '-'}
-                        </td>
-                        <td className="p-4">{vehicleItem.objet || '-'}</td>
-                        <td className="p-4">
-                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusInfo.color}`}>
-                            {statusInfo.icon} {statusInfo.text}
+            {/* Liste des véhicules - Version mobile */}
+            <div className="space-y-3">
+              {vehicles.map((vehicleItem) => {
+                const statusInfo = getVehicleStatus(vehicleItem);
+                
+                return (
+                  <Card key={vehicleItem.id} className="p-4">
+                    <div className="space-y-3">
+                      {/* En-tête avec matricule et statut */}
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h3 className="font-mono font-semibold text-lg">{vehicleItem.matricule}</h3>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusInfo.color}`}>
+                            {statusInfo.text}
                           </span>
-                        </td>
-                        <td className="p-4">
-                          <select 
-                            value={vehicleItem.status}
-                            onChange={(e) => handleChangeVehicleStatus(vehicleItem.id, e.target.value as any)}
-                            className="text-sm border rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          >
-                            <option value="available">Disponible</option>
-                            <option value="reserved">Réservé</option>
-                            <option value="maintenance">Maintenance</option>
-                          </select>
-                        </td>
-                        <td className="p-4">
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => handleDeleteVehicle(vehicleItem.id, vehicleItem.matricule)}
-                          >
-                            Supprimer
-                          </Button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                        </div>
+                        <select 
+                          value={vehicleItem.status}
+                          onChange={(e) => handleChangeVehicleStatus(vehicleItem.id, e.target.value as any)}
+                          className="text-xs border rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        >
+                          <option value="available">Disponible</option>
+                          <option value="reserved">Réservé</option>
+                          <option value="maintenance">Maintenance</option>
+                        </select>
+                      </div>
+
+                      {/* Détails */}
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div>
+                          <span className="text-gray-600">OBD:</span>
+                          <div className="font-medium">{vehicleItem.obd || '-'}</div>
+                        </div>
+                        <div>
+                          <span className="text-gray-600">Date OBD:</span>
+                          <div className="font-medium">
+                            {vehicleItem.date_obd ? format(new Date(vehicleItem.date_obd), "dd/MM/yy") : '-'}
+                          </div>
+                        </div>
+                        <div className="col-span-2">
+                          <span className="text-gray-600">Objet:</span>
+                          <div className="font-medium truncate">{vehicleItem.objet || '-'}</div>
+                        </div>
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex justify-end pt-2">
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => handleDeleteVehicle(vehicleItem.id, vehicleItem.matricule)}
+                        >
+                          Supprimer
+                        </Button>
+                      </div>
+                    </div>
+                  </Card>
+                );
+              })}
 
               {vehicles.length === 0 && (
-                <div className="p-8 text-center text-gray-500">
+                <Card className="p-8 text-center">
                   <div className="text-4xl mb-4">🚗</div>
-                  <p>Aucun véhicule trouvé pour ce modèle</p>
+                  <p className="text-muted-foreground mb-4">Aucun véhicule trouvé pour ce modèle</p>
                   <Button 
                     onClick={() => setIsCreateVehicleModalOpen(true)}
-                    className="mt-4"
+                    className="flex items-center gap-2"
                   >
+                    <Plus className="h-4 w-4" />
                     Ajouter le premier véhicule
                   </Button>
-                </div>
+                </Card>
               )}
             </div>
           </>
@@ -902,10 +926,15 @@ export default function AdminVehicleDetail() {
 
         {activeTab === 'offers' && (
           <>
-            <div className="flex justify-between items-center mb-3">
-              <h2 className="text-xl font-semibold">Offres spéciales</h2>
-              <Button onClick={() => setIsCreateOfferModalOpen(true)}>
-                + Ajouter une offre
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-semibold">Offres spéciales</h2>
+              <Button 
+                onClick={() => setIsCreateOfferModalOpen(true)}
+                size="sm"
+                className="flex items-center gap-1"
+              >
+                <Plus className="h-4 w-4" />
+                <span className="hidden sm:inline">Ajouter</span>
               </Button>
             </div>
 
@@ -914,31 +943,34 @@ export default function AdminVehicleDetail() {
                 <CardContent className="py-8 text-center">
                   <div className="text-4xl mb-4">🎯</div>
                   <p className="text-muted-foreground mb-4">Aucune offre spéciale pour ce modèle</p>
-                  <Button onClick={() => setIsCreateOfferModalOpen(true)}>
+                  <Button 
+                    onClick={() => setIsCreateOfferModalOpen(true)}
+                    className="flex items-center gap-2"
+                  >
+                    <Plus className="h-4 w-4" />
                     Créer la première offre
                   </Button>
                 </CardContent>
               </Card>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 gap-3">
                 {offers.map((offer) => (
-                  <Card key={offer.id} className="relative">
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-lg">{offer.period}</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-2xl font-bold text-primary mb-4">
-                        {offer.price} MAD
-                      </p>
+                  <Card key={offer.id} className="p-4">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <h3 className="font-semibold">{offer.period}</h3>
+                        <p className="text-2xl font-bold text-primary">
+                          {offer.price} MAD
+                        </p>
+                      </div>
                       <Button
                         variant="destructive"
                         size="sm"
                         onClick={() => handleDeleteOffer(offer.id)}
-                        className="w-full"
                       >
-                        Supprimer l'offre
+                        Supprimer
                       </Button>
-                    </CardContent>
+                    </div>
                   </Card>
                 ))}
               </div>
@@ -946,66 +978,69 @@ export default function AdminVehicleDetail() {
           </>
         )}
 
-        {/* Contenu de l'onglet réservations */}
+        {/* Contenu de l'onglet réservations - Version mobile */}
         {activeTab === 'reservations' && (
           <>
-            <h2 className="text-xl font-semibold mb-3">Toutes les réservations</h2>
+            <h2 className="text-lg font-semibold mb-4">Toutes les réservations</h2>
             
-            <div className="bg-white rounded-lg border shadow-sm overflow-hidden">
-              <table className="w-full">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="p-4 text-left">ID</th>
-                    <th className="p-4 text-left">Client</th>
-                    <th className="p-4 text-left">Période</th>
-                    <th className="p-4 text-left">Statut</th>
-                    <th className="p-4 text-left">Lieux</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {allReservations.map((reservation) => {
-                    const clientInfo = getClientInfo(reservation);
-                    
-                    return (
-                      <tr key={reservation.id} className="border-b hover:bg-gray-50">
-                        <td className="p-4 font-mono text-sm">{reservation.id.slice(0, 8)}...</td>
-                        <td className="p-4">
-                          <div className="space-y-1">
-                            <div className="font-medium">{clientInfo.name}</div>
-                            <div className="text-sm text-gray-600">{clientInfo.email}</div>
-                            <div className="text-xs text-gray-500">{clientInfo.type}</div>
-                          </div>
-                        </td>
-                        <td className="p-4">
-                          {format(new Date(reservation.pickup_date), "dd/MM/yyyy")} - {" "}
-                          {format(new Date(reservation.return_date), "dd/MM/yyyy")}
-                        </td>
-                        <td className="p-4">
-                          <span className={`px-2 py-1 rounded text-xs font-medium ${
-                            reservation.status === 'accepted' 
-                              ? 'bg-green-100 text-green-800' 
-                              : reservation.status === 'pending'
-                              ? 'bg-yellow-100 text-yellow-800'
-                              : 'bg-red-100 text-red-800'
-                          }`}>
-                            {reservation.status === 'accepted' ? '✅ Acceptée' : 
-                            reservation.status === 'pending' ? '⏳ En attente' : 
-                            '❌ Refusée'}
-                          </span>
-                        </td>
-                        <td className="p-4 text-sm">
+            <div className="space-y-3">
+              {allReservations.map((reservation) => {
+                const clientInfo = getClientInfo(reservation);
+                
+                return (
+                  <Card key={reservation.id} className="p-4">
+                    <div className="space-y-3">
+                      {/* En-tête avec ID et statut */}
+                      <div className="flex justify-between items-start">
+                        <code className="text-xs bg-gray-100 px-2 py-1 rounded">
+                          {reservation.id.slice(0, 8)}...
+                        </code>
+                        <span className={`px-2 py-1 rounded text-xs font-medium ${
+                          reservation.status === 'accepted' 
+                            ? 'bg-green-100 text-green-800' 
+                            : reservation.status === 'pending'
+                            ? 'bg-yellow-100 text-yellow-800'
+                            : 'bg-red-100 text-red-800'
+                        }`}>
+                          {reservation.status === 'accepted' ? '✅ Acceptée' : 
+                          reservation.status === 'pending' ? '⏳ En attente' : 
+                          '❌ Refusée'}
+                        </span>
+                      </div>
+
+                      {/* Informations client */}
+                      <div>
+                        <h3 className="font-medium text-sm">{clientInfo.name}</h3>
+                        <p className="text-xs text-gray-600">{clientInfo.email}</p>
+                        <p className="text-xs text-gray-500">{clientInfo.type}</p>
+                      </div>
+
+                      {/* Période */}
+                      <div className="text-sm">
+                        <span className="text-gray-600">Période:</span>
+                        <div className="font-medium">
+                          {format(new Date(reservation.pickup_date), "dd/MM/yy")} - {" "}
+                          {format(new Date(reservation.return_date), "dd/MM/yy")}
+                        </div>
+                      </div>
+
+                      {/* Lieux */}
+                      <div className="text-sm">
+                        <span className="text-gray-600">Trajet:</span>
+                        <div className="font-medium">
                           {reservation.pickup_location} → {reservation.return_location}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                        </div>
+                      </div>
+                    </div>
+                  </Card>
+                );
+              })}
               
               {allReservations.length === 0 && (
-                <div className="p-8 text-center text-gray-500">
-                  Aucune réservation pour ce véhicule
-                </div>
+                <Card className="p-8 text-center">
+                  <div className="text-4xl mb-4">📋</div>
+                  <p className="text-muted-foreground">Aucune réservation pour ce véhicule</p>
+                </Card>
               )}
             </div>
           </>
@@ -1015,7 +1050,7 @@ export default function AdminVehicleDetail() {
         <Dialog open={isCreateVehicleModalOpen} onClose={() => setIsCreateVehicleModalOpen(false)} className="relative z-50">
           <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
           <div className="fixed inset-0 flex items-center justify-center p-4">
-            <Dialog.Panel className="bg-white rounded-lg p-6 w-full max-w-md">
+            <Dialog.Panel className="bg-white rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
               <Dialog.Title className="text-lg font-semibold mb-4">
                 Ajouter un véhicule
               </Dialog.Title>
@@ -1063,11 +1098,11 @@ export default function AdminVehicleDetail() {
                 </div>
               </div>
 
-              <div className="flex justify-end gap-2 mt-6">
-                <Button variant="secondary" onClick={() => setIsCreateVehicleModalOpen(false)}>
+              <div className="flex flex-col sm:flex-row justify-end gap-2 mt-6">
+                <Button variant="secondary" onClick={() => setIsCreateVehicleModalOpen(false)} className="flex-1 sm:flex-none">
                   Annuler
                 </Button>
-                <Button onClick={handleCreateVehicle} disabled={saving}>
+                <Button onClick={handleCreateVehicle} disabled={saving} className="flex-1 sm:flex-none">
                   {saving ? "Création..." : "Ajouter le véhicule"}
                 </Button>
               </div>
@@ -1079,7 +1114,7 @@ export default function AdminVehicleDetail() {
         <Dialog open={isCreateOfferModalOpen} onClose={() => setIsCreateOfferModalOpen(false)} className="relative z-50">
           <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
           <div className="fixed inset-0 flex items-center justify-center p-4">
-            <Dialog.Panel className="bg-white rounded-lg p-6 w-full max-w-md">
+            <Dialog.Panel className="bg-white rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
               <Dialog.Title className="text-lg font-semibold mb-4">
                 Ajouter une offre spéciale
               </Dialog.Title>
@@ -1109,11 +1144,11 @@ export default function AdminVehicleDetail() {
                 </div>
               </div>
 
-              <div className="flex justify-end gap-2 mt-6">
-                <Button variant="secondary" onClick={() => setIsCreateOfferModalOpen(false)}>
+              <div className="flex flex-col sm:flex-row justify-end gap-2 mt-6">
+                <Button variant="secondary" onClick={() => setIsCreateOfferModalOpen(false)} className="flex-1 sm:flex-none">
                   Annuler
                 </Button>
-                <Button onClick={handleCreateOffer} disabled={saving}>
+                <Button onClick={handleCreateOffer} disabled={saving} className="flex-1 sm:flex-none">
                   {saving ? "Création..." : "Créer l'offre"}
                 </Button>
               </div>

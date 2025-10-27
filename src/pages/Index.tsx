@@ -174,19 +174,6 @@ const Index = () => {
         berlin: ["Berlin"],
       };
 
-      if (data.carType && data.carType.toLowerCase() !== "all") {
-        const allowedCategories = categoryMap[data.carType.toLowerCase()] || [];
-        query = query.in("category", allowedCategories);
-      }
-
-      if (data.transmission && data.transmission.toLowerCase() !== "all") {
-        query = query.eq("transmission", data.transmission.toLowerCase());
-      }
-
-      if (data.fuel && data.fuel.toLowerCase() !== "all") {
-        query = query.eq("fuel", data.fuel.toLowerCase());
-      }
-
       const { data: allCars, error } = await query as {
         data: Car[] | null;
         error: any;

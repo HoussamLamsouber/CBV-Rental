@@ -4,8 +4,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Separator } from "@/components/ui/separator";
-import { CalendarIcon, MapPinIcon, ClockIcon, Check, ChevronsUpDown } from "lucide-react";
+import { 
+  CalendarIcon, 
+  MapPinIcon, 
+  ClockIcon, 
+  Check, 
+  ChevronsUpDown,
+  Search,
+  ArrowRightLeft,
+  Car
+} from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
@@ -18,11 +26,6 @@ export interface SearchData {
   returnDate: Date | undefined;
   pickupTime: string;
   returnTime: string;
-  carType: string;
-  transmission: string;
-  fuel: string;
-  passengers: string;
-  sortBy: string;
 }
 
 interface SearchFormProps {
@@ -34,12 +37,14 @@ const AutoCompleteInput = ({
   items,
   placeholder,
   value,
-  onSelect
+  onSelect,
+  icon
 }: {
   items: { value: string; label: string }[];
   placeholder: string;
   value: string;
   onSelect: (value: string) => void;
+  icon?: React.ReactNode;
 }) => {
   const [open, setOpen] = useState(false);
   const selectedItem = items.find((item) => item.value === value);
@@ -51,16 +56,23 @@ const AutoCompleteInput = ({
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className="w-full justify-between h-10"
+          className="w-full justify-between h-12 border-gray-300 hover:border-blue-500 transition-colors"
         >
-          {selectedItem ? selectedItem.label : placeholder}
+          <div className="flex items-center gap-2 flex-1 text-left">
+            {icon}
+            <span className={cn("truncate", !selectedItem && "text-muted-foreground")}>
+              {selectedItem ? selectedItem.label : placeholder}
+            </span>
+          </div>
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
         <Command>
           <CommandInput placeholder="Rechercher une location..." />
-          <CommandEmpty>Aucun résultat trouvé.</CommandEmpty>
+          <CommandEmpty className="py-6 text-center text-sm text-muted-foreground">
+            Aucun résultat trouvé.
+          </CommandEmpty>
           <CommandGroup className="max-h-60 overflow-y-auto">
             {items.map((item) => (
               <CommandItem
@@ -70,13 +82,15 @@ const AutoCompleteInput = ({
                   onSelect(item.value);
                   setOpen(false);
                 }}
+                className="flex items-center gap-2"
               >
                 <Check
                   className={cn(
-                    "mr-2 h-4 w-4",
+                    "h-4 w-4",
                     value === item.value ? "opacity-100" : "opacity-0"
                   )}
                 />
+                <MapPinIcon className="h-4 w-4 text-muted-foreground" />
                 {item.label}
               </CommandItem>
             ))}
@@ -90,17 +104,11 @@ const AutoCompleteInput = ({
 export const SearchForm = ({ onSearch }: SearchFormProps) => {
   const [pickupLocation, setPickupLocation] = useState("");
   const [returnLocation, setReturnLocation] = useState("");
-  const [sameLocation, setSameLocation] = useState(false); // Maintenant false par défaut
+  const [sameLocation, setSameLocation] = useState(false);
   const [pickupDate, setPickupDate] = useState<Date>();
   const [returnDate, setReturnDate] = useState<Date>();
   const [pickupTime, setPickupTime] = useState("09:00");
   const [returnTime, setReturnTime] = useState("09:00");
-  const [carType, setCarType] = useState("all");
-  const [transmission, setTransmission] = useState("all");
-  const [fuel, setFuel] = useState("all");
-  const [passengers, setPassengers] = useState("all");
-  const [sortBy, setSortBy] = useState("relevance");
-  const [showFilters, setShowFilters] = useState(false);
 
   const locations = {
     airports: [
@@ -188,197 +196,211 @@ export const SearchForm = ({ onSearch }: SearchFormProps) => {
       pickupDate,
       returnDate,
       pickupTime,
-      returnTime,
-      carType,
-      transmission,
-      fuel,
-      passengers,
-      sortBy
+      returnTime
     });
   };
 
-  const resetFilters = () => {
-    setCarType("all");
-    setTransmission("all");
-    setFuel("all");
-    setPassengers("all");
-    setSortBy("relevance");
-    setSameLocation(false); // Reset à false
-  };
-
   return (
-    <div className="bg-card border shadow-[var(--card-shadow)] rounded-xl p-6 backdrop-blur-sm">
-      <div className="flex flex-col md:flex-row md:items-end gap-4 mb-4">
+    <div className="bg-white/95 backdrop-blur-sm border border-gray-200/80 rounded-2xl p-6 shadow-xl shadow-blue-500/5">
+      {/* Header avec titre */}
+      <div className="flex items-center gap-3 mb-8">
+        <div className="p-2 bg-blue-100 rounded-lg">
+          <Car className="h-5 w-5 text-blue-600" />
+        </div>
+        <div>
+          <h2 className="text-xl font-bold text-gray-900">Réservez votre véhicule</h2>
+          <p className="text-sm text-gray-600">Trouvez la voiture parfaite pour votre voyage</p>
+        </div>
+      </div>
 
+      {/* Lieux - Ligne unique */}
+      <div className="flex items-end gap-4 mb-8">
         {/* Pickup Location */}
-        <div className="flex-1 space-y-1">
-          <div className="flex items-center justify-between">
-            <Label htmlFor="pickupLocation" className="text-sm font-medium">Lieu de départ</Label>
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id="sameLocation"
-                checked={sameLocation}
-                onChange={() => setSameLocation(!sameLocation)}
-                className="w-4 h-4"
-              />
-              <Label htmlFor="sameLocation" className="text-sm font-medium">
-                Même lieu
-              </Label>
-            </div>
-          </div>
-          
+        <div className="flex-1 space-y-3">
+          <Label htmlFor="pickupLocation" className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+            <MapPinIcon className="h-4 w-4 text-blue-600" />
+            Lieu de départ
+          </Label>
           <AutoCompleteInput
             items={allLocations}
-            placeholder="Recherchez un aéroport ou une gare"
+            placeholder="Aéroport ou gare de départ"
             value={pickupLocation}
             onSelect={setPickupLocation}
+            icon={<MapPinIcon className="h-4 w-4 text-blue-600" />}
           />
         </div>
 
-        {/* Return Location - TOUJOURS VISIBLE */}
-        <div className="flex-1 space-y-1">
-          <Label htmlFor="returnLocation" className="text-sm font-medium">
-            {sameLocation ? "Lieu de retour (identique)" : "Lieu de retour"}
+        {/* Bouton de swap */}
+        <div className="pb-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setSameLocation(!sameLocation)}
+            className={cn(
+              "rounded-full p-3 border-2 transition-all duration-300",
+              sameLocation 
+                ? "bg-green-50 border-green-200 text-green-600" 
+                : "bg-gray-50 border-gray-200 text-gray-600 hover:bg-blue-50 hover:border-blue-200 hover:text-blue-600"
+            )}
+            title={sameLocation ? "Lieux différents" : "Même lieu"}
+          >
+            <ArrowRightLeft className="h-4 w-4" />
+          </Button>
+        </div>
+
+        {/* Return Location */}
+        <div className="flex-1 space-y-3">
+          <Label htmlFor="returnLocation" className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+            <MapPinIcon className="h-4 w-4 text-green-600" />
+            Lieu de retour
           </Label>
-          
           {sameLocation ? (
             <div className="relative">
               <Input
                 value={pickupLocation}
                 readOnly
-                className="bg-muted cursor-not-allowed opacity-70"
-                placeholder="Identique au lieu de prise en charge"
+                className="bg-green-50 border-green-200 cursor-not-allowed h-12"
               />
               <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-sm text-muted-foreground bg-background/80 px-2 rounded">
-                  Identique au lieu de départ
+                <span className="text-sm text-green-700 bg-green-50/80 px-3 py-1 rounded-full font-medium">
+                  Identique au départ
                 </span>
               </div>
             </div>
           ) : (
             <AutoCompleteInput
               items={allLocations}
-              placeholder="Recherchez un aéroport ou une gare"
+              placeholder="Aéroport ou gare de retour"
               value={returnLocation}
               onSelect={setReturnLocation}
+              icon={<MapPinIcon className="h-4 w-4 text-green-600" />}
             />
           )}
         </div>
       </div>
 
-      {/* Dates et heures */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-        {/* Pickup Date */}
-        <div className="space-y-2">
-          <Label className="text-sm font-medium">Date de départ</Label>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className={cn(
-                  "w-full justify-start text-left font-normal",
-                  !pickupDate && "text-muted-foreground"
-                )}
-              >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {pickupDate ? format(pickupDate, "dd/MM/yyyy") : "Sélectionner"}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar
-                mode="single"
-                selected={pickupDate}
-                onSelect={setPickupDate}
-                disabled={(date) => date < new Date()}
-                initialFocus
-                className="pointer-events-auto"
-              />
-            </PopoverContent>
-          </Popover>
-        </div>
+      {/* Dates et heures - Groupées par période */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        {/* Période de départ */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-2 h-6 bg-blue-600 rounded-full"></div>
+            <h3 className="font-semibold text-gray-900">Départ</h3>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-3">
+              <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                <CalendarIcon className="h-4 w-4 text-blue-600" />
+                Date
+              </Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal h-12 border-gray-300 hover:border-blue-500",
+                      !pickupDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {pickupDate ? format(pickupDate, "dd/MM/yyyy") : "Sélectionner"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={pickupDate}
+                    onSelect={setPickupDate}
+                    disabled={(date) => date < new Date()}
+                    initialFocus
+                    className="pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
 
-        {/* Pickup Time */}
-        <div className="space-y-2">
-          <Label className="text-sm font-medium">Heure de départ</Label>
-          <div className="relative">
-            <ClockIcon className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-            <Input
-              type="time"
-              value={pickupTime}
-              onChange={(e) => setPickupTime(e.target.value)}
-              className="pl-10"
-            />
+            <div className="space-y-3">
+              <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                <ClockIcon className="h-4 w-4 text-blue-600" />
+                Heure
+              </Label>
+              <div className="relative">
+                <Input
+                  type="time"
+                  value={pickupTime}
+                  onChange={(e) => setPickupTime(e.target.value)}
+                  className="pl-5 h-12 border-gray-300 focus:border-blue-500 cursor-pointer w-32"
+                />
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Return Date */}
-        <div className="space-y-2">
-          <Label className="text-sm font-medium">Date de retour</Label>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className={cn(
-                  "w-full justify-start text-left font-normal",
-                  !returnDate && "text-muted-foreground"
-                )}
-              >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {returnDate ? format(returnDate, "dd/MM/yyyy") : "Sélectionner"}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar
-                mode="single"
-                selected={returnDate}
-                onSelect={setReturnDate}
-                disabled={(date) => date < (pickupDate || new Date())}
-                initialFocus
-                className="pointer-events-auto"
-              />
-            </PopoverContent>
-          </Popover>
-        </div>
+        {/* Période de retour */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-2 h-6 bg-green-600 rounded-full"></div>
+            <h3 className="font-semibold text-gray-900">Retour</h3>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-3">
+              <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                <CalendarIcon className="h-4 w-4 text-green-600" />
+                Date
+              </Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal h-12 border-gray-300 hover:border-green-500",
+                      !returnDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {returnDate ? format(returnDate, "dd/MM/yyyy") : "Sélectionner"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={returnDate}
+                    onSelect={setReturnDate}
+                    disabled={(date) => date < (pickupDate || new Date())}
+                    initialFocus
+                    className="pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
 
-        {/* Return Time */}
-        <div className="space-y-2">
-          <Label className="text-sm font-medium">Heure de retour</Label>
-          <div className="relative">
-            <ClockIcon className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-            <Input
-              type="time"
-              value={returnTime}
-              onChange={(e) => setReturnTime(e.target.value)}
-              className="pl-10"
-            />
+            <div className="space-y-3">
+              <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                <ClockIcon className="h-4 w-4 text-green-600" />
+                Heure
+              </Label>
+              <div className="relative">
+                <Input
+                  type="time"
+                  value={returnTime}
+                  onChange={(e) => setReturnTime(e.target.value)}
+                  className="pl-5 h-12 border-gray-300 focus:border-green-500 cursor-pointer w-32"
+                />
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Bouton de recherche */}
       <Button
-        onClick={handleSearch}
-        className="w-full bg-gradient-to-r from-[var(--accent-gradient)] to-[var(--accent-gradient-to)] text-white hover:shadow-[var(--glow-shadow)] transition-all duration-300 font-semibold"
-        size="lg"
+      onClick={handleSearch}
+      className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 transition-all duration-300 font-semibold h-12 text-base"
+      size="lg"
       >
-        Rechercher
+        <Search className="h-5 w-5 mr-2" />
+        Rechercher des véhicules
       </Button>
-
-      {/* Filtres avancés */}
-      {showFilters && (
-        <>
-          <Separator className="my-4" />
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            {/* Vos filtres ici */}
-          </div>
-          <div className="mt-4 flex justify-end">
-            <Button variant="ghost" size="sm" onClick={resetFilters}>
-              Réinitialiser
-            </Button>
-          </div>
-        </>
-      )}
     </div>
   );
 };

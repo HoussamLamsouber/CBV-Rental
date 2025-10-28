@@ -56,7 +56,7 @@ const AutoCompleteInput = ({
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className="w-full justify-between h-12 border-gray-300 hover:border-blue-500 transition-colors min-w-0" // Ajout de min-w-0
+          className="w-full justify-between h-12 border-gray-300 hover:border-blue-500 transition-colors min-w-0"
         >
           <div className="flex items-center gap-2 flex-1 text-left min-w-0">
             {icon}
@@ -67,7 +67,11 @@ const AutoCompleteInput = ({
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+      <PopoverContent 
+        className="w-[var(--radix-popover-trigger-width)] p-0 max-h-[60vh] overflow-y-auto" 
+        align="start"
+        side="bottom"
+      >
         <Command>
           <CommandInput placeholder="Rechercher une location..." />
           <CommandEmpty className="py-6 text-center text-sm text-muted-foreground">
@@ -98,6 +102,72 @@ const AutoCompleteInput = ({
         </Command>
       </PopoverContent>
     </Popover>
+  );
+};
+
+// Composant réutilisable pour les sélecteurs de date
+const DatePickerField = ({
+  label,
+  date,
+  onDateChange,
+  icon,
+  color = "blue",
+  disabledCondition
+}: {
+  label: string;
+  date: Date | undefined;
+  onDateChange: (date: Date | undefined) => void;
+  icon: React.ReactNode;
+  color?: "blue" | "green";
+  disabledCondition?: (date: Date) => boolean;
+}) => {
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+
+  return (
+    <div className="space-y-3">
+      <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+        {icon}
+        {label}
+      </Label>
+      <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            className={cn(
+              "w-full justify-start text-left font-normal h-12 border-gray-300 text-sm relative",
+              color === "blue" 
+                ? "hover:border-blue-500 focus:border-blue-500" 
+                : "hover:border-green-500 focus:border-green-500",
+              !date && "text-muted-foreground"
+            )}
+          >
+            <CalendarIcon className="mr-2 h-4 w-4" />
+            {date ? format(date, "dd/MM/yy") : "Sélectionner"}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent 
+          className="w-auto p-0 mx-4 sm:mx-0" 
+          align="center"
+          side="bottom"
+          avoidCollisions={true}
+          collisionPadding={16}
+        >
+          <div className="max-h-[80vh] overflow-y-auto">
+            <Calendar
+              mode="single"
+              selected={date}
+              onSelect={(selectedDate) => {
+                onDateChange(selectedDate);
+                setIsCalendarOpen(false);
+              }}
+              disabled={disabledCondition}
+              initialFocus
+              className="pointer-events-auto"
+            />
+          </div>
+        </PopoverContent>
+      </Popover>
+    </div>
   );
 };
 
@@ -201,7 +271,7 @@ export const SearchForm = ({ onSearch }: SearchFormProps) => {
   };
 
   return (
-    <div className="bg-white/95 backdrop-blur-sm border border-gray-200/80 rounded-2xl p-4 sm:p-6 shadow-xl shadow-blue-500/5">
+    <div className="bg-white/95 backdrop-blur-sm border border-gray-200/80 rounded-2xl p-4 sm:p-6 shadow-xl shadow-blue-500/5 relative overflow-visible">
       {/* Header avec titre */}
       <div className="flex items-center gap-3 mb-6 sm:mb-8">
         <div className="p-2 bg-blue-100 rounded-lg">
@@ -288,36 +358,14 @@ export const SearchForm = ({ onSearch }: SearchFormProps) => {
             <h3 className="font-semibold text-gray-900">Départ</h3>
           </div>
           <div className="grid grid-cols-2 gap-3 sm:gap-4">
-            <div className="space-y-3">
-              <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                <CalendarIcon className="h-4 w-4 text-blue-600" />
-                Date
-              </Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal h-12 border-gray-300 hover:border-blue-500 text-sm",
-                      !pickupDate && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {pickupDate ? format(pickupDate, "dd/MM/yy") : "Sélectionner"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={pickupDate}
-                    onSelect={setPickupDate}
-                    disabled={(date) => date < new Date()}
-                    initialFocus
-                    className="pointer-events-auto"
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
+            <DatePickerField
+              label="Date"
+              date={pickupDate}
+              onDateChange={setPickupDate}
+              icon={<CalendarIcon className="h-4 w-4 text-blue-600" />}
+              color="blue"
+              disabledCondition={(date) => date < new Date()}
+            />
 
             <div className="space-y-3">
               <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
@@ -343,36 +391,14 @@ export const SearchForm = ({ onSearch }: SearchFormProps) => {
             <h3 className="font-semibold text-gray-900">Retour</h3>
           </div>
           <div className="grid grid-cols-2 gap-3 sm:gap-4">
-            <div className="space-y-3">
-              <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                <CalendarIcon className="h-4 w-4 text-green-600" />
-                Date
-              </Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal h-12 border-gray-300 hover:border-green-500 text-sm",
-                      !returnDate && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {returnDate ? format(returnDate, "dd/MM/yy") : "Sélectionner"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={returnDate}
-                    onSelect={setReturnDate}
-                    disabled={(date) => date < (pickupDate || new Date())}
-                    initialFocus
-                    className="pointer-events-auto"
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
+            <DatePickerField
+              label="Date"
+              date={returnDate}
+              onDateChange={setReturnDate}
+              icon={<CalendarIcon className="h-4 w-4 text-green-600" />}
+              color="green"
+              disabledCondition={(date) => date < (pickupDate || new Date())}
+            />
 
             <div className="space-y-3">
               <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">

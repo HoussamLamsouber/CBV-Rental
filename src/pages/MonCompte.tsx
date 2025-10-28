@@ -1,309 +1,406 @@
-import { Footer } from "@/components/Footer";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { User, Mail, Phone, MapPin, Calendar, Shield, ArrowLeft } from "lucide-react";
-import { useState, useEffect, useCallback } from "react";
-import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
-import { useNavigate } from "react-router-dom";
-import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { 
+  CalendarIcon, 
+  MapPinIcon, 
+  ClockIcon, 
+  Check, 
+  ChevronsUpDown,
+  Search,
+  ArrowRightLeft,
+  Car
+} from "lucide-react";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
 
-// Définition de l'interface des données du profil
-interface UserProfile {
-  id: string;
-  email: string;
-  full_name: string;
-  adresse: string;
-  telephone: string;
-  dateNaissance: string;
+export interface SearchData {
+  pickupLocation: string;
+  returnLocation: string;
+  sameLocation: boolean;
+  pickupDate: Date | undefined;
+  returnDate: Date | undefined;
+  pickupTime: string;
+  returnTime: string;
 }
 
-const initialUserInfo: UserProfile = {
-  id: "",
-  email: "",
-  full_name: "",
-  adresse: "",
-  telephone: "",
-  dateNaissance: "",
-};
+interface SearchFormProps {
+  onSearch: (searchData: SearchData) => void;
+}
 
-const MonCompte = () => {
-  const { toast } = useToast();
-  const navigate = useNavigate();
-  const [isEditing, setIsEditing] = useState(false);
-  const [userInfo, setUserInfo] = useState<UserProfile>(initialUserInfo);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-
-  // Fonction utilitaire pour séparer le nom complet
-  const getNames = (fullName: string) => {
-    const parts = fullName.trim().split(/\s+/);
-    const firstName = parts.length > 1 ? parts[0] : '';
-    const lastName = parts.length > 1 ? parts.slice(1).join(' ') : parts[0];
-    return { firstName, lastName };
-  };
-
-  // 1. DÉPLACEMENT ET MEMOIZATION DE LA FONCTION getProfile
-  const getProfile = useCallback(async () => {
-    setLoading(true);
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user) {
-      toast({ title: "Accès non autorisé", description: "Veuillez vous connecter.", variant: "destructive" });
-      navigate("/auth");
-      setLoading(false);
-      return;
-    }
-
-    const { data, error } = await supabase
-      .from('profiles')
-      .select(`id, email, full_name, adresse, telephone, dateNaissance`)
-      .eq('id', user.id)
-      .single();
-
-    if (error) {
-      console.error("Erreur de chargement du profil:", error);
-      toast({ title: "Erreur", description: "Impossible de charger les données du profil.", variant: "destructive" });
-    } else if (data) {
-      // Hydrater l'état avec les données de Supabase
-      setUserInfo({
-        id: data.id,
-        email: data.email || user.email || '',
-        full_name: data.full_name || '',
-        adresse: data.adresse || '',
-        telephone: data.telephone || '',
-        dateNaissance: data.dateNaissance || '',
-      });
-    }
-    setLoading(false);
-  }, [navigate, toast]);
-
-  // 2. APPEL DE getProfile au chargement
-  useEffect(() => {
-    getProfile();
-  }, [getProfile]);
-
-  // 3. MISE À JOUR DES DONNÉES DU PROFIL (au clic sur Sauvegarder)
-  const handleSave = async () => {
-    setSaving(true);
-    
-    // Vérification rapide pour s'assurer que l'ID est là
-    if (!userInfo.id) {
-        toast({ title: "Erreur", description: "ID utilisateur manquant.", variant: "destructive" });
-        setSaving(false);
-        return;
-    }
-
-    const { error } = await supabase
-      .from('profiles')
-      .update({
-        full_name: userInfo.full_name,
-        email: userInfo.email,
-        adresse: userInfo.adresse,
-        telephone: userInfo.telephone,
-        dateNaissance: userInfo.dateNaissance,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', userInfo.id);
-
-    if (error) {
-      console.error("Erreur de sauvegarde:", error);
-      toast({ title: "Erreur", description: "Échec de la sauvegarde des informations.", variant: "destructive" });
-    } else {
-      toast({ title: "Profil mis à jour", description: "Vos informations ont été sauvegardées avec succès." });
-      setIsEditing(false); // Sortir du mode édition après succès
-    }
-    setSaving(false);
-  };
-  
-  // Fonction de gestion du changement des inputs (générique)
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { id, value } = e.target;
-    setUserInfo(prev => ({ ...prev, [id as keyof UserProfile]: value }));
-  };
-
-  // Affichage du chargement
-  if (loading && !userInfo.id) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-        <LoadingSpinner message="Chargement de votre profil..." />
-      </div>
-    );
-  }
-
-  // --- RENDU DU COMPOSANT ---
-  const { firstName, lastName } = getNames(userInfo.full_name);
-  const avatarFallbackText = `${firstName?.[0] || ''}${lastName?.[0] || ''}`;
+// Component réutilisable pour l'autocomplétion
+const AutoCompleteInput = ({
+  items,
+  placeholder,
+  value,
+  onSelect,
+  icon
+}: {
+  items: { value: string; label: string }[];
+  placeholder: string;
+  value: string;
+  onSelect: (value: string) => void;
+  icon?: React.ReactNode;
+}) => {
+  const [open, setOpen] = useState(false);
+  const selectedItem = items.find((item) => item.value === value);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <main className="container mx-auto px-4 py-6">
-        <div className="max-w-4xl mx-auto space-y-6">
-          
-          {/* En-tête du profil - Version mobile optimisée */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <Avatar className="h-12 w-12 sm:h-16 sm:w-16">
-                <AvatarFallback className="bg-primary text-primary-foreground text-sm sm:text-lg">
-                  {avatarFallbackText || 'NC'}
-                </AvatarFallback>
-              </Avatar>
-              
-              <div className="min-w-0 flex-1">
-                <h1 className="text-xl sm:text-3xl font-bold text-gray-900 truncate">
-                  Mon Compte
-                </h1>
-                <p className="text-gray-600 text-sm sm:text-base truncate">
-                  {userInfo.full_name || 'Nom complet non renseigné'}
-                </p>
-                <Badge variant="secondary" className="mt-1 text-xs">
-                  <Shield className="h-3 w-3 mr-1" />
-                  Compte vérifié
-                </Badge>
-              </div>
-            </div>
-            
-            <Button 
-              onClick={() => {
-                if(isEditing) {
-                  getProfile(); 
-                }
-                setIsEditing(!isEditing)
-              }}
-              variant={isEditing ? "default" : "outline"}
-              disabled={loading || saving}
-              size="sm"
-              className="w-full sm:w-auto mt-4 sm:mt-0"
-            >
-              {isEditing ? "Annuler" : "Modifier"}
-            </Button>
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          className="w-full justify-between h-12 border-gray-300 hover:border-blue-500 transition-colors min-w-0" // Ajout de min-w-0
+        >
+          <div className="flex items-center gap-2 flex-1 text-left min-w-0">
+            {icon}
+            <span className={cn("truncate", !selectedItem && "text-muted-foreground")}>
+              {selectedItem ? selectedItem.label : placeholder}
+            </span>
           </div>
-
-          {/* Informations personnelles - Version mobile */}
-          <Card>
-            <CardHeader className="pb-4">
-              <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-                <User className="h-4 w-4 sm:h-5 sm:w-5" />
-                Informations personnelles
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              
-              {/* Nom Complet */}
-              <div className="space-y-2">
-                <Label htmlFor="full_name" className="text-sm">Nom Complet</Label>
-                <Input
-                  id="full_name"
-                  value={userInfo.full_name}
-                  onChange={handleChange}
-                  disabled={!isEditing}
-                  placeholder="Votre nom complet"
-                  className="text-sm"
+          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+        <Command>
+          <CommandInput placeholder="Rechercher une location..." />
+          <CommandEmpty className="py-6 text-center text-sm text-muted-foreground">
+            Aucun résultat trouvé.
+          </CommandEmpty>
+          <CommandGroup className="max-h-60 overflow-y-auto">
+            {items.map((item) => (
+              <CommandItem
+                key={item.value}
+                value={item.label}
+                onSelect={() => {
+                  onSelect(item.value);
+                  setOpen(false);
+                }}
+                className="flex items-center gap-2"
+              >
+                <Check
+                  className={cn(
+                    "h-4 w-4",
+                    value === item.value ? "opacity-100" : "opacity-0"
+                  )}
                 />
-              </div>
-
-              {/* Email */}
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-sm">Email</Label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                  <Input
-                    id="email"
-                    type="email"
-                    value={userInfo.email}
-                    onChange={handleChange}
-                    disabled={!isEditing}
-                    className="pl-10 text-sm"
-                    placeholder="votre@email.com"
-                  />
-                </div>
-              </div>
-
-              {/* Téléphone */}
-              <div className="space-y-2">
-                <Label htmlFor="telephone" className="text-sm">Téléphone</Label>
-                <div className="relative">
-                  <Phone className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                  <Input
-                    id="telephone"
-                    value={userInfo.telephone}
-                    onChange={handleChange}
-                    disabled={!isEditing}
-                    className="pl-10 text-sm"
-                    placeholder="+212 6 00 00 00 00"
-                  />
-                </div>
-              </div>
-
-              {/* Adresse */}
-              <div className="space-y-2">
-                <Label htmlFor="adresse" className="text-sm">Adresse</Label>
-                <div className="relative">
-                  <MapPin className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                  <Input
-                    id="adresse"
-                    value={userInfo.adresse}
-                    onChange={handleChange}
-                    disabled={!isEditing}
-                    className="pl-10 text-sm"
-                    placeholder="Votre adresse complète"
-                  />
-                </div>
-              </div>
-
-              {/* Date de naissance */}
-              <div className="space-y-2">
-                <Label htmlFor="dateNaissance" className="text-sm">Date de naissance</Label>
-                <div className="relative">
-                  <Calendar className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                  <Input
-                    id="dateNaissance"
-                    type="date"
-                    value={userInfo.dateNaissance}
-                    onChange={handleChange}
-                    disabled={!isEditing}
-                    className="pl-10 text-sm"
-                  />
-                </div>
-              </div>
-
-              {/* Boutons d'action - Version mobile */}
-              {isEditing && (
-                <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-200">
-                  <Button 
-                    onClick={handleSave} 
-                    disabled={saving}
-                    className="flex-1 flex items-center justify-center gap-2"
-                  >
-                    {saving ? (
-                      <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                        Sauvegarde...
-                      </>
-                    ) : (
-                      "Sauvegarder"
-                    )}
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    onClick={() => setIsEditing(false)}
-                    className="flex-1"
-                  >
-                    Annuler
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      </main>
-      <Footer />
-    </div>
+                <MapPinIcon className="h-4 w-4 text-muted-foreground" />
+                {item.label}
+              </CommandItem>
+            ))}
+          </CommandGroup>
+        </Command>
+      </PopoverContent>
+    </Popover>
   );
 };
 
-export default MonCompte; 
+export const SearchForm = ({ onSearch }: SearchFormProps) => {
+  const [pickupLocation, setPickupLocation] = useState("");
+  const [returnLocation, setReturnLocation] = useState("");
+  const [sameLocation, setSameLocation] = useState(false);
+  const [pickupDate, setPickupDate] = useState<Date>();
+  const [returnDate, setReturnDate] = useState<Date>();
+  const [pickupTime, setPickupTime] = useState("09:00");
+  const [returnTime, setReturnTime] = useState("09:00");
+
+  const locations = {
+    airports: [
+      { value: 'Aéroport d’Agadir-Al Massira (AGA)', label: 'Aéroport d’Agadir-Al Massira (AGA)' },
+      { value: 'Aéroport d’Al Hoceïma-Cherif Al Idrissi (AHU)', label: 'Aéroport d’Al Hoceïma-Cherif Al Idrissi (AHU)' },
+      { value: 'Aéroport de Béni Mellal (BEM)', label: 'Aéroport de Béni Mellal (BEM)' },
+      { value: 'Aéroport de Casablanca-Mohammed V (CMN)', label: 'Aéroport de Casablanca-Mohammed V (CMN)' },
+      { value: 'Aéroport de Dakhla (VIL)', label: 'Aéroport de Dakhla (VIL)' },
+      { value: 'Aéroport d’Errachidia-Moulay Ali Chérif (ERH)', label: 'Aéroport d’Errachidia-Moulay Ali Chérif (ERH)' },
+      { value: 'Aéroport d’Essaouira-Mogador (ESU)', label: 'Aéroport d’Essaouira-Mogador (ESU)' },
+      { value: 'Aéroport de Fès-Saïss (FEZ)', label: 'Aéroport de Fès-Saïss (FEZ)' },
+      { value: 'Aéroport de Guelmim (GLN)', label: 'Aéroport de Guelmim (GLN)' },
+      { value: 'Aéroport de Laâyoune-Hassan I (EUN)', label: 'Aéroport de Laâyoune-Hassan I (EUN)' },
+      { value: 'Aéroport de Marrakech-Ménara (RAK)', label: 'Aéroport de Marrakech-Ménara (RAK)' },
+      { value: 'Aéroport de Nador-Al Aroui (NDR)', label: 'Aéroport de Nador-Al Aroui (NDR)' },
+      { value: 'Aéroport d’Ouarzazate (OZZ)', label: 'Aéroport d’Ouarzazate (OZZ)' },
+      { value: 'Aéroport d’Oujda-Angads (OUD)', label: 'Aéroport d’Oujda-Angads (OUD)' },
+      { value: 'Aéroport de Rabat-Salé (RBA)', label: 'Aéroport de Rabat-Salé (RBA)' },
+      { value: 'Aéroport de Tanger-Ibn Battouta (TNG)', label: 'Aéroport de Tanger-Ibn Battouta (TNG)' },
+      { value: 'Aéroport de Tétouan-Sania Ramel (TTU)', label: 'Aéroport de Tétouan-Sania Ramel (TTU)' },
+      { value: 'Aéroport de Zagora (OZG)', label: 'Aéroport de Zagora (OZG)' },
+      { value: 'Aéroport de Tan Tan (TTA)', label: 'Aéroport de Tan Tan (TTA)' },
+      { value: 'Aéroport de Smara (SMW)', label: 'Aéroport de Smara (SMW)' },
+      { value: 'Aéroport de Bouarfa (UAR)', label: 'Aéroport de Bouarfa (UAR)' },
+      { value: 'Aéroport de Benslimane (GMD)', label: 'Aéroport de Benslimane (GMD)' },
+      { value: 'Aéroport d’Ifrane (IFR)', label: 'Aéroport d’Ifrane (IFR)' },
+      { value: 'Aéroport de Casablanca-Tit Mellil (CAS)', label: 'Aéroport de Casablanca-Tit Mellil (CAS)' },
+    ],
+    stations: [
+      { value: 'Gare de l\'Aéroport Mohammed V', label: 'Gare de l\'Aéroport Mohammed V' },
+      { value: 'Gare d\'Agadir', label: 'Gare d\'Agadir' },
+      { value: 'Gare d\'Assilah', label: 'Gare d\'Assilah' },
+      { value: 'Gare de Ben Guerir', label: 'Gare de Ben Guerir' },
+      { value: 'Gare de Berrechid', label: 'Gare de Berrechid' },
+      { value: 'Gare de Kénitra', label: 'Gare de Kénitra' },
+      { value: 'Gare de Khouribga', label: 'Gare de Khouribga' },
+      { value: 'Gare de Marrakech', label: 'Gare de Marrakech' },
+      { value: 'Gare de Meknès', label: 'Gare de Meknès' },
+      { value: 'Gare de Mohammédia', label: 'Gare de Mohammédia' },
+      { value: 'Gare de Nador-Ville', label: 'Gare de Nador-Ville' },
+      { value: 'Gare d\'Oujda', label: 'Gare d\'Oujda' },
+      { value: 'Gare de Rabat-Agdal', label: 'Gare de Rabat-Agdal' },
+      { value: 'Gare de Rabat-Ville', label: 'Gare de Rabat-Ville' },
+      { value: 'Gare de Salé-Tabriquet', label: 'Gare de Salé-Tabriquet' },
+      { value: 'Gare de Salé-Ville', label: 'Gare de Salé-Ville' },
+      { value: 'Gare de Safi', label: 'Gare de Safi' },
+      { value: 'Gare de Tanger-Ville', label: 'Gare de Tanger-Ville' },
+      { value: 'Gare de Tanger-Med', label: 'Gare de Tanger-Med' },
+      { value: 'Gare de Taourirt', label: 'Gare de Taourirt' },
+      { value: 'Gare de Témara', label: 'Gare de Témara' },
+      { value: 'Gare de Casa-Voyageurs', label: 'Gare de Casa-Voyageurs' },
+      { value: 'Gare de Casa-Port', label: 'Gare de Casa-Port' },
+      { value: 'Gare de Casa-Oasis', label: 'Gare de Casa-Oasis' },
+      { value: 'Gare de Casa-Mers Sultan', label: 'Gare de Casa-Mers Sultan' },
+      { value: 'Gare d\'El Jadida', label: 'Gare d\'El Jadida' },
+      { value: 'Gare de Settat', label: 'Gare de Settat' },
+      { value: 'Gare de Skhirat', label: 'Gare de Skhirat' },
+      { value: 'Gare de Bouznika', label: 'Gare de Bouznika' },
+      { value: 'Gare de Zenata', label: 'Gare de Zenata' },
+      { value: 'Gare d\'Aïn Sebaâ', label: 'Gare d\'Aïn Sebaâ' },
+      { value: 'Gare de Bouskoura', label: 'Gare de Bouskoura' },
+      { value: 'Gare des Facultés', label: 'Gare des Facultés' },
+      { value: 'Gare Ennassim', label: 'Gare Ennassim' },
+      { value: 'Gare de Sidi Kacem', label: 'Gare de Sidi Kacem' },
+      { value: 'Gare de Sidi Slimane', label: 'Gare de Sidi Slimane' },
+      { value: 'Gare de Sidi Yahya El Gharb', label: 'Gare de Sidi Yahya El Gharb' },
+      { value: 'Gare de Ksar El Kebir', label: 'Gare de Ksar El Kebir' },
+      { value: 'Gare de Souk El Arbaa', label: 'Gare de Souk El Arbaa' },
+      { value: 'Gare de Melloussa', label: 'Gare de Melloussa' },
+      { value: 'Gare de Ksar Sghir', label: 'Gare de Ksar Sghir' },
+    ],
+  };
+
+  // Combinez tous les lieux en une seule liste
+  const allLocations = [
+    ...locations.airports,
+    ...locations.stations
+  ];
+
+  const handleSearch = () => {
+    onSearch({
+      pickupLocation,
+      returnLocation,
+      sameLocation,
+      pickupDate,
+      returnDate,
+      pickupTime,
+      returnTime
+    });
+  };
+
+  return (
+    <div className="bg-white/95 backdrop-blur-sm border border-gray-200/80 rounded-2xl p-4 sm:p-6 shadow-xl shadow-blue-500/5">
+      {/* Header avec titre */}
+      <div className="flex items-center gap-3 mb-6 sm:mb-8">
+        <div className="p-2 bg-blue-100 rounded-lg">
+          <Car className="h-5 w-5 text-blue-600" />
+        </div>
+        <div>
+          <h2 className="text-lg sm:text-xl font-bold text-gray-900">Réservez votre véhicule</h2>
+          <p className="text-xs sm:text-sm text-gray-600">Trouvez la voiture parfaite pour votre voyage</p>
+        </div>
+      </div>
+
+      {/* Lieux - Version mobile empilée */}
+      <div className="space-y-4 sm:space-y-0 sm:flex sm:items-end sm:gap-4 mb-6 sm:mb-8">
+        {/* Pickup Location */}
+        <div className="flex-1 space-y-3 min-w-0">
+          <Label htmlFor="pickupLocation" className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+            <MapPinIcon className="h-4 w-4 text-blue-600" />
+            Lieu de départ
+          </Label>
+          <AutoCompleteInput
+            items={allLocations}
+            placeholder="Aéroport ou gare de départ"
+            value={pickupLocation}
+            onSelect={setPickupLocation}
+            icon={<MapPinIcon className="h-4 w-4 text-blue-600" />}
+          />
+        </div>
+
+        {/* Bouton de swap - Centré verticalement sur mobile */}
+        <div className="flex justify-center sm:justify-start sm:pb-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setSameLocation(!sameLocation)}
+            className={cn(
+              "rounded-full p-3 border-2 transition-all duration-300",
+              sameLocation 
+                ? "bg-green-50 border-green-200 text-green-600" 
+                : "bg-gray-50 border-gray-200 text-gray-600 hover:bg-blue-50 hover:border-blue-200 hover:text-blue-600"
+            )}
+            title={sameLocation ? "Lieux différents" : "Même lieu"}
+          >
+            <ArrowRightLeft className="h-4 w-4" />
+          </Button>
+        </div>
+
+        {/* Return Location */}
+        <div className="flex-1 space-y-3 min-w-0">
+          <Label htmlFor="returnLocation" className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+            <MapPinIcon className="h-4 w-4 text-green-600" />
+            Lieu de retour
+          </Label>
+          {sameLocation ? (
+            <div className="relative">
+              <Input
+                value={pickupLocation}
+                readOnly
+                className="bg-green-50 border-green-200 cursor-not-allowed h-12"
+              />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <span className="text-xs sm:text-sm text-green-700 bg-green-50/80 px-2 sm:px-3 py-1 rounded-full font-medium">
+                  Identique au départ
+                </span>
+              </div>
+            </div>
+          ) : (
+            <AutoCompleteInput
+              items={allLocations}
+              placeholder="Aéroport ou gare de retour"
+              value={returnLocation}
+              onSelect={setReturnLocation}
+              icon={<MapPinIcon className="h-4 w-4 text-green-600" />}
+            />
+          )}
+        </div>
+      </div>
+
+      {/* Dates et heures - Version mobile empilée */}
+      <div className="space-y-6 sm:space-y-0 sm:grid sm:grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 mb-6 sm:mb-8">
+        {/* Période de départ */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-2 h-6 bg-blue-600 rounded-full"></div>
+            <h3 className="font-semibold text-gray-900">Départ</h3>
+          </div>
+          <div className="grid grid-cols-2 gap-3 sm:gap-4">
+            <div className="space-y-3">
+              <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                <CalendarIcon className="h-4 w-4 text-blue-600" />
+                Date
+              </Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal h-12 border-gray-300 hover:border-blue-500 text-sm",
+                      !pickupDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {pickupDate ? format(pickupDate, "dd/MM/yy") : "Sélectionner"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={pickupDate}
+                    onSelect={setPickupDate}
+                    disabled={(date) => date < new Date()}
+                    initialFocus
+                    className="pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            <div className="space-y-3">
+              <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                <ClockIcon className="h-4 w-4 text-blue-600" />
+                Heure
+              </Label>
+              <div className="relative">
+                <Input
+                  type="time"
+                  value={pickupTime}
+                  onChange={(e) => setPickupTime(e.target.value)}
+                  className="pl-5 h-12 border-gray-300 focus:border-blue-500 cursor-pointer w-full min-w-0"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Période de retour */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-2 h-6 bg-green-600 rounded-full"></div>
+            <h3 className="font-semibold text-gray-900">Retour</h3>
+          </div>
+          <div className="grid grid-cols-2 gap-3 sm:gap-4">
+            <div className="space-y-3">
+              <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                <CalendarIcon className="h-4 w-4 text-green-600" />
+                Date
+              </Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal h-12 border-gray-300 hover:border-green-500 text-sm",
+                      !returnDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {returnDate ? format(returnDate, "dd/MM/yy") : "Sélectionner"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={returnDate}
+                    onSelect={setReturnDate}
+                    disabled={(date) => date < (pickupDate || new Date())}
+                    initialFocus
+                    className="pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            <div className="space-y-3">
+              <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                <ClockIcon className="h-4 w-4 text-green-600" />
+                Heure
+              </Label>
+              <div className="relative">
+                <Input
+                  type="time"
+                  value={returnTime}
+                  onChange={(e) => setReturnTime(e.target.value)}
+                  className="pl-5 h-12 border-gray-300 focus:border-green-500 cursor-pointer w-full min-w-0"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Bouton de recherche */}
+      <Button
+        onClick={handleSearch}
+        className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 transition-all duration-300 font-semibold h-12 text-sm sm:text-base"
+        size="lg"
+      >
+        <Search className="h-5 w-5 mr-2" />
+        Rechercher des véhicules
+      </Button>
+    </div>
+  );
+};

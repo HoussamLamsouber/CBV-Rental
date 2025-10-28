@@ -568,11 +568,11 @@ export default function ReservationsAdmin() {
               )}
             </div>
 
-            {/* Panneau des filtres avancés */}
+            {/* Panneau des filtres avancés - CORRIGÉ */}
             {showFilters && (
-              <div className="mt-4 pt-4 border-t grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {/* Filtre par date */}
-                <div>
+              <div className="mt-4 pt-4 border-t grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 w-full">
+                {/* Filtre par date - CORRECTION APPLIQUÉE */}
+                <div className="w-full min-w-0">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Date spécifique
                   </label>
@@ -580,13 +580,14 @@ export default function ReservationsAdmin() {
                     type="date"
                     value={filters.date}
                     onChange={(e) => setFilters({...filters, date: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    className="w-full min-w-0 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    style={{ maxWidth: '100%' }}
                   />
                   <p className="text-xs text-gray-500 mt-1">Date de départ, retour ou création</p>
                 </div>
 
                 {/* Filtre par modèle de véhicule */}
-                <div>
+                <div className="w-full min-w-0">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Modèle de véhicule
                   </label>
@@ -595,19 +596,19 @@ export default function ReservationsAdmin() {
                     placeholder="Ex: Tesla, SUV, BMW..."
                     value={filters.vehicleModel}
                     onChange={(e) => setFilters({...filters, vehicleModel: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    className="w-full min-w-0 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                   />
                 </div>
 
                 {/* Filtre par statut (pour recherche globale) */}
-                <div>
+                <div className="w-full min-w-0">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Statut
                   </label>
                   <select
                     value={filters.status}
                     onChange={(e) => setFilters({...filters, status: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    className="w-full min-w-0 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                   >
                     <option value="all">Tous les statuts</option>
                     <option value="pending">En attente</option>

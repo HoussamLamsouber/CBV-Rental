@@ -1,4 +1,4 @@
-// src/pages/Auth.tsx
+// src/pages/Auth.tsx (version mobile optimisée)
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Car, LogIn, UserPlus } from "lucide-react";
+import { Car, LogIn, UserPlus, Eye, EyeOff } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 const Auth = () => {
@@ -17,6 +17,8 @@ const Auth = () => {
   const [signupEmail, setSignupEmail] = useState("");
   const [signupPassword, setSignupPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [showSignupPassword, setShowSignupPassword] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
   const [fullName, setFullName] = useState("");
@@ -63,12 +65,10 @@ const Auth = () => {
     try {
       console.log("Tentative d'inscription pour:", signupEmail);
       
-      // Inscription sans confirmation d'email pour le développement
       const { data, error } = await supabase.auth.signUp({
         email: signupEmail.trim(),
         password: signupPassword.trim(),
         options: {
-          // Note: emailRedirectTo est supprimé pour éviter l'erreur d'envoi d'email
           data: {
             full_name: fullName.trim(),
           },
@@ -124,6 +124,7 @@ const Auth = () => {
           setSignupEmail("");
           setSignupPassword("");
           setFullName("");
+          setShowSignupPassword(false);
           
           // Basculer vers l'onglet connexion
           setTimeout(() => {
@@ -218,136 +219,186 @@ const Auth = () => {
     setSignupEmail("");
     setSignupPassword("");
     setFullName("");
+    setShowLoginPassword(false);
+    setShowSignupPassword(false);
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-md mx-auto">
-          <div className="text-center mb-8">
-            <div className="flex items-center justify-center gap-2 mb-4">
-              <Car className="h-8 w-8 text-primary" />
-              <h1 className="text-2xl font-bold text-primary">CarRental</h1>
-            </div>
-            <p className="text-muted-foreground">
-              Connectez-vous pour réserver votre véhicule
-            </p>
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+        {/* En-tête mobile optimisé */}
+        <div className="text-center mb-6">
+          <div className="flex items-center justify-center gap-2 mb-3">
+            <Car className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
+            <h1 className="text-xl sm:text-2xl font-bold text-primary">CarRental</h1>
           </div>
+          <p className="text-muted-foreground text-sm sm:text-base">
+            Connectez-vous pour réserver votre véhicule
+          </p>
+        </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Authentification</CardTitle>
-              <CardDescription>
-                Connectez-vous ou créez un nouveau compte
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Tabs defaultValue="login" onValueChange={handleTabChange} className="w-full">
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="login" className="flex items-center gap-2">
-                    <LogIn className="h-4 w-4" />
-                    Connexion
-                  </TabsTrigger>
-                  <TabsTrigger value="signup" className="flex items-center gap-2">
-                    <UserPlus className="h-4 w-4" />
-                    Inscription
-                  </TabsTrigger>
-                </TabsList>
-                
-                <TabsContent value="login" className="space-y-4">
-                  <form onSubmit={handleSignIn} className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="login-email">Email</Label>
-                      <Input
-                        id="login-email"
-                        type="email"
-                        placeholder="votre@email.com"
-                        value={loginEmail}
-                        onChange={(e) => setLoginEmail(e.target.value)}
-                        required
-                        disabled={loading}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="login-password">Mot de passe</Label>
+        <Card className="w-full">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-lg sm:text-xl">Authentification</CardTitle>
+            <CardDescription className="text-sm sm:text-base">
+              Connectez-vous ou créez un nouveau compte
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-2">
+            <Tabs defaultValue="login" onValueChange={handleTabChange} className="w-full">
+              <TabsList className="grid w-full grid-cols-2 h-10 sm:h-12">
+                <TabsTrigger value="login" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+                  <LogIn className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <span>Connexion</span>
+                </TabsTrigger>
+                <TabsTrigger value="signup" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+                  <UserPlus className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <span>Inscription</span>
+                </TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="login" className="space-y-4 mt-4">
+                <form onSubmit={handleSignIn} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="login-email" className="text-sm">Email</Label>
+                    <Input
+                      id="login-email"
+                      type="email"
+                      placeholder="votre@email.com"
+                      value={loginEmail}
+                      onChange={(e) => setLoginEmail(e.target.value)}
+                      required
+                      disabled={loading}
+                      className="text-sm"
+                      autoComplete="email"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="login-password" className="text-sm">Mot de passe</Label>
+                    <div className="relative">
                       <Input
                         id="login-password"
-                        type="password"
+                        type={showLoginPassword ? "text" : "password"}
                         placeholder="••••••••"
                         value={loginPassword}
                         onChange={(e) => setLoginPassword(e.target.value)}
                         required
                         disabled={loading}
+                        className="text-sm pr-10"
+                        autoComplete="current-password"
                       />
-                    </div>
-                    <Button type="submit" className="w-full" disabled={loading}>
-                      {loading ? "Connexion..." : "Se connecter"}
-                    </Button>
-                  </form>
-                </TabsContent>
-                
-                <TabsContent value="signup" className="space-y-4">
-                  <form onSubmit={handleSignUp} className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="signup-fullname">Nom complet *</Label>
-                      <Input
-                        id="signup-fullname"
-                        type="text"
-                        placeholder="Votre nom complet"
-                        value={fullName}
-                        onChange={(e) => setFullName(e.target.value)}
-                        required
+                      <button
+                        type="button"
+                        onClick={() => setShowLoginPassword(!showLoginPassword)}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
                         disabled={loading}
-                      />
+                      >
+                        {showLoginPassword ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
+                      </button>
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="signup-email">Email *</Label>
-                      <Input
-                        id="signup-email"
-                        type="email"
-                        placeholder="votre@email.com"
-                        value={signupEmail}
-                        onChange={(e) => setSignupEmail(e.target.value)}
-                        required
-                        disabled={loading}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="signup-password">Mot de passe *</Label>
+                  </div>
+                  <Button 
+                    type="submit" 
+                    className="w-full h-10 sm:h-11" 
+                    disabled={loading}
+                    size="sm"
+                  >
+                    {loading ? "Connexion..." : "Se connecter"}
+                  </Button>
+                </form>
+              </TabsContent>
+              
+              <TabsContent value="signup" className="space-y-4 mt-4">
+                <form onSubmit={handleSignUp} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-fullname" className="text-sm">Nom complet *</Label>
+                    <Input
+                      id="signup-fullname"
+                      type="text"
+                      placeholder="Votre nom complet"
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      required
+                      disabled={loading}
+                      className="text-sm"
+                      autoComplete="name"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-email" className="text-sm">Email *</Label>
+                    <Input
+                      id="signup-email"
+                      type="email"
+                      placeholder="votre@email.com"
+                      value={signupEmail}
+                      onChange={(e) => setSignupEmail(e.target.value)}
+                      required
+                      disabled={loading}
+                      className="text-sm"
+                      autoComplete="email"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-password" className="text-sm">Mot de passe *</Label>
+                    <div className="relative">
                       <Input
                         id="signup-password"
-                        type="password"
+                        type={showSignupPassword ? "text" : "password"}
                         placeholder="Au moins 6 caractères"
                         value={signupPassword}
                         onChange={(e) => setSignupPassword(e.target.value)}
                         required
                         minLength={6}
                         disabled={loading}
+                        className="text-sm pr-10"
+                        autoComplete="new-password"
                       />
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Le mot de passe doit contenir au moins 6 caractères
-                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setShowSignupPassword(!showSignupPassword)}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                        disabled={loading}
+                      >
+                        {showSignupPassword ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
+                      </button>
                     </div>
-                    <Button type="submit" className="w-full" disabled={loading}>
-                      {loading ? "Inscription..." : "S'inscrire"}
-                    </Button>
-                  </form>
-                </TabsContent>
-              </Tabs>
-            </CardContent>
-          </Card>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Le mot de passe doit contenir au moins 6 caractères
+                    </p>
+                  </div>
+                  <Button 
+                    type="submit" 
+                    className="w-full h-10 sm:h-11" 
+                    disabled={loading}
+                    size="sm"
+                  >
+                    {loading ? "Inscription..." : "S'inscrire"}
+                  </Button>
+                </form>
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
 
-          <div className="text-center mt-6">
-            <p className="text-sm text-muted-foreground">
-              Vous êtes administrateur ?{" "}
-              <button
-                onClick={() => navigate("/admin")}
-                className="text-primary hover:underline"
-              >
-                Accéder au panneau admin
-              </button>
-            </p>
-          </div>
+        {/* Lien admin - Version mobile */}
+        <div className="text-center mt-4">
+          <p className="text-xs sm:text-sm text-muted-foreground">
+            Vous êtes administrateur ?{" "}
+            <button
+              onClick={() => navigate("/admin")}
+              className="text-primary hover:underline font-medium"
+            >
+              Accéder au panneau admin
+            </button>
+          </p>
         </div>
       </div>
     </div>

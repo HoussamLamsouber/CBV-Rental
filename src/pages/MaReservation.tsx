@@ -7,6 +7,22 @@ import type { Database } from "@/integrations/supabase/types";
 import { formatDisplayDate } from "@/utils/dateUtils";
 import { emailJSService } from "@/services/emailJSService";
 import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { 
+  Calendar, 
+  MapPin, 
+  Car, 
+  User, 
+  Phone, 
+  Mail, 
+  Clock,
+  ArrowLeft,
+  Trash2,
+  AlertTriangle
+} from "lucide-react";
+import { LoadingSpinner } from "@/components/LoadingSpinner";
 
 type ReservationRow = Database["public"]["Tables"]["reservations"]["Row"];
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
@@ -21,6 +37,7 @@ type ReservationWithProfile = ReservationRow & {
 const MaReservation = () => {
   const [reservations, setReservations] = useState<ReservationWithProfile[]>([]);
   const [loading, setLoading] = useState(true);
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -160,7 +177,13 @@ const MaReservation = () => {
   }, [toast, navigate, user]);
 
   const handleCancelReservation = async (res: ReservationWithProfile) => {
+    if (!confirm("Êtes-vous sûr de vouloir annuler cette réservation ? Cette action est irréversible.")) {
+      return;
+    }
+
     try {
+      setCancellingId(res.id);
+
       // Pour les invités, retirer l'ID du localStorage
       if (!user) {
         const guestReservations = localStorage.getItem("guest_reservations");
@@ -208,7 +231,7 @@ const MaReservation = () => {
 
       toast({ 
         title: "Réservation annulée", 
-        description: `Votre réservation a été annulée.` 
+        description: `Votre réservation pour ${res.car_name} a été annulée.` 
       });
       
       setReservations(prev => prev.filter(r => r.id !== res.id));
@@ -219,81 +242,221 @@ const MaReservation = () => {
         description: "Impossible d'annuler la réservation", 
         variant: "destructive" 
       });
+    } finally {
+      setCancellingId(null);
     }
+  };
+
+  const getStatusBadge = (status: string) => {
+    const statusConfig = {
+      pending: { label: "En attente", color: "bg-yellow-100 text-yellow-800" },
+      accepted: { label: "Confirmée", color: "bg-green-100 text-green-800" },
+      active: { label: "En cours", color: "bg-blue-100 text-blue-800" },
+      completed: { label: "Terminée", color: "bg-gray-100 text-gray-800" },
+      refused: { label: "Refusée", color: "bg-red-100 text-red-800" },
+      cancelled: { label: "Annulée", color: "bg-red-100 text-red-800" }
+    };
+
+    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.pending;
+    
+    return (
+      <Badge variant="secondary" className={config.color}>
+        {config.label}
+      </Badge>
+    );
   };
 
   // Structure commune pour tous les états
   const renderContent = () => {
     if (loading) {
       return (
-        <div className="flex-1">
-          <h1 className="text-3xl font-bold text-primary mb-8">Mes Réservations</h1>
-          <p>Chargement...</p>
+        <div className="flex-1 flex items-center justify-center">
+          <LoadingSpinner message="Chargement de vos réservations..." />
         </div>
       );
     }
 
     if (!reservations.length) {
       return (
-        <div className="flex-1">
-          <h1 className="text-3xl font-bold text-primary mb-8">Mes Réservations</h1>
-          <p className="text-muted-foreground">
-            {user ? "Aucune réservation pour le moment." : "Vous n'avez pas encore de réservation."}
-          </p>
-          {!user && (
-            <button
-              onClick={() => navigate("/offres")}
-              className="mt-4 bg-primary text-white py-2 px-4 rounded hover:bg-primary/90"
-            >
-              Faire une réservation
-            </button>
-          )}
+        <div className="flex-1 text-center py-12">
+          <div className="max-w-md mx-auto">
+            <Calendar className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">Aucune réservation</h1>
+            <p className="text-gray-600 mb-6">
+              {user 
+                ? "Vous n'avez pas encore effectué de réservation." 
+                : "Vous n'avez pas de réservation en cours."
+              }
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <Button onClick={() => navigate("/")}>
+                Voir les véhicules
+              </Button>
+              {!user && (
+                <Button variant="outline" onClick={() => navigate("/auth")}>
+                  Créer un compte
+                </Button>
+              )}
+            </div>
+          </div>
         </div>
       );
     }
 
     return (
       <div className="flex-1">
-        <h1 className="text-3xl font-bold text-primary mb-8">Mes Réservations</h1>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {reservations.map(res => (
-            <div key={res.id} className="border rounded-lg overflow-hidden shadow-lg bg-white flex flex-col">
-              <img 
-                src={res.car_image || "/placeholder-car.jpg"} 
-                alt={res.car_name} 
-                className="w-full h-48 object-cover" 
-              />
-              <div className="p-4 flex-1 flex flex-col">
-                <h2 className="font-semibold text-lg">{res.car_name}</h2>
-                <p className="text-sm text-muted-foreground">{res.car_category}</p>
-                
-                <div className="mt-3 space-y-2 text-sm flex-1">
-                  <p>
-                    <span className="font-medium">Du :</span> {formatDisplayDate(res.pickup_date)} {res.pickup_time}
-                  </p>
-                  <p>
-                    <span className="font-medium">Au :</span> {formatDisplayDate(res.return_date)} {res.return_time}
-                  </p>
-                  <p>
-                    <span className="font-medium">Lieu de retrait :</span> {res.pickup_location}
-                  </p>
-                  {res.return_location !== res.pickup_location && (
-                    <p>
-                      <span className="font-medium">Lieu de retour :</span> {res.return_location}
-                    </p>
-                  )}
-                  <p className="font-semibold text-primary">Prix total : {res.total_price} Dhs</p>
-                </div>
+        {/* En-tête */}
+        <div className="flex items-center gap-4 mb-6">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => navigate("/")}
+            className="flex items-center gap-2"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Retour
+          </Button>
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Mes Réservations</h1>
+            <p className="text-gray-600 text-sm sm:text-base mt-1">
+              {reservations.length} réservation(s) trouvée(s)
+            </p>
+          </div>
+        </div>
 
-                {/* Bouton toujours en bas de la carte */}
-                <button
-                  className="mt-4 w-full bg-red-600 text-white py-2 rounded hover:bg-red-700 transition-colors"
-                  onClick={() => handleCancelReservation(res)}
-                >
-                  Annuler la réservation
-                </button>
-              </div>
-            </div>
+        {/* Liste des réservations */}
+        <div className="grid gap-4 sm:gap-6">
+          {reservations.map(res => (
+            <Card key={res.id} className="overflow-hidden">
+              <CardContent className="p-0">
+                {/* Image et en-tête */}
+                <div className="flex flex-col sm:flex-row">
+                  <div className="sm:w-48 flex-shrink-0">
+                    <img 
+                      src={res.car_image || "/placeholder-car.jpg"} 
+                      alt={res.car_name} 
+                      className="w-full h-40 sm:h-full object-cover" 
+                    />
+                  </div>
+                  
+                  <div className="flex-1 p-4 sm:p-6">
+                    {/* En-tête avec véhicule et statut */}
+                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Car className="h-4 w-4 text-gray-400" />
+                          <h2 className="font-semibold text-lg text-gray-900">{res.car_name}</h2>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Badge variant="outline">{res.car_category}</Badge>
+                          {getStatusBadge(res.status)}
+                        </div>
+                      </div>
+                      
+                      <div className="text-right">
+                        <div className="text-2xl font-bold text-primary">{res.total_price} Dhs</div>
+                        <div className="text-sm text-gray-500">Prix total</div>
+                      </div>
+                    </div>
+
+                    {/* Informations de réservation */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                      {/* Dates et heures */}
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2">
+                          <Calendar className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                          <div>
+                            <div className="font-medium">Du {formatDisplayDate(res.pickup_date)}</div>
+                            <div className="text-gray-600">{res.pickup_time}</div>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center gap-2">
+                          <Clock className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                          <div>
+                            <div className="font-medium">Au {formatDisplayDate(res.return_date)}</div>
+                            <div className="text-gray-600">{res.return_time}</div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Lieux */}
+                      <div className="space-y-3">
+                        <div className="flex items-start gap-2">
+                          <MapPin className="h-4 w-4 text-gray-400 flex-shrink-0 mt-0.5" />
+                          <div>
+                            <div className="font-medium">Retrait</div>
+                            <div className="text-gray-600">{res.pickup_location}</div>
+                          </div>
+                        </div>
+                        
+                        {res.return_location !== res.pickup_location && (
+                          <div className="flex items-start gap-2">
+                            <MapPin className="h-4 w-4 text-gray-400 flex-shrink-0 mt-0.5" />
+                            <div>
+                              <div className="font-medium">Retour</div>
+                              <div className="text-gray-600">{res.return_location}</div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Informations client */}
+                    <div className="mt-4 pt-4 border-t border-gray-200">
+                      <div className="flex items-center gap-2 mb-2">
+                        <User className="h-4 w-4 text-gray-400" />
+                        <span className="font-medium text-sm">Informations client</span>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+                        <div className="flex items-center gap-2">
+                          <Mail className="h-3 w-3 text-gray-400" />
+                          <span className="text-gray-600">{res.client_email}</span>
+                        </div>
+                        {res.client_phone && (
+                          <div className="flex items-center gap-2">
+                            <Phone className="h-3 w-3 text-gray-400" />
+                            <span className="text-gray-600">{res.client_phone}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Bouton d'annulation */}
+                    {res.status === 'pending' || res.status === 'accepted' ? (
+                      <div className="mt-4 pt-4 border-t border-gray-200">
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => handleCancelReservation(res)}
+                          disabled={cancellingId === res.id}
+                          className="w-full sm:w-auto flex items-center gap-2"
+                        >
+                          {cancellingId === res.id ? (
+                            <>
+                              <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
+                              Annulation...
+                            </>
+                          ) : (
+                            <>
+                              <Trash2 className="h-4 w-4" />
+                              Annuler la réservation
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="mt-4 pt-4 border-t border-gray-200">
+                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                          <AlertTriangle className="h-4 w-4 text-gray-400" />
+                          Cette réservation ne peut pas être annulée
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           ))}
         </div>
       </div>
@@ -301,8 +464,8 @@ const MaReservation = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <main className="container mx-auto px-4 py-8 flex-1">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      <main className="container mx-auto px-4 py-6 sm:py-8 flex-1">
         {renderContent()}
       </main>
       <Footer />

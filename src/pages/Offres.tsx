@@ -2,6 +2,18 @@ import { useState, useEffect } from "react";
 import { Footer } from "@/components/Footer";
 import { supabase } from "@/integrations/supabase/client";
 import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { 
+  Car, 
+  Tag, 
+  Calendar, 
+  X,
+  ArrowRight,
+  Shield,
+  Clock
+} from "lucide-react";
 
 interface Car {
   id: string;
@@ -10,6 +22,8 @@ interface Car {
   transmission?: string;
   price: number;
   image_url: string;
+  fuel?: string;
+  seats?: number;
 }
 
 interface CarOffer {
@@ -28,19 +42,29 @@ const Offres = () => {
   const [cars, setCars] = useState<Car[]>([]);
   const [offers, setOffers] = useState<Record<string, CarOffer[]>>({});
   const [selectedCarId, setSelectedCarId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   // Charger les voitures depuis Supabase
   useEffect(() => {
     const fetchCars = async () => {
-      const { data, error } = await supabase
-        .from("cars")
-        .select("*")
-        .is("is_deleted", false);
-      if (error) {
-        console.error("Erreur fetch cars:", error);
-        return;
+      try {
+        setLoading(true);
+        const { data, error } = await supabase
+          .from("cars")
+          .select("*")
+          .is("is_deleted", false)
+          .eq("available", true);
+
+        if (error) {
+          console.error("Erreur fetch cars:", error);
+          return;
+        }
+        setCars(data as Car[]);
+      } catch (error) {
+        console.error("Erreur lors du chargement des véhicules:", error);
+      } finally {
+        setLoading(false);
       }
-      setCars(data as Car[]);
     };
     fetchCars();
   }, []);
@@ -48,7 +72,11 @@ const Offres = () => {
   // Charger les offres depuis Supabase
   useEffect(() => {
     const fetchOffers = async () => {
-      const { data, error } = await supabase.from("offers").select("*");
+      const { data, error } = await supabase
+        .from("offers")
+        .select("*")
+        .is("is_deleted", false);
+
       if (error) {
         console.error("Erreur fetch offers:", error);
         return;
@@ -72,107 +100,211 @@ const Offres = () => {
   const currentCarOffers = selectedCarId ? offers[selectedCarId] || [] : [];
   const currentCar = selectedCarId ? cars.find((c) => c.id === selectedCarId) : null;
 
-  return (
-    <div className="min-h-screen bg-background">
-      <main className="container mx-auto px-4 py-8">
-        <h1 className="text-4xl font-bold text-primary mb-8 text-center">
-          Découvrez nos Tarifs et Offres
-        </h1>
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-gray-600">Chargement des offres...</p>
+        </div>
+      </div>
+    );
+  }
 
-        {/* Grille de voitures */}
-        <section className="mb-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <main className="container mx-auto px-4 py-6">
+        {/* En-tête */}
+        <div className="text-center mb-8">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
+            Nos Véhicules et Offres
+          </h1>
+          <p className="text-gray-600 text-sm sm:text-base max-w-2xl mx-auto">
+            Découvrez notre flotte complète et profitez de nos offres spéciales 
+            pour une expérience de location exceptionnelle
+          </p>
+        </div>
+
+        {/* Grille de voitures - Version mobile optimisée */}
+        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 mb-10">
           {cars.map((car) => (
-            <div
-              key={car.id}
-              className="bg-card text-card-foreground rounded-lg overflow-hidden shadow-xl hover:shadow-2xl transition-shadow duration-300 border border-border"
-            >
-              <img
-                src={car.image_url}
-                alt={car.name}
-                className="w-full h-48 object-cover"
-              />
-              <div className="p-4">
-                <h3 className="text-xl font-bold">{car.name}</h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  {car.category} | {car.transmission}
-                </p>
-                <p className="text-lg font-semibold text-gray-700">
-                  À partir de {car.price} Dhs/jour
-                </p>
-                
-                {/* MODIFICATION : Afficher le nombre d'offres disponibles */}
+            <Card key={car.id} className="overflow-hidden hover:shadow-lg transition-shadow duration-300">
+              <div className="relative">
+                <img
+                  src={car.image_url}
+                  alt={car.name}
+                  className="w-full h-40 sm:h-48 object-cover"
+                />
                 {offers[car.id] && offers[car.id].length > 0 && (
-                  <p className="text-sm text-green-600 font-medium mt-2">
-                    ✅ {offers[car.id].length} offre{offers[car.id].length > 1 ? 's' : ''} spéciale{offers[car.id].length > 1 ? 's' : ''} disponible{offers[car.id].length > 1 ? 's' : ''}
-                  </p>
+                  <Badge className="absolute top-2 left-2 bg-green-600 hover:bg-green-700">
+                    <Tag className="h-3 w-3 mr-1" />
+                    {offers[car.id].length} offre{offers[car.id].length > 1 ? 's' : ''}
+                  </Badge>
                 )}
-                
-                <button
-                  onClick={() => openOffersModal(car.id)}
-                  className="w-full mt-4 py-2 bg-secondary text-secondary-foreground font-semibold rounded-lg hover:bg-secondary/90 transition-colors"
-                >
-                  Voir les offres
-                </button>
               </div>
-            </div>
+              
+              <CardContent className="p-4">
+                <div className="space-y-3">
+                  <div>
+                    <h3 className="font-bold text-gray-900 text-base sm:text-lg line-clamp-1">
+                      {car.name}
+                    </h3>
+                    <div className="flex flex-wrap items-center gap-1 mt-1">
+                      <Badge variant="secondary" className="text-xs">
+                        {car.category}
+                      </Badge>
+                      <Badge variant="outline" className="text-xs">
+                        {car.transmission}
+                      </Badge>
+                    </div>
+                  </div>
+
+                  {/* Détails du véhicule */}
+                  <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
+                    <div className="flex items-center gap-1">
+                      <span>⛽</span>
+                      <span>{car.fuel || 'Essence'}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span>👤</span>
+                      <span>{car.seats || 5} places</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-gray-600">À partir de</p>
+                      <p className="text-lg font-bold text-primary">
+                        {car.price} Dhs/jour
+                      </p>
+                    </div>
+                    
+                    <Button
+                      onClick={() => openOffersModal(car.id)}
+                      size="sm"
+                      className="flex items-center gap-1"
+                    >
+                      <span className="hidden sm:inline">Voir</span>
+                      <ArrowRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           ))}
         </section>
 
-        {/* Modal offres - MODIFICATION : Accessible sans connexion */}
+        {/* Aucun véhicule */}
+        {cars.length === 0 && (
+          <div className="text-center py-12">
+            <Car className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              Aucun véhicule disponible
+            </h3>
+            <p className="text-gray-600 mb-6">
+              Tous nos véhicules sont actuellement en location.
+            </p>
+            <Button onClick={() => window.location.reload()}>
+              Actualiser la page
+            </Button>
+          </div>
+        )}
+
+        {/* Modal offres - Version mobile optimisée */}
         {selectedCarId && currentCar && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg p-6 w-full max-w-md shadow-2xl">
-              <div className="flex justify-between items-center mb-4 border-b pb-2">
-                <h2 className="text-2xl font-bold text-primary">
-                  Offres pour {currentCar.name}
-                </h2>
-                <button
+            <div className="bg-white rounded-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+              {/* En-tête du modal */}
+              <div className="flex items-center justify-between p-4 sm:p-6 border-b">
+                <div className="flex items-center gap-3">
+                  <img
+                    src={currentCar.image_url}
+                    alt={currentCar.name}
+                    className="w-12 h-12 object-cover rounded-lg"
+                  />
+                  <div>
+                    <h2 className="font-bold text-gray-900 text-lg">
+                      {currentCar.name}
+                    </h2>
+                    <p className="text-gray-600 text-sm">{currentCar.category}</p>
+                  </div>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
                   onClick={closeOffersModal}
-                  className="text-gray-500 hover:text-gray-700 text-3xl leading-none"
+                  className="h-8 w-8 p-0"
                 >
-                  &times;
-                </button>
+                  <X className="h-4 w-4" />
+                </Button>
               </div>
 
-              <div className="space-y-3 mb-6">
-                {currentCarOffers.length > 0 ? (
-                  currentCarOffers.map((offer, idx) => (
-                    <div
-                      key={idx}
-                      className="flex justify-between items-center p-3 bg-gray-50 rounded-md border"
-                    >
-                      <span className="font-medium">{offer.period}</span>
-                      <span className="text-xl font-bold text-green-600">
-                        {offer.price}
-                      </span>
+              {/* Contenu du modal */}
+              <div className="p-4 sm:p-6">
+                {/* Prix standard */}
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-blue-800 font-medium">Prix standard</p>
+                      <p className="text-blue-900 text-sm">Location à la journée</p>
                     </div>
-                  ))
-                ) : (
-                  <p className="text-gray-600">
-                    Aucune offre spéciale disponible pour ce véhicule pour le
-                    moment.
-                  </p>
-                )}
+                    <div className="text-right">
+                      <p className="text-lg font-bold text-blue-900">{currentCar.price} Dhs</p>
+                      <p className="text-blue-800 text-sm">par jour</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Offres spéciales */}
+                <div className="mb-6">
+                  <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                    <Tag className="h-4 w-4 text-green-600" />
+                    Offres spéciales
+                  </h3>
+                  
+                  {currentCarOffers.length > 0 ? (
+                    <div className="space-y-3">
+                      {currentCarOffers.map((offer, idx) => (
+                        <div
+                          key={idx}
+                          className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-lg"
+                        >
+                          <div className="flex items-center gap-2">
+                            <Calendar className="h-4 w-4 text-green-600" />
+                            <span className="font-medium text-green-900">
+                              {offer.period}
+                            </span>
+                          </div>
+                          <span className="text-lg font-bold text-green-600">
+                            {offer.price}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-6 border-2 border-dashed border-gray-300 rounded-lg">
+                      <Clock className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                      <p className="text-gray-600 text-sm">
+                        Aucune offre spéciale disponible
+                      </p>
+                      <p className="text-gray-500 text-xs mt-1">
+                        Consultez nos tarifs standards
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Boutons d'action */}
+                <div className="space-y-3">
+                  <Link
+                    to="/"
+                    onClick={closeOffersModal}
+                    className="block w-full text-center py-3 bg-primary text-white font-semibold rounded-lg hover:bg-primary/90 transition-colors"
+                  >
+                    Réserver maintenant
+                  </Link>
+                </div>
               </div>
-
-              <p className="text-sm text-center text-muted-foreground mb-4">
-                Les prix sont donnés à titre indicatif et peuvent varier selon
-                les dates.
-              </p>
-
-              {/* MODIFICATION : Bouton de réservation accessible à tous */}
-              <Link
-                to="/"
-                onClick={closeOffersModal}
-                className="block w-full text-center py-3 bg-primary text-primary-foreground font-bold rounded-lg hover:bg-primary/90 transition-colors"
-              >
-                Réserver maintenant
-              </Link>
-              
-              {/* MODIFICATION : Message informatif */}
-              <p className="text-xs text-center text-muted-foreground mt-3">
-                🔒 Connexion requise uniquement pour finaliser la réservation
-              </p>
             </div>
           </div>
         )}

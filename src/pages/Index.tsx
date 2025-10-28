@@ -8,6 +8,7 @@ import { CarGrid } from "@/components/CarGrid";
 import { SearchData } from "@/components/SearchForm";
 import { Database } from "@/integrations/supabase/types";
 import { ReservationModal } from "@/components/ReservationModal";
+import { LoadingSpinner } from "@/components/LoadingSpinner";
 
 type Car = Database["public"]["Tables"]["cars"]["Row"];
 type Reservation = Database["public"]["Tables"]["reservations"]["Row"];
@@ -19,6 +20,8 @@ const Index = () => {
   const [user, setUser] = useState<any>(null);
   const [selectedCar, setSelectedCar] = useState<Car | null>(null);
   const [showModal, setShowModal] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [searchLoading, setSearchLoading] = useState(false);
 
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -27,6 +30,7 @@ const Index = () => {
   useEffect(() => {
     const fetchCars = async () => {
       try {
+        setLoading(true);
         const { data, error } = await supabase
           .from("cars")
           .select("*") 
@@ -34,17 +38,29 @@ const Index = () => {
 
         if (error) {
           console.error("Erreur fetch cars:", error);
+          toast({
+            title: "Erreur",
+            description: "Impossible de charger les véhicules",
+            variant: "destructive",
+          });
         } else if (data) {
           setCars(data);
           setSearchResults(data);
         }
       } catch (err) {
         console.error("Erreur fetchCars:", err);
+        toast({
+          title: "Erreur",
+          description: "Une erreur est survenue lors du chargement",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchCars();
-  }, []);
+  }, [toast]);
 
   // Authentification
   useEffect(() => {
@@ -150,6 +166,7 @@ const Index = () => {
   // Recherche
   const handleSearch = async (data: SearchData) => {
     setSearchData(data);
+    setSearchLoading(true);
 
     const startDate = data.pickupDate?.toISOString().split("T")[0];
     const endDate = data.returnDate?.toISOString().split("T")[0];
@@ -157,9 +174,10 @@ const Index = () => {
     if (!startDate || !endDate) {
       toast({
         title: "Dates manquantes",
-        description: "Veuillez sélectionner les dates",
+        description: "Veuillez sélectionner les dates de location",
         variant: "destructive",
       });
+      setSearchLoading(false);
       return;
     }
 
@@ -178,8 +196,10 @@ const Index = () => {
         data: Car[] | null;
         error: any;
       };
+      
       if (error) throw error;
 
+      // Vérifier la disponibilité pour chaque véhicule
       const availableCars = await Promise.all(
         (allCars || []).map(async (car) => ({
           ...car,
@@ -195,25 +215,26 @@ const Index = () => {
       setSearchResults(finalCars);
 
       toast({
-        title: "Résultats",
-        description: `${finalCars.length} véhicule(s) disponible(s)`,
+        title: "Recherche terminée",
+        description: `${finalCars.length} véhicule(s) disponible(s) pour vos dates`,
       });
     } catch (err) {
       console.error("Erreur recherche:", err);
       toast({
         title: "Erreur de recherche",
-        description: "Une erreur est survenue",
+        description: "Une erreur est survenue lors de la recherche",
         variant: "destructive",
       });
+    } finally {
+      setSearchLoading(false);
     }
   };
 
-  // ✅ Autoriser les réservations invitées
   const handleOpenReserve = (car: Car) => {
     if (!searchData?.pickupDate || !searchData?.returnDate) {
       toast({
-        title: "Paramètres manquants",
-        description: "Veuillez remplir toutes les informations",
+        title: "Informations manquantes",
+        description: "Veuillez d'abord effectuer une recherche avec des dates",
         variant: "destructive",
       });
       return;
@@ -222,7 +243,7 @@ const Index = () => {
     if (!user) {
       toast({
         title: "Réservation invitée",
-        description: "Vous pouvez réserver sans compte.",
+        description: "Vous pouvez réserver sans créer de compte",
       });
     }
 
@@ -236,9 +257,34 @@ const Index = () => {
     !!searchData?.returnDate &&
     (searchData.sameLocation || !!searchData?.returnLocation);
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <LoadingSpinner message="Chargement des véhicules..." />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
-      <Hero onSearch={handleSearch} />
+      {/* Hero Section avec recherche */}
+      <div className="relative">
+        <Hero onSearch={handleSearch} />
+        
+        {/* Indicateur de chargement pour la recherche */}
+        {searchLoading && (
+          <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10">
+            <div className="bg-white/90 backdrop-blur-sm rounded-lg px-4 py-2 shadow-lg flex items-center gap-2">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+              <span className="text-sm font-medium text-gray-700">
+                Recherche en cours...
+              </span>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Réservation Modal */}
       <ReservationModal
         isOpen={showModal}
         onClose={() => setShowModal(false)}
@@ -250,11 +296,42 @@ const Index = () => {
           navigate("/ma-reservation");
         }}
       />
-      <CarGrid
-        cars={searchResults}
-        onReserve={handleOpenReserve}
-        canReserve={isSearchReady}
-      />
+
+      {/* Section résultats */}
+      <section className="py-8 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto">
+          {/* Grille des véhicules */}
+          <CarGrid
+            cars={searchResults}
+            onReserve={handleOpenReserve}
+            canReserve={isSearchReady}
+          />
+
+          {/* Message si aucun résultat */}
+          {searchData && searchResults.length === 0 && !searchLoading && (
+            <div className="text-center py-12">
+              <div className="text-gray-400 text-6xl mb-4">🔍</div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                Aucun véhicule disponible
+              </h3>
+              <p className="text-gray-600 max-w-md mx-auto mb-6">
+                Aucun véhicule ne correspond à vos critères de recherche pour les dates sélectionnées.
+              </p>
+              <div className="space-y-3">
+                <p className="text-sm text-gray-500">
+                  Suggestions :
+                </p>
+                <ul className="text-sm text-gray-600 space-y-1">
+                  <li>• Essayez des dates différentes</li>
+                  <li>• Élargissez votre recherche à d'autres catégories</li>
+                  <li>• Vérifiez d'autres lieux de retrait</li>
+                </ul>
+              </div>
+            </div>
+          )}
+        </div>
+      </section>
+
       <Footer />
     </div>
   );

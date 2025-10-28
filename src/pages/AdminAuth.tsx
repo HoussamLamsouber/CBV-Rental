@@ -154,13 +154,6 @@ const AdminLogin = () => {
             </div>
           </CardContent>
         </Card>
-
-        {/* Informations supplémentaires pour mobile */}
-        <div className="mt-6 text-center">
-          <p className="text-xs text-muted-foreground">
-            Version mobile optimisée
-          </p>
-        </div>
       </div>
     </div>
   );

@@ -240,13 +240,6 @@ const Index = () => {
       return;
     }
 
-    if (!user) {
-      toast({
-        title: "Réservation invitée",
-        description: "Vous pouvez réserver sans créer de compte",
-      });
-    }
-
     setSelectedCar(car);
     setShowModal(true);
   };

@@ -56,9 +56,9 @@ const AutoCompleteInput = ({
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className="w-full justify-between h-12 border-gray-300 hover:border-blue-500 transition-colors"
+          className="w-full justify-between h-12 border-gray-300 hover:border-blue-500 transition-colors min-w-0" // Ajout de min-w-0
         >
-          <div className="flex items-center gap-2 flex-1 text-left">
+          <div className="flex items-center gap-2 flex-1 text-left min-w-0">
             {icon}
             <span className={cn("truncate", !selectedItem && "text-muted-foreground")}>
               {selectedItem ? selectedItem.label : placeholder}
@@ -201,22 +201,22 @@ export const SearchForm = ({ onSearch }: SearchFormProps) => {
   };
 
   return (
-    <div className="bg-white/95 backdrop-blur-sm border border-gray-200/80 rounded-2xl p-6 shadow-xl shadow-blue-500/5">
+    <div className="bg-white/95 backdrop-blur-sm border border-gray-200/80 rounded-2xl p-4 sm:p-6 shadow-xl shadow-blue-500/5">
       {/* Header avec titre */}
-      <div className="flex items-center gap-3 mb-8">
+      <div className="flex items-center gap-3 mb-6 sm:mb-8">
         <div className="p-2 bg-blue-100 rounded-lg">
           <Car className="h-5 w-5 text-blue-600" />
         </div>
         <div>
-          <h2 className="text-xl font-bold text-gray-900">Réservez votre véhicule</h2>
-          <p className="text-sm text-gray-600">Trouvez la voiture parfaite pour votre voyage</p>
+          <h2 className="text-lg sm:text-xl font-bold text-gray-900">Réservez votre véhicule</h2>
+          <p className="text-xs sm:text-sm text-gray-600">Trouvez la voiture parfaite pour votre voyage</p>
         </div>
       </div>
 
-      {/* Lieux - Ligne unique */}
-      <div className="flex items-end gap-4 mb-8">
+      {/* Lieux - Version mobile empilée */}
+      <div className="space-y-4 sm:space-y-0 sm:flex sm:items-end sm:gap-4 mb-6 sm:mb-8">
         {/* Pickup Location */}
-        <div className="flex-1 space-y-3">
+        <div className="flex-1 space-y-3 min-w-0">
           <Label htmlFor="pickupLocation" className="text-sm font-semibold text-gray-700 flex items-center gap-2">
             <MapPinIcon className="h-4 w-4 text-blue-600" />
             Lieu de départ
@@ -230,8 +230,8 @@ export const SearchForm = ({ onSearch }: SearchFormProps) => {
           />
         </div>
 
-        {/* Bouton de swap */}
-        <div className="pb-2">
+        {/* Bouton de swap - Centré verticalement sur mobile */}
+        <div className="flex justify-center sm:justify-start sm:pb-2">
           <Button
             variant="ghost"
             size="sm"
@@ -249,7 +249,7 @@ export const SearchForm = ({ onSearch }: SearchFormProps) => {
         </div>
 
         {/* Return Location */}
-        <div className="flex-1 space-y-3">
+        <div className="flex-1 space-y-3 min-w-0">
           <Label htmlFor="returnLocation" className="text-sm font-semibold text-gray-700 flex items-center gap-2">
             <MapPinIcon className="h-4 w-4 text-green-600" />
             Lieu de retour
@@ -262,7 +262,7 @@ export const SearchForm = ({ onSearch }: SearchFormProps) => {
                 className="bg-green-50 border-green-200 cursor-not-allowed h-12"
               />
               <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-sm text-green-700 bg-green-50/80 px-3 py-1 rounded-full font-medium">
+                <span className="text-xs sm:text-sm text-green-700 bg-green-50/80 px-2 sm:px-3 py-1 rounded-full font-medium">
                   Identique au départ
                 </span>
               </div>
@@ -279,15 +279,15 @@ export const SearchForm = ({ onSearch }: SearchFormProps) => {
         </div>
       </div>
 
-      {/* Dates et heures - Groupées par période */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+      {/* Dates et heures - Version mobile empilée */}
+      <div className="space-y-6 sm:space-y-0 sm:grid sm:grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 mb-6 sm:mb-8">
         {/* Période de départ */}
         <div className="space-y-4">
           <div className="flex items-center gap-2 mb-3">
             <div className="w-2 h-6 bg-blue-600 rounded-full"></div>
             <h3 className="font-semibold text-gray-900">Départ</h3>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4">
             <div className="space-y-3">
               <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
                 <CalendarIcon className="h-4 w-4 text-blue-600" />
@@ -298,12 +298,12 @@ export const SearchForm = ({ onSearch }: SearchFormProps) => {
                   <Button
                     variant="outline"
                     className={cn(
-                      "w-full justify-start text-left font-normal h-12 border-gray-300 hover:border-blue-500",
+                      "w-full justify-start text-left font-normal h-12 border-gray-300 hover:border-blue-500 text-sm",
                       !pickupDate && "text-muted-foreground"
                     )}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {pickupDate ? format(pickupDate, "dd/MM/yyyy") : "Sélectionner"}
+                    {pickupDate ? format(pickupDate, "dd/MM/yy") : "Sélectionner"}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
@@ -329,7 +329,7 @@ export const SearchForm = ({ onSearch }: SearchFormProps) => {
                   type="time"
                   value={pickupTime}
                   onChange={(e) => setPickupTime(e.target.value)}
-                  className="pl-5 h-12 border-gray-300 focus:border-blue-500 cursor-pointer w-32"
+                  className="pl-5 h-12 border-gray-300 focus:border-blue-500 cursor-pointer w-full min-w-0"
                 />
               </div>
             </div>
@@ -342,7 +342,7 @@ export const SearchForm = ({ onSearch }: SearchFormProps) => {
             <div className="w-2 h-6 bg-green-600 rounded-full"></div>
             <h3 className="font-semibold text-gray-900">Retour</h3>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4">
             <div className="space-y-3">
               <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
                 <CalendarIcon className="h-4 w-4 text-green-600" />
@@ -353,12 +353,12 @@ export const SearchForm = ({ onSearch }: SearchFormProps) => {
                   <Button
                     variant="outline"
                     className={cn(
-                      "w-full justify-start text-left font-normal h-12 border-gray-300 hover:border-green-500",
+                      "w-full justify-start text-left font-normal h-12 border-gray-300 hover:border-green-500 text-sm",
                       !returnDate && "text-muted-foreground"
                     )}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {returnDate ? format(returnDate, "dd/MM/yyyy") : "Sélectionner"}
+                    {returnDate ? format(returnDate, "dd/MM/yy") : "Sélectionner"}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
@@ -384,7 +384,7 @@ export const SearchForm = ({ onSearch }: SearchFormProps) => {
                   type="time"
                   value={returnTime}
                   onChange={(e) => setReturnTime(e.target.value)}
-                  className="pl-5 h-12 border-gray-300 focus:border-green-500 cursor-pointer w-32"
+                  className="pl-5 h-12 border-gray-300 focus:border-green-500 cursor-pointer w-full min-w-0"
                 />
               </div>
             </div>
@@ -394,9 +394,9 @@ export const SearchForm = ({ onSearch }: SearchFormProps) => {
 
       {/* Bouton de recherche */}
       <Button
-      onClick={handleSearch}
-      className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 transition-all duration-300 font-semibold h-12 text-base"
-      size="lg"
+        onClick={handleSearch}
+        className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 transition-all duration-300 font-semibold h-12 text-sm sm:text-base"
+        size="lg"
       >
         <Search className="h-5 w-5 mr-2" />
         Rechercher des véhicules

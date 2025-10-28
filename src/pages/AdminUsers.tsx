@@ -375,10 +375,6 @@ const handleDeleteUser = async (profileId: string, email: string, userRole: stri
         {/* En-tête */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
           <div className="flex items-center gap-4">
-            <Button variant="outline" onClick={() => navigate("/admin")}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Retour
-            </Button>
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Gestion des Utilisateurs</h1>
               <p className="text-gray-600 mt-1">

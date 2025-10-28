@@ -582,15 +582,14 @@ export default function ReservationsAdmin() {
                       <input
                         type="date"
                         value={filters.date}
-                        onChange={(e) => setFilters({...filters, date: e.target.value})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                        style={{ 
-                          width: '100%',
-                          maxWidth: '100%',
+                        onChange={(e) => setFilters({ ...filters, date: e.target.value })}
+                        className="block w-full min-w-0 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm appearance-none sm:max-w-full overflow-hidden"
+                        style={{
                           boxSizing: 'border-box',
-                          WebkitAppearance: 'none'
+                          maxWidth: '100%',
                         }}
                       />
+
                     </div>
                     <p className="text-xs text-gray-500 mt-1">Date de départ, retour ou création</p>
                   </div>

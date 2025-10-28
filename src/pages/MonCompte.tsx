@@ -5,14 +5,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { User, Mail, Phone, MapPin, Calendar, Shield, ArrowLeft } from "lucide-react";
+import { User, Mail, Phone, MapPin, Calendar, Shield } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 
-// Définition de l'interface des données du profil
 interface UserProfile {
   id: string;
   email: string;
@@ -39,7 +38,6 @@ const MonCompte = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  // Fonction utilitaire pour séparer le nom complet
   const getNames = (fullName: string) => {
     const parts = fullName.trim().split(/\s+/);
     const firstName = parts.length > 1 ? parts[0] : '';
@@ -47,7 +45,6 @@ const MonCompte = () => {
     return { firstName, lastName };
   };
 
-  // 1. DÉPLACEMENT ET MEMOIZATION DE LA FONCTION getProfile
   const getProfile = useCallback(async () => {
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
@@ -69,7 +66,6 @@ const MonCompte = () => {
       console.error("Erreur de chargement du profil:", error);
       toast({ title: "Erreur", description: "Impossible de charger les données du profil.", variant: "destructive" });
     } else if (data) {
-      // Hydrater l'état avec les données de Supabase
       setUserInfo({
         id: data.id,
         email: data.email || user.email || '',
@@ -82,20 +78,17 @@ const MonCompte = () => {
     setLoading(false);
   }, [navigate, toast]);
 
-  // 2. APPEL DE getProfile au chargement
   useEffect(() => {
     getProfile();
   }, [getProfile]);
 
-  // 3. MISE À JOUR DES DONNÉES DU PROFIL (au clic sur Sauvegarder)
   const handleSave = async () => {
     setSaving(true);
-    
-    // Vérification rapide pour s'assurer que l'ID est là
+
     if (!userInfo.id) {
-        toast({ title: "Erreur", description: "ID utilisateur manquant.", variant: "destructive" });
-        setSaving(false);
-        return;
+      toast({ title: "Erreur", description: "ID utilisateur manquant.", variant: "destructive" });
+      setSaving(false);
+      return;
     }
 
     const { error } = await supabase
@@ -115,18 +108,16 @@ const MonCompte = () => {
       toast({ title: "Erreur", description: "Échec de la sauvegarde des informations.", variant: "destructive" });
     } else {
       toast({ title: "Profil mis à jour", description: "Vos informations ont été sauvegardées avec succès." });
-      setIsEditing(false); // Sortir du mode édition après succès
+      setIsEditing(false);
     }
     setSaving(false);
   };
-  
-  // Fonction de gestion du changement des inputs (générique)
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
     setUserInfo(prev => ({ ...prev, [id as keyof UserProfile]: value }));
   };
 
-  // Affichage du chargement
   if (loading && !userInfo.id) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
@@ -135,7 +126,6 @@ const MonCompte = () => {
     );
   }
 
-  // --- RENDU DU COMPOSANT ---
   const { firstName, lastName } = getNames(userInfo.full_name);
   const avatarFallbackText = `${firstName?.[0] || ''}${lastName?.[0] || ''}`;
 
@@ -144,7 +134,6 @@ const MonCompte = () => {
       <main className="container mx-auto px-4 py-6">
         <div className="max-w-4xl mx-auto space-y-6">
           
-          {/* En-tête du profil - Version mobile optimisée */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="flex items-center gap-4">
               <Avatar className="h-12 w-12 sm:h-16 sm:w-16">
@@ -183,7 +172,6 @@ const MonCompte = () => {
             </Button>
           </div>
 
-          {/* Informations personnelles - Version mobile */}
           <Card>
             <CardHeader className="pb-4">
               <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
@@ -193,7 +181,6 @@ const MonCompte = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               
-              {/* Nom Complet */}
               <div className="space-y-2">
                 <Label htmlFor="full_name" className="text-sm">Nom Complet</Label>
                 <Input
@@ -202,11 +189,10 @@ const MonCompte = () => {
                   onChange={handleChange}
                   disabled={!isEditing}
                   placeholder="Votre nom complet"
-                  className="text-sm"
+                  className="text-sm w-full"
                 />
               </div>
 
-              {/* Email */}
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-sm">Email</Label>
                 <div className="relative">
@@ -217,13 +203,12 @@ const MonCompte = () => {
                     value={userInfo.email}
                     onChange={handleChange}
                     disabled={!isEditing}
-                    className="pl-10 text-sm"
+                    className="pl-10 text-sm w-full"
                     placeholder="votre@email.com"
                   />
                 </div>
               </div>
 
-              {/* Téléphone */}
               <div className="space-y-2">
                 <Label htmlFor="telephone" className="text-sm">Téléphone</Label>
                 <div className="relative">
@@ -233,13 +218,12 @@ const MonCompte = () => {
                     value={userInfo.telephone}
                     onChange={handleChange}
                     disabled={!isEditing}
-                    className="pl-10 text-sm"
+                    className="pl-10 text-sm w-full"
                     placeholder="+212 6 00 00 00 00"
                   />
                 </div>
               </div>
 
-              {/* Adresse */}
               <div className="space-y-2">
                 <Label htmlFor="adresse" className="text-sm">Adresse</Label>
                 <div className="relative">
@@ -249,13 +233,13 @@ const MonCompte = () => {
                     value={userInfo.adresse}
                     onChange={handleChange}
                     disabled={!isEditing}
-                    className="pl-10 text-sm"
+                    className="pl-10 text-sm w-full"
                     placeholder="Votre adresse complète"
                   />
                 </div>
               </div>
 
-              {/* Date de naissance */}
+              {/* ✅ Correction du débordement mobile */}
               <div className="space-y-2">
                 <Label htmlFor="dateNaissance" className="text-sm">Date de naissance</Label>
                 <div className="relative">
@@ -266,12 +250,12 @@ const MonCompte = () => {
                     value={userInfo.dateNaissance}
                     onChange={handleChange}
                     disabled={!isEditing}
-                    className="pl-10 text-sm"
+                    className="pl-10 text-sm w-full appearance-none [color-scheme:light]"
+                    style={{ minWidth: 0 }}
                   />
                 </div>
               </div>
 
-              {/* Boutons d'action - Version mobile */}
               {isEditing && (
                 <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-200">
                   <Button 
@@ -306,4 +290,4 @@ const MonCompte = () => {
   );
 };
 
-export default MonCompte; 
+export default MonCompte;

@@ -17,6 +17,13 @@ export default function ReservationsAdmin() {
     status: ""
   });
   
+  // 🔹 État pour la modal de refus avec raison
+  const [rejectModal, setRejectModal] = useState({
+    isOpen: false,
+    reservation: null,
+    reason: ""
+  });
+  
   // 🔹 Récupérer les paramètres d'URL et navigation
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -94,7 +101,8 @@ export default function ReservationsAdmin() {
             guest_phone: reservation.guest_phone,
             created_at: reservation.created_at,
             user_id: reservation.user_id,
-            profiles: profileInfo
+            profiles: profileInfo,
+            rejection_reason: reservation.rejection_reason // Ajout de la raison de refus
           };
         })
       );
@@ -160,28 +168,152 @@ export default function ReservationsAdmin() {
     }
   }
 
-  // 🔹 Mise à jour du statut
-  async function handleStatusChange(id: string, newStatus: string) {
+  // 🔹 Fonction pour ouvrir la modal de refus
+  const openRejectModal = (reservation: any) => {
+    setRejectModal({
+      isOpen: true,
+      reservation: reservation,
+      reason: ""
+    });
+  };
+
+  // 🔹 Fonction pour fermer la modal de refus
+  const closeRejectModal = () => {
+    setRejectModal({
+      isOpen: false,
+      reservation: null,
+      reason: ""
+    });
+  };
+
+  // 🔹 Fonction pour refuser une réservation avec raison
+  const handleRejectWithReason = async () => {
+    if (!rejectModal.reservation) return;
+    
+    if (!rejectModal.reason.trim()) {
+      toast({
+        title: "Raison manquante",
+        description: "Veuillez saisir la raison du refus.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
+      const reservation = rejectModal.reservation;
+      
+      // Mettre à jour le statut et la raison dans la base de données
       const { error } = await supabase
         .from("reservations")
-        .update({ status: newStatus })
-        .eq("id", id);
+        .update({ 
+          status: "refused",
+          rejection_reason: rejectModal.reason
+        })
+        .eq("id", reservation.id);
 
-      if (error) {
-        console.error("Erreur maj statut :", error);
-        return;
-      }
-      
-      console.log(`✅ Statut mis à jour pour la réservation ${id}: ${newStatus}`);
-      await fetchReservations(); // Recharger les données
-      
-    } catch (error) {
-      console.error("💥 Erreur lors de la mise à jour du statut:", error);
+      if (error) throw error;
+
+      // Préparer les données pour l'email
+      const emailData = {
+        reservationId: reservation.id,
+        clientName: reservation.guest_name || reservation.profiles?.full_name || "Utilisateur",
+        clientEmail: reservation.guest_email || reservation.profiles?.email,
+        clientPhone: reservation.guest_phone || reservation.profiles?.telephone || "Non renseigné",
+        carName: reservation.car_name,
+        carCategory: reservation.car_category,
+        pickupDate: new Date(reservation.pickup_date).toLocaleDateString('fr-FR'),
+        pickupTime: reservation.pickup_time,
+        returnDate: new Date(reservation.return_date).toLocaleDateString('fr-FR'),
+        returnTime: reservation.return_time,
+        pickupLocation: reservation.pickup_location,
+        returnLocation: reservation.return_location,
+        totalPrice: reservation.total_price,
+        rejectionReason: rejectModal.reason // Ajout de la raison dans l'email
+      };
+
+      // Envoyer l'email de refus au client
+      await emailJSService.sendReservationRejectedEmail(emailData);
+
+      toast({
+        title: "Réservation refusée",
+        description: "Le client a été notifié avec la raison du refus.",
+      });
+
+      // Fermer la modal et recharger les données
+      closeRejectModal();
+      fetchReservations();
+    } catch (error: any) {
+      console.error("Erreur refus réservation:", error);
+      toast({
+        title: "Erreur",
+        description: error.message || "Impossible de refuser la réservation.",
+        variant: "destructive",
+      });
     }
-  }
+  };
 
-  // 🔥 Rafraîchissement périodique des statuts
+  // 🔹 Fonction pour accepter une réservation
+  const handleAcceptReservation = async (reservation: any) => {
+    try {
+      console.log("📧 Données réservation pour acceptation:", reservation);
+      
+      // Mettre à jour le statut dans la base de données
+      const { error } = await supabase
+        .from("reservations")
+        .update({ status: "accepted" })
+        .eq("id", reservation.id);
+
+      if (error) throw error;
+
+      // Préparer les données pour l'email - CORRECTION ICI
+      const emailData = {
+        reservationId: reservation.id,
+        clientName: reservation.guest_name || reservation.profiles?.full_name || "Utilisateur",
+        clientEmail: reservation.guest_email || reservation.profiles?.email,
+        clientPhone: reservation.guest_phone || reservation.profiles?.telephone || "Non renseigné",
+        carName: reservation.car_name,
+        carCategory: reservation.car_category,
+        pickupDate: new Date(reservation.pickup_date).toLocaleDateString('fr-FR'),
+        pickupTime: reservation.pickup_time || "14:00", // Valeur par défaut si manquant
+        returnDate: new Date(reservation.return_date).toLocaleDateString('fr-FR'),
+        returnTime: reservation.return_time || "14:00", // Valeur par défaut si manquant
+        pickupLocation: reservation.pickup_location,
+        returnLocation: reservation.return_location,
+        totalPrice: reservation.total_price,
+      };
+
+      console.log("📨 Données email acceptation:", emailData);
+
+      // Vérifier que l'email client existe
+      if (!emailData.clientEmail) {
+        throw new Error("Email du client non trouvé");
+      }
+
+      // Envoyer l'email de confirmation au client
+      const emailResult = await emailJSService.sendReservationAcceptedEmail(emailData);
+      
+      if (!emailResult.success) {
+        throw new Error("Échec de l'envoi de l'email");
+      }
+
+      toast({
+        title: "Réservation acceptée",
+        description: "Le client a été notifié par email.",
+      });
+
+      // Recharger les données
+      fetchReservations();
+    } catch (error: any) {
+      console.error("❌ Erreur acceptation réservation:", error);
+      toast({
+        title: "Erreur",
+        description: error.message || "Impossible d'accepter la réservation.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // 🔹 Rafraîchissement périodique des statuts
   useEffect(() => {
     const interval = setInterval(() => {
       fetchReservations(); // Recalcule les statuts actifs/terminés
@@ -239,7 +371,9 @@ export default function ReservationsAdmin() {
          reservation.car_category?.toLowerCase().includes(searchLower) ||
          // Recherche dans les lieux
          reservation.pickup_location?.toLowerCase().includes(searchLower) ||
-         reservation.return_location?.toLowerCase().includes(searchLower));
+         reservation.return_location?.toLowerCase().includes(searchLower) ||
+         // Recherche dans la raison de refus
+         reservation.rejection_reason?.toLowerCase().includes(searchLower));
 
       if (!matchesSearch) return false;
     }
@@ -363,116 +497,6 @@ export default function ReservationsAdmin() {
       </div>
     );
   }
-
-  // Fonction pour accepter une réservation
-  const handleAcceptReservation = async (reservation: any) => {
-    try {
-      console.log("📧 Données réservation pour acceptation:", reservation);
-      
-      // Mettre à jour le statut dans la base de données
-      const { error } = await supabase
-        .from("reservations")
-        .update({ status: "accepted" })
-        .eq("id", reservation.id);
-
-      if (error) throw error;
-
-      // Préparer les données pour l'email - CORRECTION ICI
-      const emailData = {
-        reservationId: reservation.id,
-        clientName: reservation.guest_name || reservation.profiles?.full_name || "Utilisateur",
-        clientEmail: reservation.guest_email || reservation.profiles?.email,
-        clientPhone: reservation.guest_phone || reservation.profiles?.telephone || "Non renseigné",
-        carName: reservation.car_name,
-        carCategory: reservation.car_category,
-        pickupDate: new Date(reservation.pickup_date).toLocaleDateString('fr-FR'),
-        pickupTime: reservation.pickup_time || "14:00", // Valeur par défaut si manquant
-        returnDate: new Date(reservation.return_date).toLocaleDateString('fr-FR'),
-        returnTime: reservation.return_time || "14:00", // Valeur par défaut si manquant
-        pickupLocation: reservation.pickup_location,
-        returnLocation: reservation.return_location,
-        totalPrice: reservation.total_price,
-      };
-
-      console.log("📨 Données email acceptation:", emailData);
-
-      // Vérifier que l'email client existe
-      if (!emailData.clientEmail) {
-        throw new Error("Email du client non trouvé");
-      }
-
-      // Envoyer l'email de confirmation au client
-      const emailResult = await emailJSService.sendReservationAcceptedEmail(emailData);
-      
-      if (!emailResult.success) {
-        throw new Error("Échec de l'envoi de l'email");
-      }
-
-      toast({
-        title: "Réservation acceptée",
-        description: "Le client a été notifié par email.",
-      });
-
-      // Recharger les données
-      fetchReservations();
-    } catch (error: any) {
-      console.error("❌ Erreur acceptation réservation:", error);
-      toast({
-        title: "Erreur",
-        description: error.message || "Impossible d'accepter la réservation.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  // Fonction pour refuser une réservation
-  const handleRejectReservation = async (reservation: any) => {
-
-    try {
-      // Mettre à jour le statut dans la base de données
-      const { error } = await supabase
-        .from("reservations")
-        .update({ status: "refused" })
-        .eq("id", reservation.id);
-
-      if (error) throw error;
-
-      // Préparer les données pour l'email
-      const emailData = {
-        reservationId: reservation.id,
-        clientName: reservation.guest_name || reservation.profiles?.full_name || "Utilisateur",
-        clientEmail: reservation.guest_email || reservation.profiles?.email,
-        clientPhone: reservation.guest_phone || reservation.profiles?.telephone || "Non renseigné",
-        carName: reservation.car_name,
-        carCategory: reservation.car_category,
-        pickupDate: new Date(reservation.pickup_date).toLocaleDateString('fr-FR'),
-        pickupTime: reservation.pickup_time,
-        returnDate: new Date(reservation.return_date).toLocaleDateString('fr-FR'),
-        returnTime: reservation.return_time,
-        pickupLocation: reservation.pickup_location,
-        returnLocation: reservation.return_location,
-        totalPrice: reservation.total_price,
-      };
-
-      // Envoyer l'email de refus au client
-      await emailJSService.sendReservationRejectedEmail(emailData);
-
-      toast({
-        title: "Réservation refusée",
-        description: "Le client a été notifié par email.",
-      });
-
-      // Recharger les données
-      fetchReservations();
-    } catch (error: any) {
-      console.error("Erreur refus réservation:", error);
-      toast({
-        title: "Erreur",
-        description: error.message || "Impossible de refuser la réservation.",
-        variant: "destructive",
-      });
-    }
-  };
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 sm:p-6">
@@ -810,6 +834,18 @@ export default function ReservationsAdmin() {
                         </p>
                       </div>
                     </div>
+
+                    {/* Affichage de la raison de refus si elle existe */}
+                    {reservation.rejection_reason && (
+                      <div className="col-span-2">
+                        <div className="flex items-center gap-1 text-sm font-medium text-red-900 mb-1">
+                          ❌ Raison du refus
+                        </div>
+                        <p className="text-sm text-red-700 bg-red-50 p-2 rounded border border-red-200">
+                          {reservation.rejection_reason}
+                        </p>
+                      </div>
+                    )}
                   </div>
 
                   {/* Actions */}
@@ -827,7 +863,7 @@ export default function ReservationsAdmin() {
                           Accepter
                         </button>
                         <button
-                          onClick={() => handleRejectReservation(reservation)}
+                          onClick={() => openRejectModal(reservation)}
                           className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors font-medium text-sm flex-1 sm:flex-none text-center"
                         >
                           Refuser
@@ -847,6 +883,45 @@ export default function ReservationsAdmin() {
           </div>
         )}
       </div>
+
+      {/* 🔹 Modal de refus avec raison */}
+      {rejectModal.isOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-md w-full p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Refuser la réservation
+            </h3>
+            
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Raison du refus *
+              </label>
+              <textarea
+                value={rejectModal.reason}
+                onChange={(e) => setRejectModal({...rejectModal, reason: e.target.value})}
+                placeholder="Veuillez saisir la raison du refus (cette raison sera communiquée au client)..."
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm resize-none"
+                rows={4}
+              />
+            </div>
+
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={closeRejectModal}
+                className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors text-sm"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={handleRejectWithReason}
+                className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors font-medium text-sm"
+              >
+                Confirmer le refus
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

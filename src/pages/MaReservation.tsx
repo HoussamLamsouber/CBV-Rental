@@ -307,15 +307,6 @@ const MaReservation = () => {
       <div className="flex-1">
         {/* En-tête */}
         <div className="flex items-center gap-4 mb-6">
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => navigate("/")}
-            className="flex items-center gap-2"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Retour
-          </Button>
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Mes Réservations</h1>
             <p className="text-gray-600 text-sm sm:text-base mt-1">

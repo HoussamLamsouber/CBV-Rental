@@ -149,10 +149,6 @@ const MonCompte = () => {
                 <p className="text-gray-600 text-sm sm:text-base truncate">
                   {userInfo.full_name || 'Nom complet non renseigné'}
                 </p>
-                <Badge variant="secondary" className="mt-1 text-xs">
-                  <Shield className="h-3 w-3 mr-1" />
-                  Compte vérifié
-                </Badge>
               </div>
             </div>
             
@@ -179,109 +175,124 @@ const MonCompte = () => {
                 Informations personnelles
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              
-              <div className="space-y-2">
-                <Label htmlFor="full_name" className="text-sm">Nom Complet</Label>
-                <Input
-                  id="full_name"
-                  value={userInfo.full_name}
-                  onChange={handleChange}
-                  disabled={!isEditing}
-                  placeholder="Votre nom complet"
-                  className="text-sm w-full"
-                />
-              </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-sm">Email</Label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                  <Input
-                    id="email"
-                    type="email"
-                    value={userInfo.email}
-                    onChange={handleChange}
-                    disabled={!isEditing}
-                    className="pl-10 text-sm w-full"
-                    placeholder="votre@email.com"
-                  />
-                </div>
-              </div>
+<CardContent className="space-y-6 sm:space-y-8">
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+    {/* Colonne de gauche */}
+    <div className="space-y-4">
+      {/* Nom complet */}
+      <div className="space-y-1.5">
+        <Label htmlFor="full_name" className="text-sm font-medium">Nom complet</Label>
+        <Input
+          id="full_name"
+          value={userInfo.full_name}
+          onChange={handleChange}
+          disabled={!isEditing}
+          placeholder="Votre nom complet"
+          className="text-sm h-10"
+        />
+      </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="telephone" className="text-sm">Téléphone</Label>
-                <div className="relative">
-                  <Phone className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                  <Input
-                    id="telephone"
-                    value={userInfo.telephone}
-                    onChange={handleChange}
-                    disabled={!isEditing}
-                    className="pl-10 text-sm w-full"
-                    placeholder="+212 6 00 00 00 00"
-                  />
-                </div>
-              </div>
+      {/* Date de naissance */}
+      <div className="space-y-1.5">
+        <Label htmlFor="dateNaissance" className="text-sm font-medium">Date de naissance</Label>
+        <div className="relative">
+          <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Input
+            id="dateNaissance"
+            type="date"
+            value={userInfo.dateNaissance}
+            onChange={handleChange}
+            disabled={!isEditing}
+            className="pl-9 text-sm h-10 appearance-none [color-scheme:light]"
+          />
+        </div>
+      </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="adresse" className="text-sm">Adresse</Label>
-                <div className="relative">
-                  <MapPin className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                  <Input
-                    id="adresse"
-                    value={userInfo.adresse}
-                    onChange={handleChange}
-                    disabled={!isEditing}
-                    className="pl-10 text-sm w-full"
-                    placeholder="Votre adresse complète"
-                  />
-                </div>
-              </div>
+      {/* Adresse */}
+      <div className="space-y-1.5">
+        <Label htmlFor="adresse" className="text-sm font-medium">Adresse</Label>
+        <div className="relative">
+          <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Input
+            id="adresse"
+            value={userInfo.adresse}
+            onChange={handleChange}
+            disabled={!isEditing}
+            className="pl-9 text-sm h-10"
+            placeholder="Votre adresse complète"
+          />
+        </div>
+      </div>
+    </div>
 
-              {/* ✅ Correction du débordement mobile */}
-              <div className="space-y-2">
-                <Label htmlFor="dateNaissance" className="text-sm">Date de naissance</Label>
-                <div className="relative">
-                  <Calendar className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                  <Input
-                    id="dateNaissance"
-                    type="date"
-                    value={userInfo.dateNaissance}
-                    onChange={handleChange}
-                    disabled={!isEditing}
-                    className="pl-10 text-sm w-full appearance-none [color-scheme:light]"
-                    style={{ minWidth: 0 }}
-                  />
-                </div>
-              </div>
+    {/* Colonne de droite */}
+    <div className="space-y-4">
+      {/* Email */}
+      <div className="space-y-1.5">
+        <Label htmlFor="email" className="text-sm font-medium">Email</Label>
+        <div className="relative">
+          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Input
+            id="email"
+            type="email"
+            value={userInfo.email}
+            onChange={handleChange}
+            disabled={!isEditing}
+            className="pl-9 text-sm h-10"
+            placeholder="votre@email.com"
+          />
+        </div>
+      </div>
 
-              {isEditing && (
-                <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-200">
-                  <Button 
-                    onClick={handleSave} 
-                    disabled={saving}
-                    className="flex-1 flex items-center justify-center gap-2"
-                  >
-                    {saving ? (
-                      <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                        Sauvegarde...
-                      </>
-                    ) : (
-                      "Sauvegarder"
-                    )}
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    onClick={() => setIsEditing(false)}
-                    className="flex-1"
-                  >
-                    Annuler
-                  </Button>
-                </div>
-              )}
-            </CardContent>
+      {/* Téléphone */}
+      <div className="space-y-1.5">
+        <Label htmlFor="telephone" className="text-sm font-medium">Téléphone</Label>
+        <div className="relative">
+          <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Input
+            id="telephone"
+            value={userInfo.telephone}
+            onChange={handleChange}
+            disabled={!isEditing}
+            className="pl-9 text-sm h-10"
+            placeholder="+212 6 00 00 00 00"
+          />
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {/* Boutons (affichés uniquement en édition) */}
+  {isEditing && (
+    <div className="flex flex-col sm:flex-row gap-2.5 pt-4 border-t border-gray-200 mt-2">
+      <Button 
+        onClick={handleSave} 
+        disabled={saving}
+        className="flex-1 flex items-center justify-center gap-2 h-10"
+      >
+        {saving ? (
+          <>
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+            Sauvegarde...
+          </>
+        ) : (
+          "Sauvegarder"
+        )}
+      </Button>
+      <Button 
+        variant="outline" 
+        onClick={() => setIsEditing(false)}
+        className="flex-1 h-10"
+      >
+        Annuler
+      </Button>
+    </div>
+  )}
+</CardContent>
+
+
+
           </Card>
         </div>
       </main>

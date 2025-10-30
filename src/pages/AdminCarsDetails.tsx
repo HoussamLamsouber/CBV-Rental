@@ -5,14 +5,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { format } from "date-fns";
+import { format, addDays } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog } from "@headlessui/react";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Calendar, Trash2 } from "lucide-react";
 
 type CarRow = {
   id: string;
@@ -77,9 +77,8 @@ export default function AdminVehicleDetail() {
   const [reservations, setReservations] = useState<ReservationRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [stockEdit, setStockEdit] = useState<number | "">("");
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-  const [activeTab, setActiveTab] = useState<'availability' | 'vehicles' | 'offers' | 'reservations'>('availability');
+  const [activeTab, setActiveTab] = useState<'availability' | 'vehicles' | 'offers' | 'reservations' | 'calendar'>('availability');
   const [offers, setOffers] = useState<any[]>([]);
   const [isCreateOfferModalOpen, setIsCreateOfferModalOpen] = useState(false);
   const [isCreateVehicleModalOpen, setIsCreateVehicleModalOpen] = useState(false);
@@ -92,6 +91,10 @@ export default function AdminVehicleDetail() {
     status: "available" as 'available' | 'reserved' | 'maintenance'
   });
   const [allReservations, setAllReservations] = useState<ReservationRow[]>([]);
+  
+  // Nouvelles variables pour le calendrier
+  const [dates, setDates] = useState<string[]>([]);
+  const [acceptedReservations, setAcceptedReservations] = useState<ReservationRow[]>([]);
 
   useEffect(() => {
     if (!id) return;
@@ -111,7 +114,6 @@ export default function AdminVehicleDetail() {
         if (!mounted) return;
         
         setVehicle(vData as CarRow);
-        setStockEdit((vData as CarRow).quantity ?? "");
 
         // 2. Charger les véhicules individuels
         const { data: vehiclesData } = await supabase
@@ -123,10 +125,9 @@ export default function AdminVehicleDetail() {
 
         setVehicles(vehiclesData || []);
 
-        // 3. Charger TOUTES les réservations - APPROCHE CORRIGÉE
+        // 3. Charger TOUTES les réservations
         console.log("🔄 Chargement des réservations...");
         
-        // Option 1: Charger sans la relation profiles d'abord
         const { data: allReservationsData, error: reservationsError } = await supabase
           .from("reservations")
           .select(`
@@ -142,7 +143,6 @@ export default function AdminVehicleDetail() {
         if (reservationsError) {
           console.error("❌ Erreur avec jointure profiles:", reservationsError);
           
-          // Option 2: Charger sans la relation si elle échoue
           const { data: simpleReservationsData } = await supabase
             .from("reservations")
             .select("*")
@@ -154,7 +154,6 @@ export default function AdminVehicleDetail() {
         } else {
           console.log("✅ Réservations chargées (avec profiles):", allReservationsData?.length);
           
-          // Nettoyer les données pour s'assurer qu'elles correspondent au type
           const cleanedReservations = allReservationsData?.map(reservation => ({
             id: reservation.id,
             car_id: reservation.car_id,
@@ -184,17 +183,25 @@ export default function AdminVehicleDetail() {
           setAllReservations(cleanedReservations || []);
         }
         
-        // 4. Charger les réservations acceptées
-        const { data: acceptedReservations } = await supabase
+        // 4. Charger les réservations acceptées pour le calendrier
+        const { data: acceptedReservationsData } = await supabase
           .from("reservations")
           .select("*")
           .eq("car_id", id)
           .eq("status", "accepted");
 
-        setReservations(acceptedReservations || []);
+        setAcceptedReservations(acceptedReservationsData || []);
+        setReservations(acceptedReservationsData || []);
 
         // 5. Charger les offres du véhicule
         await loadOffers();
+
+        // 6. Générer les dates pour le calendrier (30 jours)
+        const today = new Date();
+        const nextDays = Array.from({ length: 30 }, (_, i) =>
+          format(addDays(today, i), "yyyy-MM-dd")
+        );
+        setDates(nextDays);
 
       } catch (err: any) {
         console.error("Erreur load vehicle detail:", err);
@@ -228,6 +235,32 @@ export default function AdminVehicleDetail() {
     }
     
     setOffers(offersData || []);
+  };
+
+  // Fonctions pour le calendrier de disponibilité
+  const isDateInReservation = (date: string, reservation: ReservationRow) => {
+    const currentDate = new Date(date);
+    const pickupDate = new Date(reservation.pickup_date);
+    const returnDate = new Date(reservation.return_date);
+    
+    return currentDate >= pickupDate && currentDate <= returnDate;
+  };
+
+  const getReservedCountForDate = (date: string) => {
+    return acceptedReservations
+      .filter(r => isDateInReservation(date, r))
+      .length;
+  };
+
+  const getDailyAvailability = (date: string) => {
+    if (!vehicle) return 0;
+
+    if (!vehicle.available) {
+      return 0;
+    }
+
+    const reserved = getReservedCountForDate(date);
+    return Math.max(0, vehicle.quantity - reserved);
   };
 
   // Fonction pour obtenir les informations du client
@@ -329,7 +362,6 @@ export default function AdminVehicleDetail() {
       
       if (updatedVehicle) {
         setVehicle(prev => prev ? { ...prev, quantity: updatedVehicle.quantity } : prev);
-        setStockEdit(updatedVehicle.quantity);
       }
   
     } catch (error: any) {
@@ -457,7 +489,6 @@ export default function AdminVehicleDetail() {
       
       if (updatedVehicle) {
         setVehicle(prev => prev ? { ...prev, quantity: updatedVehicle.quantity } : prev);
-        setStockEdit(updatedVehicle.quantity);
       }
   
     } catch (error: any) {
@@ -621,17 +652,13 @@ export default function AdminVehicleDetail() {
             <p className="text-muted-foreground mb-2">{vehicle.category}</p>
             <p className="mb-2">Prix: <strong>{vehicle.price} / jour</strong></p>
 
+            {/* Stock affiché simplement sans input */}
             <div className="mb-4">
               <label className="block text-sm text-gray-600 mb-1">Stock total</label>
               <div className="flex items-center gap-2">
-                <Input
-                  value={stockEdit}
-                  onChange={(e) => setStockEdit(e.target.value === "" ? "" : Number(e.target.value))}
-                  type="number"
-                  min={0}
-                  className="w-40"
-                  disabled
-                />
+                <div className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-gray-900 font-medium min-w-20">
+                  {vehicle.quantity}
+                </div>
                 <span className="text-sm text-gray-500">
                   (Synchronisé automatiquement: {vehicles.length} véhicule(s) actif(s))
                 </span>
@@ -657,7 +684,7 @@ export default function AdminVehicleDetail() {
               }`}
               onClick={() => setActiveTab('availability')}
             >
-              Disponibilité en temps réel
+              Disponibilité aujourd'hui
             </button>
             <button
               className={`py-2 px-1 font-medium text-sm border-b-2 transition-colors ${
@@ -689,13 +716,23 @@ export default function AdminVehicleDetail() {
             >
               Toutes les réservations ({allReservations.length})
             </button>
+            <button
+              className={`py-2 px-1 font-medium text-sm border-b-2 transition-colors ${
+                activeTab === 'calendar'
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
+              }`}
+              onClick={() => setActiveTab('calendar')}
+            >
+              Calendrier (30j)
+            </button>
           </div>
         </div>
 
         {/* Contenu des onglets */}
         {activeTab === 'availability' && (
           <>
-            <h2 className="text-xl font-semibold mb-3">Disponibilité en temps réel</h2>
+            <h2 className="text-xl font-semibold mb-3">Disponibilité aujourd'hui</h2>
             
             {/* Cartes de statut */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
@@ -851,7 +888,7 @@ export default function AdminVehicleDetail() {
 
         {activeTab === 'offers' && (
           <>
-            <div className="flex justify-between items-center mb-3">
+            <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl font-semibold">Offres spéciales</h2>
               <Button onClick={() => setIsCreateOfferModalOpen(true)}>
                 + Ajouter une offre
@@ -871,22 +908,27 @@ export default function AdminVehicleDetail() {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {offers.map((offer) => (
-                  <Card key={offer.id} className="relative">
+                  <Card key={offer.id} className="relative group hover:shadow-lg transition-shadow duration-200">
                     <CardHeader className="pb-3">
-                      <CardTitle className="text-lg">{offer.period}</CardTitle>
+                      <CardTitle className="text-lg flex items-center justify-between">
+                        {offer.period}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteOffer(offer.id)}
+                          className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-red-50 hover:text-red-600"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <p className="text-2xl font-bold text-primary mb-4">
+                      <p className="text-2xl font-bold text-primary">
                         {offer.price} MAD
                       </p>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => handleDeleteOffer(offer.id)}
-                        className="w-full"
-                      >
-                        Supprimer l'offre
-                      </Button>
+                      <p className="text-sm text-muted-foreground mt-2">
+                        Prix spécial pour {offer.period.toLowerCase()}
+                      </p>
                     </CardContent>
                   </Card>
                 ))}
@@ -959,6 +1001,169 @@ export default function AdminVehicleDetail() {
             </div>
           </>
         )}
+
+        {/* Nouvel onglet Calendrier */}
+// Section du calendrier modifiée
+{activeTab === 'calendar' && (
+  <>
+    <div className="flex justify-between items-center mb-6">
+      <h2 className="text-xl font-semibold">Calendrier de disponibilité - 30 jours</h2>
+      <div className="flex items-center gap-2 text-sm text-gray-600">
+        <Calendar className="h-4 w-4" />
+        <span>Disponibilité sur {dates.length} jours</span>
+      </div>
+    </div>
+
+    {/* Timeline de disponibilité améliorée */}
+    <div className="bg-white rounded-xl shadow-sm border p-6">
+      <div className="flex items-center justify-between mb-4">
+        <h4 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+          <Calendar className="h-4 w-4" />
+          Calendrier des réservations
+        </h4>
+        <div className="text-sm text-gray-500">
+          Stock total: {vehicle.quantity} véhicules
+        </div>
+      </div>
+      
+      <div className="overflow-x-auto">
+        <div className="flex gap-1 min-w-max">
+          {dates.map((date) => {
+            const available = getDailyAvailability(date);
+            const reserved = getReservedCountForDate(date);
+            const isToday = date === format(new Date(), "yyyy-MM-dd");
+            const isFullyBooked = available === 0;
+            const isPartiallyAvailable = available > 0 && available < vehicle.quantity;
+            const isFullyAvailable = available === vehicle.quantity;
+            
+            return (
+              <div
+                key={date}
+                className={`flex flex-col items-center p-2 rounded-lg border text-xs font-medium min-w-12 transition-all duration-200 ${
+                  isFullyBooked 
+                    ? "bg-red-50 border-red-200 text-red-700" 
+                    : isPartiallyAvailable
+                    ? "bg-yellow-50 border-yellow-200 text-yellow-700"
+                    : "bg-green-50 border-green-200 text-green-700"
+                } ${isToday ? "ring-2 ring-blue-500 ring-opacity-50 transform scale-105" : ""}`}
+                title={`${format(new Date(date), "dd/MM/yyyy")}
+${available} véhicule(s) disponible(s)
+${reserved} véhicule(s) réservé(s)
+Stock total: ${vehicle.quantity} véhicules`}
+              >
+                <span className="font-semibold">{format(new Date(date), "dd")}</span>
+                <span className="text-[10px] opacity-70">{format(new Date(date), "MMM")}</span>
+                <div className="mt-1 flex flex-col items-center space-y-0.5">
+                  {/* Indicateur visuel simple */}
+                  <div className="flex items-center gap-1">
+                    <span className={`text-xs font-bold ${
+                      isFullyBooked ? "text-red-600" :
+                      isPartiallyAvailable ? "text-yellow-600" :
+                      "text-green-600"
+                    }`}>
+                      {available}
+                    </span>
+                    <span className="text-[10px] text-gray-500">dispo</span>
+                  </div>
+                  
+                  {/* Barre de progression visuelle */}
+                  <div className="w-8 h-1 bg-gray-200 rounded-full overflow-hidden">
+                    <div 
+                      className={`h-full rounded-full ${
+                        isFullyBooked ? "bg-red-400" :
+                        isPartiallyAvailable ? "bg-yellow-400" :
+                        "bg-green-400"
+                      }`}
+                      style={{ 
+                        width: `${vehicle.quantity > 0 ? (available / vehicle.quantity) * 100 : 0}%` 
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Légende simplifiée */}
+      <div className="flex flex-wrap items-center justify-center gap-4 mt-6 text-xs text-gray-600">
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 bg-green-100 border border-green-200 rounded"></div>
+          <span>Disponible ({vehicle.quantity} véhicules)</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 bg-yellow-100 border border-yellow-200 rounded"></div>
+          <span>Partiellement disponible</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 bg-red-100 border border-red-200 rounded"></div>
+          <span>Complet (0 disponible)</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 ring-2 ring-blue-500 ring-opacity-50 rounded"></div>
+          <span>Aujourd'hui</span>
+        </div>
+      </div>
+
+      {/* Explication du système */}
+      <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+        <p className="text-xs text-blue-800 text-center">
+          <strong>Comment lire le calendrier :</strong> Le nombre indique les véhicules disponibles sur le stock total de {vehicle.quantity}. 
+          La barre montre le taux de disponibilité.
+        </p>
+      </div>
+    </div>
+
+    {/* Statistiques de réservation */}
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg">Véhicules disponibles aujourd'hui</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold text-green-600">
+            {getDailyAvailability(format(new Date(), "yyyy-MM-dd"))}
+          </div>
+          <p className="text-sm text-muted-foreground mt-2">
+            sur {vehicle.quantity} au total
+          </p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg">Réservations en cours</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold text-blue-600">
+            {acceptedReservations.length}
+          </div>
+          <p className="text-sm text-muted-foreground mt-2">
+            Réservations acceptées
+          </p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg">Taux d'occupation</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold text-purple-600">
+            {vehicle.quantity > 0 
+              ? `${Math.round((acceptedReservations.length / vehicle.quantity) * 100)}%`
+              : '0%'
+            }
+          </div>
+          <p className="text-sm text-muted-foreground mt-2">
+            Moyenne globale
+          </p>
+        </CardContent>
+      </Card>
+    </div>
+  </>
+)}
 
         {/* Modal de création de véhicule individuel */}
         <Dialog open={isCreateVehicleModalOpen} onClose={() => setIsCreateVehicleModalOpen(false)} className="relative z-50">

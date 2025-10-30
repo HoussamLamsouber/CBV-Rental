@@ -10,6 +10,7 @@ import MaReservation from "./pages/MaReservation";
 import MonCompte from "./pages/MonCompte";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
+import About from "./pages/About";
 
 import AdminVehicles from "./pages/AdminVehicules";
 import AdminCarDetails from "./pages/AdminCarsDetails";
@@ -19,6 +20,7 @@ import { Header } from './components/Header';
 import { AuthProvider } from './contexts/AuthContext';
 import AdminUsers from "./pages/AdminUsers";
 import AdminReservations from "./pages/AdminReservations";
+// import './i18n';
 
 const queryClient = new QueryClient();
 
@@ -42,6 +44,7 @@ function App() {
               <Route path="/ma-reservation" element={<MaReservation />} />
               <Route path="/mon-compte" element={<MonCompte />} />
               <Route path="/auth" element={<Auth />} />
+              <Route path="/about" element={<About />} />
 
               {/* Admin */}
               <Route path="/admin" element={<AdminAuth />} />

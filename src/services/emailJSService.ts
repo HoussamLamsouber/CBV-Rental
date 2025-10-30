@@ -122,7 +122,8 @@ export const emailJSService = {
         // Variables pour le template conditionnel
         reservation_status: 'rejected',
         is_accepted: false,
-        is_rejected: true
+        is_rejected: true,
+        rejection_reason: reservationData.rejectionReason || "Non spécifiée. Veuillez nous contacter pour plus d'informations.",
       };
 
       console.log("📤 Paramètres email refus:", templateParams);

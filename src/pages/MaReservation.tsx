@@ -23,6 +23,7 @@ import {
   AlertTriangle
 } from "lucide-react";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { useTranslation } from "react-i18next";
 
 type ReservationRow = Database["public"]["Tables"]["reservations"]["Row"];
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
@@ -41,6 +42,7 @@ const MaReservation = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { t } = useTranslation();
 
   useEffect(() => {
     let mounted = true;
@@ -59,8 +61,8 @@ const MaReservation = () => {
       } catch (err) {
         console.error(err);
         if (mounted) toast({ 
-          title: "Erreur", 
-          description: "Impossible de récupérer vos réservations", 
+          title: t("error"), 
+          description: t('ma_reservation.messages.cannot_load_reservations'), 
           variant: "destructive" 
         });
       } finally {
@@ -97,7 +99,7 @@ const MaReservation = () => {
       // Étape 3: Combiner les données
       const reservationsWithProfile: ReservationWithProfile[] = reservationsData.map(reservation => ({
         ...reservation,
-        client_name: profileData?.full_name || user.email || "Non spécifié",
+        client_name: profileData?.full_name || user.email || t('ma_reservation.messages.not_specified'),
         client_email: profileData?.email || user.email,
         client_phone: profileData?.telephone
       }));
@@ -128,8 +130,8 @@ const MaReservation = () => {
           // Pour les invités, utiliser les données guest_*
           const reservationsWithGuestData: ReservationWithProfile[] = (reservationsData || []).map(reservation => ({
             ...reservation,
-            client_name: reservation.guest_name || "Invité",
-            client_email: reservation.guest_email || "Non spécifié",
+            client_name: reservation.guest_name || t('ma_reservation.messages.guest'),
+            client_email: reservation.guest_email || t('ma_reservation.messages.not_specified'),
             client_phone: reservation.guest_phone
           }));
     
@@ -158,8 +160,8 @@ const MaReservation = () => {
           if (!error && reservation) {
             reservations.push({
               ...reservation,
-              client_name: reservation.guest_name || "Invité",
-              client_email: reservation.guest_email || "Non spécifié",
+              client_name: reservation.guest_name || t('ma_reservation.messages.guest'),
+              client_email: reservation.guest_email || t('ma_reservation.messages.not_specified'),
               client_phone: reservation.guest_phone
             });
           }
@@ -174,10 +176,10 @@ const MaReservation = () => {
 
     loadReservations();
     return () => { mounted = false; };
-  }, [toast, navigate, user]);
+  }, [toast, navigate, user, t]);
 
   const handleCancelReservation = async (res: ReservationWithProfile) => {
-    if (!confirm("Êtes-vous sûr de vouloir annuler cette réservation ? Cette action est irréversible.")) {
+    if (!confirm(t('ma_reservation.messages.confirm_cancellation'))) {
       return;
     }
 
@@ -206,8 +208,8 @@ const MaReservation = () => {
       // Préparer les données pour l'email d'annulation
       const reservationData = {
         reservationId: res.id,
-        clientName: res.client_name || "Invité",
-        clientEmail: res.client_email || "Non spécifié",
+        clientName: res.client_name || t('ma_reservation.messages.guest'),
+        clientEmail: res.client_email || t('ma_reservation.messages.not_specified'),
         clientPhone: res.client_phone,
         carName: res.car_name,
         carCategory: res.car_category,
@@ -230,16 +232,16 @@ const MaReservation = () => {
       }
 
       toast({ 
-        title: "Réservation annulée", 
-        description: `Votre réservation pour ${res.car_name} a été annulée.` 
+        title: t('ma_reservation.messages.reservation_cancelled'), 
+        description: t('ma_reservation.messages.reservation_cancelled_for', { carName: res.car_name }) 
       });
       
       setReservations(prev => prev.filter(r => r.id !== res.id));
     } catch (err) {
       console.error("❌ Erreur annulation:", err);
       toast({ 
-        title: "Erreur", 
-        description: "Impossible d'annuler la réservation", 
+        title: t("error"), 
+        description: t('ma_reservation.messages.cannot_cancel_reservation'), 
         variant: "destructive" 
       });
     } finally {
@@ -249,12 +251,30 @@ const MaReservation = () => {
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
-      pending: { label: "En attente", color: "bg-yellow-100 text-yellow-800" },
-      accepted: { label: "Confirmée", color: "bg-green-100 text-green-800" },
-      active: { label: "En cours", color: "bg-blue-100 text-blue-800" },
-      completed: { label: "Terminée", color: "bg-gray-100 text-gray-800" },
-      refused: { label: "Refusée", color: "bg-red-100 text-red-800" },
-      cancelled: { label: "Annulée", color: "bg-red-100 text-red-800" }
+      pending: { 
+        label: t('ma_reservation.status.pending'), 
+        color: "bg-yellow-100 text-yellow-800" 
+      },
+      accepted: { 
+        label: t('ma_reservation.status.accepted'), 
+        color: "bg-green-100 text-green-800" 
+      },
+      active: { 
+        label: t('ma_reservation.status.active'), 
+        color: "bg-blue-100 text-blue-800" 
+      },
+      completed: { 
+        label: t('ma_reservation.status.completed'), 
+        color: "bg-gray-100 text-gray-800" 
+      },
+      refused: { 
+        label: t('ma_reservation.status.refused'), 
+        color: "bg-red-100 text-red-800" 
+      },
+      cancelled: { 
+        label: t('ma_reservation.status.cancelled'), 
+        color: "bg-red-100 text-red-800" 
+      }
     };
 
     const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.pending;
@@ -271,7 +291,7 @@ const MaReservation = () => {
     if (loading) {
       return (
         <div className="flex-1 flex items-center justify-center">
-          <LoadingSpinner message="Chargement de vos réservations..." />
+          <LoadingSpinner message={t('ma_reservation.messages.loading_reservations')} />
         </div>
       );
     }
@@ -281,20 +301,22 @@ const MaReservation = () => {
         <div className="flex-1 text-center py-12">
           <div className="max-w-md mx-auto">
             <Calendar className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">Aucune réservation</h1>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">
+              {t('ma_reservation.messages.no_reservations')}
+            </h1>
             <p className="text-gray-600 mb-6">
               {user 
-                ? "Vous n'avez pas encore effectué de réservation." 
-                : "Vous n'avez pas de réservation en cours."
+                ? t('ma_reservation.messages.no_reservations_user') 
+                : t('ma_reservation.messages.no_reservations_guest')
               }
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <Button onClick={() => navigate("/")}>
-                Voir les véhicules
+                {t('ma_reservation.actions.view_vehicles')}
               </Button>
               {!user && (
                 <Button variant="outline" onClick={() => navigate("/auth")}>
-                  Créer un compte
+                  {t('auth.tabs.signup')}
                 </Button>
               )}
             </div>
@@ -308,9 +330,11 @@ const MaReservation = () => {
         {/* En-tête */}
         <div className="flex items-center gap-4 mb-6">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Mes Réservations</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+              {t('ma_reservation.title')}
+            </h1>
             <p className="text-gray-600 text-sm sm:text-base mt-1">
-              {reservations.length} réservation(s) trouvée(s)
+              {t('ma_reservation.messages.reservations_found').replace('{count}', reservations.length.toString())}
             </p>
           </div>
         </div>
@@ -345,8 +369,8 @@ const MaReservation = () => {
                       </div>
                       
                       <div className="text-right">
-                        <div className="text-2xl font-bold text-primary">{res.total_price} Dhs</div>
-                        <div className="text-sm text-gray-500">Prix total</div>
+                        <div className="text-2xl font-bold text-primary">{res.total_price} {t('ma_reservation.currency')}</div>
+                        <div className="text-sm text-gray-500">{t('ma_reservation.total_price')}</div>
                       </div>
                     </div>
 
@@ -357,7 +381,9 @@ const MaReservation = () => {
                         <div className="flex items-center gap-2">
                           <Calendar className="h-4 w-4 text-gray-400 flex-shrink-0" />
                           <div>
-                            <div className="font-medium">Du {formatDisplayDate(res.pickup_date)}</div>
+                            <div className="font-medium">
+                              {t('ma_reservation.messages.from_date').replace('{date}', formatDisplayDate(res.pickup_date))}
+                            </div>
                             <div className="text-gray-600">{res.pickup_time}</div>
                           </div>
                         </div>
@@ -365,7 +391,9 @@ const MaReservation = () => {
                         <div className="flex items-center gap-2">
                           <Clock className="h-4 w-4 text-gray-400 flex-shrink-0" />
                           <div>
-                            <div className="font-medium">Au {formatDisplayDate(res.return_date)}</div>
+                            <div className="font-medium">
+                              {t('ma_reservation.messages.to_date').replace('{date}', formatDisplayDate(res.return_date))}
+                            </div>
                             <div className="text-gray-600">{res.return_time}</div>
                           </div>
                         </div>
@@ -376,7 +404,7 @@ const MaReservation = () => {
                         <div className="flex items-start gap-2">
                           <MapPin className="h-4 w-4 text-gray-400 flex-shrink-0 mt-0.5" />
                           <div>
-                            <div className="font-medium">Retrait</div>
+                            <div className="font-medium">{t('ma_reservation.pickup')}</div>
                             <div className="text-gray-600">{res.pickup_location}</div>
                           </div>
                         </div>
@@ -385,7 +413,7 @@ const MaReservation = () => {
                           <div className="flex items-start gap-2">
                             <MapPin className="h-4 w-4 text-gray-400 flex-shrink-0 mt-0.5" />
                             <div>
-                              <div className="font-medium">Retour</div>
+                              <div className="font-medium">{t('ma_reservation.return')}</div>
                               <div className="text-gray-600">{res.return_location}</div>
                             </div>
                           </div>
@@ -397,7 +425,7 @@ const MaReservation = () => {
                     <div className="mt-4 pt-4 border-t border-gray-200">
                       <div className="flex items-center gap-2 mb-2">
                         <User className="h-4 w-4 text-gray-400" />
-                        <span className="font-medium text-sm">Informations client</span>
+                        <span className="font-medium text-sm">{t('ma_reservation.client_info')}</span>
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
                         <div className="flex items-center gap-2">
@@ -426,12 +454,12 @@ const MaReservation = () => {
                           {cancellingId === res.id ? (
                             <>
                               <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
-                              Annulation...
+                              {t('ma_reservation.actions.cancelling')}
                             </>
                           ) : (
                             <>
                               <Trash2 className="h-4 w-4" />
-                              Annuler la réservation
+                              {t('ma_reservation.actions.cancel_reservation')}
                             </>
                           )}
                         </Button>
@@ -440,7 +468,7 @@ const MaReservation = () => {
                       <div className="mt-4 pt-4 border-t border-gray-200">
                         <div className="flex items-center gap-2 text-sm text-gray-600">
                           <AlertTriangle className="h-4 w-4 text-gray-400" />
-                          Cette réservation ne peut pas être annulée
+                          {t('ma_reservation.messages.cannot_cancel')}
                         </div>
                       </div>
                     )}

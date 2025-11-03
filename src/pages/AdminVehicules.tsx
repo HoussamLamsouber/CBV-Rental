@@ -1,4 +1,4 @@
-// src/pages/AdminVehicles.tsx
+// src/pages/AdminVehicles.tsx (version internationalisée)
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Footer } from "@/components/Footer";
@@ -22,6 +22,7 @@ import {
   ArrowRight,
   Zap
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface Vehicle {
   id: string;
@@ -84,6 +85,7 @@ export default function AdminVehicles() {
     performanceRate: 0
   });
   const { toast } = useToast();
+  const { t } = useTranslation();
 
   const [newVehicle, setNewVehicle] = useState({
     name: "",
@@ -146,8 +148,8 @@ export default function AdminVehicles() {
     } catch (error) {
       console.error("Erreur chargement données:", error);
       toast({
-        title: "Erreur",
-        description: "Impossible de charger les données",
+        title: t("error"),
+        description: t('admin_vehicles.messages.cannot_load_data'),
         variant: "destructive",
       });
     } finally {
@@ -228,8 +230,8 @@ export default function AdminVehicles() {
   const handleCreateVehicle = async () => {
     if (!newVehicle.name || !newVehicle.category || !newVehicle.price || !newVehicle.quantity) {
       toast({
-        title: "Champs manquants",
-        description: "Veuillez remplir tous les champs obligatoires.",
+        title: t('admin_vehicles.messages.missing_fields'),
+        description: t('admin_vehicles.messages.fill_required_fields'),
         variant: "destructive",
       });
       return;
@@ -251,8 +253,8 @@ export default function AdminVehicles() {
 
       if (existingCar) {
         toast({
-          title: "Modèle déjà existant",
-          description: `Un modèle avec le nom "${newVehicle.name}" existe déjà. Veuillez modifier le nom.`,
+          title: t('admin_vehicles.messages.duplicate_model'),
+          description: t('admin_vehicles.messages.model_already_exists', { name: newVehicle.name }),
           variant: "destructive",
         });
         return;
@@ -280,8 +282,8 @@ export default function AdminVehicles() {
       if (error) throw error;
 
       toast({
-        title: "Modèle créé",
-        description: `Le modèle ${newVehicle.name} a été créé avec succès.`,
+        title: t('admin_vehicles.messages.model_created'),
+        description: t('admin_vehicles.messages.model_created_success', { name: newVehicle.name }),
       });
 
       setNewVehicle({
@@ -300,8 +302,8 @@ export default function AdminVehicles() {
     } catch (error: any) {
       console.error("Erreur création modèle:", error);
       toast({
-        title: "Erreur",
-        description: error.message || "Impossible de créer le modèle.",
+        title: t("error"),
+        description: error.message || t('admin_vehicles.messages.cannot_create_model'),
         variant: "destructive",
       });
     } finally {
@@ -351,39 +353,39 @@ export default function AdminVehicles() {
           <div className="mb-8">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
               <div>
-                <h1 className="text-3xl font-bold text-gray-900 mb-2">Tableau de Bord</h1>
-                <p className="text-gray-600">Surveillez les performances de votre flotte automobile</p>
+                <h1 className="text-3xl font-bold text-gray-900 mb-2">{t('admin_vehicles.title')}</h1>
+                <p className="text-gray-600">{t('admin_vehicles.subtitle')}</p>
               </div>
             </div>
 
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
               <StatCard
-                title="Véhicules Total"
+                title={t('admin_vehicles.stats.total_vehicles')}
                 value={stats.totalVehicles}
-                subtitle="Dans la flotte"
+                subtitle={t('admin_vehicles.stats.in_fleet')}
                 icon={Car}
                 color="blue"
               />
               <StatCard
-                title="Performance"
+                title={t('admin_vehicles.stats.performance')}
                 value={`${stats.performanceRate}%`}
-                subtitle="Ratio réservations/véhicules"
+                subtitle={t('admin_vehicles.stats.reservation_ratio')}
                 icon={Zap}
                 trend={stats.monthlyGrowth}
                 color="green"
               />
               <StatCard
-                title="Revenu Total"
+                title={t('admin_vehicles.stats.total_revenue')}
                 value={`${stats.totalRevenue.toLocaleString()} MAD`}
-                subtitle="Ce mois"
+                subtitle={t('admin_vehicles.stats.this_month')}
                 icon={DollarSign}
                 color="purple"
               />
               <StatCard
-                title="Réservations Actives"
+                title={t('admin_vehicles.stats.active_reservations')}
                 value={stats.totalReservations}
-                subtitle="En cours actuellement"
+                subtitle={t('admin_vehicles.stats.currently_ongoing')}
                 icon={Users}
                 color="orange"
               />
@@ -400,12 +402,12 @@ export default function AdminVehicles() {
                     <Car className="h-5 w-5 text-blue-600" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900">Modèles de Véhicules</h3>
-                    <p className="text-sm text-gray-600">Cliquez pour gérer chaque modèle</p>
+                    <h3 className="text-lg font-semibold text-gray-900">{t('admin_vehicles.vehicle_models.title')}</h3>
+                    <p className="text-sm text-gray-600">{t('admin_vehicles.vehicle_models.subtitle')}</p>
                   </div>
                 </div>
                 <div className="text-sm text-gray-500">
-                  {vehicles.length} modèle{vehicles.length > 1 ? 's' : ''}
+                  {vehicles.length} {t('admin_vehicles.vehicle_models.model_count', { count: vehicles.length })}
                 </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -437,11 +439,11 @@ export default function AdminVehicles() {
                           </span>
                           {vehicle.available ? (
                             <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                              Disponible
+                              {t('admin_vehicles.status.available')}
                             </span>
                           ) : (
                             <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                              Indisponible
+                              {t('admin_vehicles.status.unavailable')}
                             </span>
                           )}
                         </div>
@@ -450,7 +452,7 @@ export default function AdminVehicles() {
                           <span>•</span>
                           <span>{vehicle.fuel}</span>
                           <span>•</span>
-                          <span>{vehicle.seats} places</span>
+                          <span>{vehicle.seats} {t('admin_vehicles.messages.seats')}</span>
                         </div>
                       </div>
                     </div>
@@ -460,11 +462,11 @@ export default function AdminVehicles() {
                 {vehicles.length === 0 && (
                   <div className="col-span-2 text-center py-12">
                     <Car className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                    <h4 className="text-lg font-semibold text-gray-900 mb-2">Aucun véhicule</h4>
-                    <p className="text-gray-600 mb-4">Commencez par ajouter votre premier véhicule</p>
+                    <h4 className="text-lg font-semibold text-gray-900 mb-2">{t('admin_vehicles.messages.no_vehicles')}</h4>
+                    <p className="text-gray-600 mb-4">{t('admin_vehicles.messages.add_first_vehicle')}</p>
                     <Button onClick={() => setIsCreateModalOpen(true)}>
                       <Plus className="h-4 w-4 mr-2" />
-                      Ajouter un véhicule
+                      {t('admin_vehicles.actions.add_vehicle')}
                     </Button>
                   </div>
                 )}
@@ -477,9 +479,9 @@ export default function AdminVehicles() {
                   <div className="text-center">
                     <Plus className="h-8 w-8 text-gray-400 group-hover:text-blue-500 mx-auto mb-2 transition-colors" />
                     <p className="font-medium text-gray-600 group-hover:text-blue-600 transition-colors">
-                      Ajouter un véhicule
+                      {t('admin_vehicles.actions.add_vehicle')}
                     </p>
-                    <p className="text-sm text-gray-500 mt-1">Nouveau modèle</p>
+                    <p className="text-sm text-gray-500 mt-1">{t('admin_vehicles.messages.new_model')}</p>
                   </div>
                 </div>
               </div>
@@ -493,13 +495,13 @@ export default function AdminVehicles() {
                     <Calendar className="h-5 w-5 text-green-600" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900">Réservations Récentes</h3>
-                    <p className="text-sm text-gray-600">7 derniers jours</p>
+                    <h3 className="text-lg font-semibold text-gray-900">{t('admin_vehicles.recent_reservations.title')}</h3>
+                    <p className="text-sm text-gray-600">{t('admin_vehicles.recent_reservations.subtitle')}</p>
                   </div>
                 </div>
                 <Link to="/admin/reservations">
                   <Button variant="ghost" size="sm" className="text-blue-600">
-                    Voir tout <ChevronRight className="h-4 w-4 ml-1" />
+                    {t('admin_vehicles.actions.see_all')} <ChevronRight className="h-4 w-4 ml-1" />
                   </Button>
                 </Link>
               </div>
@@ -515,8 +517,8 @@ export default function AdminVehicles() {
                           ? 'bg-yellow-100 text-yellow-800'
                           : 'bg-red-100 text-red-800'
                       }`}>
-                        {reservation.status === 'accepted' ? 'Confirmée' : 
-                         reservation.status === 'pending' ? 'En attente' : 'Annulée'}
+                        {reservation.status === 'accepted' ? t('admin_reservations.status.accepted') : 
+                         reservation.status === 'pending' ? t('admin_reservations.status.pending') : t('admin_reservations.status.refused')}
                       </span>
                     </div>
                     <div className="text-sm text-gray-600 space-y-1">
@@ -534,7 +536,7 @@ export default function AdminVehicles() {
                 {recentReservations.length === 0 && (
                   <div className="text-center py-8 text-gray-500">
                     <Clock className="h-8 w-8 mx-auto mb-2 text-gray-400" />
-                    <p className="text-sm">Aucune réservation récente</p>
+                    <p className="text-sm">{t('admin_vehicles.messages.no_recent_reservations')}</p>
                   </div>
                 )}
               </div>
@@ -549,36 +551,36 @@ export default function AdminVehicles() {
             <Dialog.Panel className="bg-white rounded-xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
               <Dialog.Title className="text-xl font-semibold mb-6 flex items-center gap-2">
                 <Car className="h-5 w-5" />
-                Nouveau Modèle de Véhicule
+                {t('admin_vehicles.modals.create_vehicle.title')}
               </Dialog.Title>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                 <div>
-                  <Label htmlFor="name" className="text-sm font-medium">Nom du modèle *</Label>
+                  <Label htmlFor="name" className="text-sm font-medium">{t('admin_vehicles.modals.create_vehicle.model_name')} *</Label>
                   <Input
                     id="name"
                     value={newVehicle.name}
                     onChange={(e) => setNewVehicle({...newVehicle, name: e.target.value})}
-                    placeholder="Ex: Renault Clio"
+                    placeholder={t('admin_vehicles.modals.create_vehicle.model_name_placeholder')}
                     className="mt-1"
                     required
                   />
                 </div>
 
                 <div>
-                  <Label htmlFor="category" className="text-sm font-medium">Catégorie *</Label>
+                  <Label htmlFor="category" className="text-sm font-medium">{t('admin_vehicles.modals.create_vehicle.category')} *</Label>
                   <Input
                     id="category"
                     value={newVehicle.category}
                     onChange={(e) => setNewVehicle({...newVehicle, category: e.target.value})}
-                    placeholder="Ex: Citadine"
+                    placeholder={t('admin_vehicles.modals.create_vehicle.category_placeholder')}
                     className="mt-1"
                     required
                   />
                 </div>
 
                 <div>
-                  <Label htmlFor="price" className="text-sm font-medium">Prix par jour (MAD) *</Label>
+                  <Label htmlFor="price" className="text-sm font-medium">{t('admin_vehicles.modals.create_vehicle.price_per_day')} *</Label>
                   <Input
                     id="price"
                     type="number"
@@ -591,7 +593,7 @@ export default function AdminVehicles() {
                 </div>
 
                 <div>
-                  <Label htmlFor="quantity" className="text-sm font-medium">Stock initial *</Label>
+                  <Label htmlFor="quantity" className="text-sm font-medium">{t('admin_vehicles.modals.create_vehicle.initial_stock')} *</Label>
                   <Input
                     id="quantity"
                     type="number"
@@ -604,7 +606,7 @@ export default function AdminVehicles() {
                 </div>
 
                 <div className="md:col-span-2">
-                  <Label htmlFor="image_url" className="text-sm font-medium">URL de l'image</Label>
+                  <Label htmlFor="image_url" className="text-sm font-medium">{t('admin_vehicles.modals.create_vehicle.image_url')}</Label>
                   <Input
                     id="image_url"
                     value={newVehicle.image_url}
@@ -615,35 +617,35 @@ export default function AdminVehicles() {
                 </div>
 
                 <div>
-                  <Label htmlFor="fuel" className="text-sm font-medium">Carburant</Label>
+                  <Label htmlFor="fuel" className="text-sm font-medium">{t('admin_vehicles.modals.create_vehicle.fuel')}</Label>
                   <select
                     id="fuel"
                     value={newVehicle.fuel}
                     onChange={(e) => setNewVehicle({...newVehicle, fuel: e.target.value})}
                     className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   >
-                    <option value="Essence">Essence</option>
-                    <option value="Diesel">Diesel</option>
-                    <option value="Electrique">Électrique</option>
-                    <option value="Hybride">Hybride</option>
+                    <option value="Essence">{t('admin_vehicles.fuel_types.gasoline')}</option>
+                    <option value="Diesel">{t('admin_vehicles.fuel_types.diesel')}</option>
+                    <option value="Electrique">{t('admin_vehicles.fuel_types.electric')}</option>
+                    <option value="Hybride">{t('admin_vehicles.fuel_types.hybrid')}</option>
                   </select>
                 </div>
 
                 <div>
-                  <Label htmlFor="transmission" className="text-sm font-medium">Transmission</Label>
+                  <Label htmlFor="transmission" className="text-sm font-medium">{t('admin_vehicles.modals.create_vehicle.transmission')}</Label>
                   <select
                     id="transmission"
                     value={newVehicle.transmission}
                     onChange={(e) => setNewVehicle({...newVehicle, transmission: e.target.value})}
                     className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   >
-                    <option value="Manuelle">Manuelle</option>
-                    <option value="Automatique">Automatique</option>
+                    <option value="Manuelle">{t('admin_vehicles.transmission_types.manual')}</option>
+                    <option value="Automatique">{t('admin_vehicles.transmission_types.automatic')}</option>
                   </select>
                 </div>
 
                 <div>
-                  <Label htmlFor="seats" className="text-sm font-medium">Nombre de places</Label>
+                  <Label htmlFor="seats" className="text-sm font-medium">{t('admin_vehicles.modals.create_vehicle.seats')}</Label>
                   <Input
                     id="seats"
                     type="number"
@@ -657,10 +659,10 @@ export default function AdminVehicles() {
 
               <div className="flex justify-end gap-3 pt-4 border-t">
                 <Button variant="secondary" onClick={() => setIsCreateModalOpen(false)}>
-                  Annuler
+                  {t('admin_vehicles.modals.create_vehicle.cancel')}
                 </Button>
                 <Button onClick={handleCreateVehicle} disabled={isLoading} className="bg-blue-600 hover:bg-blue-700">
-                  {isLoading ? "Création..." : "Créer le modèle"}
+                  {isLoading ? t('admin_vehicles.modals.create_vehicle.creating') : t('admin_vehicles.modals.create_vehicle.create_model')}
                 </Button>
               </div>
             </Dialog.Panel>

@@ -17,6 +17,7 @@ import {
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
+import { useTranslation } from "react-i18next";
 
 export interface SearchData {
   pickupLocation: string;
@@ -73,9 +74,9 @@ const AutoCompleteInput = ({
         side="bottom"
       >
         <Command>
-          <CommandInput placeholder="Rechercher une location..." />
+          <CommandInput placeholder={placeholder} />
           <CommandEmpty className="py-6 text-center text-sm text-muted-foreground">
-            Aucun résultat trouvé.
+            {placeholder === "" ? "" : placeholder} {/* ou traduire si besoin */}
           </CommandEmpty>
           <CommandGroup className="max-h-60 overflow-y-auto">
             {items.map((item) => (
@@ -184,7 +185,7 @@ const TimePickerField = ({
 }) => {
   const [open, setOpen] = useState(false);
   const hours = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, "0"));
-  const minutes = ["00","05","10","15","20","25","35","30","40","45","50","55"];
+  const minutes = ["00","05","10","15","20","25","30","35","40","45","50","55"];
 
   return (
     <div className="space-y-3 ml-20">
@@ -248,6 +249,8 @@ const TimePickerField = ({
 };
 
 export const SearchForm = ({ onSearch }: SearchFormProps) => {
+  const { t } = useTranslation();
+
   const [pickupLocation, setPickupLocation] = useState("");
   const [returnLocation, setReturnLocation] = useState("");
   const [sameLocation, setSameLocation] = useState(false);
@@ -256,83 +259,78 @@ export const SearchForm = ({ onSearch }: SearchFormProps) => {
   const [pickupTime, setPickupTime] = useState("09:00");
   const [returnTime, setReturnTime] = useState("09:00");
 
-  const locations = {
-    airports: [
-      { value: 'Aéroport d’Agadir-Al Massira (AGA)', label: 'Aéroport d’Agadir-Al Massira (AGA)' },
-      { value: 'Aéroport d’Al Hoceïma-Cherif Al Idrissi (AHU)', label: 'Aéroport d’Al Hoceïma-Cherif Al Idrissi (AHU)' },
-      { value: 'Aéroport de Béni Mellal (BEM)', label: 'Aéroport de Béni Mellal (BEM)' },
-      { value: 'Aéroport de Casablanca-Mohammed V (CMN)', label: 'Aéroport de Casablanca-Mohammed V (CMN)' },
-      { value: 'Aéroport de Dakhla (VIL)', label: 'Aéroport de Dakhla (VIL)' },
-      { value: 'Aéroport d’Errachidia-Moulay Ali Chérif (ERH)', label: 'Aéroport d’Errachidia-Moulay Ali Chérif (ERH)' },
-      { value: 'Aéroport d’Essaouira-Mogador (ESU)', label: 'Aéroport d’Essaouira-Mogador (ESU)' },
-      { value: 'Aéroport de Fès-Saïss (FEZ)', label: 'Aéroport de Fès-Saïss (FEZ)' },
-      { value: 'Aéroport de Guelmim (GLN)', label: 'Aéroport de Guelmim (GLN)' },
-      { value: 'Aéroport de Laâyoune-Hassan I (EUN)', label: 'Aéroport de Laâyoune-Hassan I (EUN)' },
-      { value: 'Aéroport de Marrakech-Ménara (RAK)', label: 'Aéroport de Marrakech-Ménara (RAK)' },
-      { value: 'Aéroport de Nador-Al Aroui (NDR)', label: 'Aéroport de Nador-Al Aroui (NDR)' },
-      { value: 'Aéroport d’Ouarzazate (OZZ)', label: 'Aéroport d’Ouarzazate (OZZ)' },
-      { value: 'Aéroport d’Oujda-Angads (OUD)', label: 'Aéroport d’Oujda-Angads (OUD)' },
-      { value: 'Aéroport de Rabat-Salé (RBA)', label: 'Aéroport de Rabat-Salé (RBA)' },
-      { value: 'Aéroport de Tanger-Ibn Battouta (TNG)', label: 'Aéroport de Tanger-Ibn Battouta (TNG)' },
-      { value: 'Aéroport de Tétouan-Sania Ramel (TTU)', label: 'Aéroport de Tétouan-Sania Ramel (TTU)' },
-      { value: 'Aéroport de Zagora (OZG)', label: 'Aéroport de Zagora (OZG)' },
-      { value: 'Aéroport de Tan Tan (TTA)', label: 'Aéroport de Tan Tan (TTA)' },
-      { value: 'Aéroport de Smara (SMW)', label: 'Aéroport de Smara (SMW)' },
-      { value: 'Aéroport de Bouarfa (UAR)', label: 'Aéroport de Bouarfa (UAR)' },
-      { value: 'Aéroport de Benslimane (GMD)', label: 'Aéroport de Benslimane (GMD)' },
-      { value: 'Aéroport d’Ifrane (IFR)', label: 'Aéroport d’Ifrane (IFR)' },
-      { value: 'Aéroport de Casablanca-Tit Mellil (CAS)', label: 'Aéroport de Casablanca-Tit Mellil (CAS)' },
-    ],
-    stations: [
-      { value: 'Gare de l\'Aéroport Mohammed V', label: 'Gare de l\'Aéroport Mohammed V' },
-      { value: 'Gare d\'Agadir', label: 'Gare d\'Agadir' },
-      { value: 'Gare d\'Assilah', label: 'Gare d\'Assilah' },
-      { value: 'Gare de Ben Guerir', label: 'Gare de Ben Guerir' },
-      { value: 'Gare de Berrechid', label: 'Gare de Berrechid' },
-      { value: 'Gare de Kénitra', label: 'Gare de Kénitra' },
-      { value: 'Gare de Khouribga', label: 'Gare de Khouribga' },
-      { value: 'Gare de Marrakech', label: 'Gare de Marrakech' },
-      { value: 'Gare de Meknès', label: 'Gare de Meknès' },
-      { value: 'Gare de Mohammédia', label: 'Gare de Mohammédia' },
-      { value: 'Gare de Nador-Ville', label: 'Gare de Nador-Ville' },
-      { value: 'Gare d\'Oujda', label: 'Gare d\'Oujda' },
-      { value: 'Gare de Rabat-Agdal', label: 'Gare de Rabat-Agdal' },
-      { value: 'Gare de Rabat-Ville', label: 'Gare de Rabat-Ville' },
-      { value: 'Gare de Salé-Tabriquet', label: 'Gare de Salé-Tabriquet' },
-      { value: 'Gare de Salé-Ville', label: 'Gare de Salé-Ville' },
-      { value: 'Gare de Safi', label: 'Gare de Safi' },
-      { value: 'Gare de Tanger-Ville', label: 'Gare de Tanger-Ville' },
-      { value: 'Gare de Tanger-Med', label: 'Gare de Tanger-Med' },
-      { value: 'Gare de Taourirt', label: 'Gare de Taourirt' },
-      { value: 'Gare de Témara', label: 'Gare de Témara' },
-      { value: 'Gare de Casa-Voyageurs', label: 'Gare de Casa-Voyageurs' },
-      { value: 'Gare de Casa-Port', label: 'Gare de Casa-Port' },
-      { value: 'Gare de Casa-Oasis', label: 'Gare de Casa-Oasis' },
-      { value: 'Gare de Casa-Mers Sultan', label: 'Gare de Casa-Mers Sultan' },
-      { value: 'Gare d\'El Jadida', label: 'Gare d\'El Jadida' },
-      { value: 'Gare de Settat', label: 'Gare de Settat' },
-      { value: 'Gare de Skhirat', label: 'Gare de Skhirat' },
-      { value: 'Gare de Bouznika', label: 'Gare de Bouznika' },
-      { value: 'Gare de Zenata', label: 'Gare de Zenata' },
-      { value: 'Gare d\'Aïn Sebaâ', label: 'Gare d\'Aïn Sebaâ' },
-      { value: 'Gare de Bouskoura', label: 'Gare de Bouskoura' },
-      { value: 'Gare des Facultés', label: 'Gare des Facultés' },
-      { value: 'Gare Ennassim', label: 'Gare Ennassim' },
-      { value: 'Gare de Sidi Kacem', label: 'Gare de Sidi Kacem' },
-      { value: 'Gare de Sidi Slimane', label: 'Gare de Sidi Slimane' },
-      { value: 'Gare de Sidi Yahya El Gharb', label: 'Gare de Sidi Yahya El Gharb' },
-      { value: 'Gare de Ksar El Kebir', label: 'Gare de Ksar El Kebir' },
-      { value: 'Gare de Souk El Arbaa', label: 'Gare de Souk El Arbaa' },
-      { value: 'Gare de Melloussa', label: 'Gare de Melloussa' },
-      { value: 'Gare de Ksar Sghir', label: 'Gare de Ksar Sghir' },
-    ],
-  };
-
-  // Combinez tous les lieux en une seule liste
-  const allLocations = [
-    ...locations.airports,
-    ...locations.stations
+const airports = [
+    { value: t("airports.Agadir"), label: t("airports.Agadir") },
+    { value: t("airports.AlHoceima"), label: t("airports.AlHoceima") },
+    { value: t("airports.BeniMellal"), label: t("airports.BeniMellal") },
+    { value: t("airports.Casablanca"), label: t("airports.Casablanca") },
+    { value: t("airports.Dakhla"), label: t("airports.Dakhla") },
+    { value: t("airports.Errachidia"), label: t("airports.Errachidia") },
+    { value: t("airports.Essaouira"), label: t("airports.Essaouira") },
+    { value: t("airports.Fes"), label: t("airports.Fes") },
+    { value: t("airports.Guelmim"), label: t("airports.Guelmim") },
+    { value: t("airports.Laayoune"), label: t("airports.Laayoune") },
+    { value: t("airports.Marrakech"), label: t("airports.Marrakech") },
+    { value: t("airports.Nador"), label: t("airports.Nador") },
+    { value: t("airports.Ouarzazate"), label: t("airports.Ouarzazate") },
+    { value: t("airports.Oujda"), label: t("airports.Oujda") },
+    { value: t("airports.Rabat"), label: t("airports.Rabat") },
+    { value: t("airports.Tanger"), label: t("airports.Tanger") },
+    { value: t("airports.Tetouan"), label: t("airports.Tetouan") },
+    { value: t("airports.Zagora"), label: t("airports.Zagora") },
+    { value: t("airports.TanTan"), label: t("airports.TanTan") },
+    { value: t("airports.Smara"), label: t("airports.Smara") },
+    { value: t("airports.Bouarfa"), label: t("airports.Bouarfa") },
+    { value: t("airports.Benslimane"), label: t("airports.Benslimane") },
+    { value: t("airports.Ifrane"), label: t("airports.Ifrane") },
+    { value: t("airports.CasablancaTitMellil"), label: t("airports.CasablancaTitMellil") },
   ];
+
+  const stations = [
+    { value: t("stations.MohammedV"), label: t("stations.MohammedV") },
+    { value: t("stations.Agadir"), label: t("stations.Agadir") },
+    { value: t("stations.Assilah"), label: t("stations.Assilah") },
+    { value: t("stations.BenGuerir"), label: t("stations.BenGuerir") },
+    { value: t("stations.Berrechid"), label: t("stations.Berrechid") },
+    { value: t("stations.Kenitra"), label: t("stations.Kenitra") },
+    { value: t("stations.Khouribga"), label: t("stations.Khouribga") },
+    { value: t("stations.Marrakech"), label: t("stations.Marrakech") },
+    { value: t("stations.Meknes"), label: t("stations.Meknes") },
+    { value: t("stations.Mohammedia"), label: t("stations.Mohammedia") },
+    { value: t("stations.NadorVille"), label: t("stations.NadorVille") },
+    { value: t("stations.Oujda"), label: t("stations.Oujda") },
+    { value: t("stations.RabatAgdal"), label: t("stations.RabatAgdal") },
+    { value: t("stations.RabatVille"), label: t("stations.RabatVille") },
+    { value: t("stations.SaleTabriquet"), label: t("stations.SaleTabriquet") },
+    { value: t("stations.SaleVille"), label: t("stations.SaleVille") },
+    { value: t("stations.Safi"), label: t("stations.Safi") },
+    { value: t("stations.TangerVille"), label: t("stations.TangerVille") },
+    { value: t("stations.TangerMed"), label: t("stations.TangerMed") },
+    { value: t("stations.Taourirt"), label: t("stations.Taourirt") },
+    { value: t("stations.Temara"), label: t("stations.Temara") },
+    { value: t("stations.CasaVoyageurs"), label: t("stations.CasaVoyageurs") },
+    { value: t("stations.CasaPort"), label: t("stations.CasaPort") },
+    { value: t("stations.CasaOasis"), label: t("stations.CasaOasis") },
+    { value: t("stations.CasaMersSultan"), label: t("stations.CasaMersSultan") },
+    { value: t("stations.ElJadida"), label: t("stations.ElJadida") },
+    { value: t("stations.Settat"), label: t("stations.Settat") },
+    { value: t("stations.Skhirat"), label: t("stations.Skhirat") },
+    { value: t("stations.Bouznika"), label: t("stations.Bouznika") },
+    { value: t("stations.Zenata"), label: t("stations.Zenata") },
+    { value: t("stations.AinSebaa"), label: t("stations.AinSebaa") },
+    { value: t("stations.Bouskoura"), label: t("stations.Bouskoura") },
+    { value: t("stations.Facultes"), label: t("stations.Facultes") },
+    { value: t("stations.Ennassim"), label: t("stations.Ennassim") },
+    { value: t("stations.SidiKacem"), label: t("stations.SidiKacem") },
+    { value: t("stations.SidiSlimane"), label: t("stations.SidiSlimane") },
+    { value: t("stations.SidiYahyaElGharb"), label: t("stations.SidiYahyaElGharb") },
+    { value: t("stations.KsarElKebir"), label: t("stations.KsarElKebir") },
+    { value: t("stations.SoukElArbaa"), label: t("stations.SoukElArbaa") },
+    { value: t("stations.Melloussa"), label: t("stations.Melloussa") },
+    { value: t("stations.KsarSghir"), label: t("stations.KsarSghir") },
+  ];
+
+  const allLocations = [...airports, ...stations];
 
   const handleSearch = () => {
     onSearch({
@@ -354,29 +352,28 @@ export const SearchForm = ({ onSearch }: SearchFormProps) => {
           <Car className="h-5 w-5 text-blue-600" />
         </div>
         <div>
-          <h2 className="text-lg sm:text-xl font-bold text-gray-900">Réservez votre véhicule</h2>
-          <p className="text-xs sm:text-sm text-gray-600">Trouvez la voiture parfaite pour votre voyage</p>
+          <h2 className="text-lg sm:text-xl font-bold text-gray-900">
+            {t("searchForm.title")}
+          </h2>
         </div>
       </div>
 
-      {/* Lieux - Version mobile empilée */}
+      {/* Lieux */}
       <div className="space-y-4 sm:space-y-0 sm:flex sm:items-end sm:gap-4 mb-6 sm:mb-8">
-        {/* Pickup Location */}
         <div className="flex-1 space-y-3 min-w-0">
-          <Label htmlFor="pickupLocation" className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+          <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
             <MapPinIcon className="h-4 w-4 text-blue-600" />
-            Lieu de départ
+            {t("searchForm.pickupPlaceholder")}
           </Label>
           <AutoCompleteInput
             items={allLocations}
-            placeholder="Aéroport ou gare de départ"
+            placeholder={t("searchForm.pickupPlaceholder")}
             value={pickupLocation}
             onSelect={setPickupLocation}
             icon={<MapPinIcon className="h-4 w-4 text-blue-600" />}
           />
         </div>
 
-        {/* Bouton de swap - Centré verticalement sur mobile */}
         <div className="flex justify-center sm:justify-start sm:pb-2">
           <Button
             variant="ghost"
@@ -384,21 +381,20 @@ export const SearchForm = ({ onSearch }: SearchFormProps) => {
             onClick={() => setSameLocation(!sameLocation)}
             className={cn(
               "rounded-full p-3 border-2 transition-all duration-300",
-              sameLocation 
-                ? "bg-green-50 border-green-200 text-green-600" 
+              sameLocation
+                ? "bg-green-50 border-green-200 text-green-600"
                 : "bg-gray-50 border-gray-200 text-gray-600 hover:bg-blue-50 hover:border-blue-200 hover:text-blue-600"
             )}
-            title={sameLocation ? "Lieux différents" : "Même lieu"}
+            title={sameLocation ? t("searchForm.returnPlaceholder") : t("searchForm.swap")}
           >
             <ArrowRightLeft className="h-4 w-4" />
           </Button>
         </div>
 
-        {/* Return Location */}
         <div className="flex-1 space-y-3 min-w-0">
-          <Label htmlFor="returnLocation" className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+          <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
             <MapPinIcon className="h-4 w-4 text-green-600" />
-            Lieu de retour
+            {t("searchForm.returnPlaceholder")}
           </Label>
           {sameLocation ? (
             <div className="relative">
@@ -409,14 +405,14 @@ export const SearchForm = ({ onSearch }: SearchFormProps) => {
               />
               <div className="absolute inset-0 flex items-center justify-center">
                 <span className="text-xs sm:text-sm text-green-700 bg-green-50/80 px-2 sm:px-3 py-1 rounded-full font-medium">
-                  Identique au départ
+                  {t("searchForm.swap")}
                 </span>
               </div>
             </div>
           ) : (
             <AutoCompleteInput
               items={allLocations}
-              placeholder="Aéroport ou gare de retour"
+              placeholder={t("searchForm.returnPlaceholder")}
               value={returnLocation}
               onSelect={setReturnLocation}
               icon={<MapPinIcon className="h-4 w-4 text-green-600" />}
@@ -425,53 +421,51 @@ export const SearchForm = ({ onSearch }: SearchFormProps) => {
         </div>
       </div>
 
-      {/* Dates et heures - Version mobile empilée */}
+      {/* Dates et heures */}
       <div className="space-y-6 sm:space-y-0 sm:grid sm:grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 mb-6 sm:mb-8">
-        {/* Période de départ */}
         <div className="space-y-4">
           <div className="flex items-center gap-2 mb-3">
             <div className="w-2 h-6 bg-blue-600 rounded-full"></div>
-            <h3 className="font-semibold text-gray-900">Départ</h3>
+            <h3 className="font-semibold text-gray-900">{t("searchForm.pickupDate")}</h3>
           </div>
           <div className="grid grid-cols-2 gap-3 sm:gap-4">
             <DatePickerField
-              label="Date"
+              label={t("searchForm.pickupDate")}
               date={pickupDate}
               onDateChange={setPickupDate}
               icon={<CalendarIcon className="h-4 w-4 text-blue-600" />}
               color="blue"
               disabledCondition={(date) => date < new Date()}
             />
-
-            <div className="space-y-3">
-              <div className="relative">
-                <TimePickerField label="Heure" value={pickupTime} onChange={setPickupTime} color="blue" />
-              </div>
-            </div>
+            <TimePickerField
+              label={t("searchForm.pickupTime")}
+              value={pickupTime}
+              onChange={setPickupTime}
+              color="blue"
+            />
           </div>
         </div>
 
-        {/* Période de retour */}
         <div className="space-y-4 ml-6">
           <div className="flex items-center gap-2 mb-3">
             <div className="w-2 h-6 bg-green-600 rounded-full"></div>
-            <h3 className="font-semibold text-gray-900">Retour</h3>
+            <h3 className="font-semibold text-gray-900">{t("searchForm.returnDate")}</h3>
           </div>
           <div className="grid grid-cols-2 gap-3 sm:gap-4">
             <DatePickerField
-              label="Date"
+              label={t("searchForm.returnDate")}
               date={returnDate}
               onDateChange={setReturnDate}
               icon={<CalendarIcon className="h-4 w-4 text-green-600" />}
               color="green"
               disabledCondition={(date) => date < (pickupDate || new Date())}
             />
-
-            <div className="space-y-3">
-              <div className="relative">
-                <TimePickerField label="Heure" value={returnTime} onChange={setReturnTime} color="green" />
-              </div>
-            </div>
+            <TimePickerField
+              label={t("searchForm.returnTime")}
+              value={returnTime}
+              onChange={setReturnTime}
+              color="green"
+            />
           </div>
         </div>
       </div>
@@ -483,8 +477,9 @@ export const SearchForm = ({ onSearch }: SearchFormProps) => {
         size="lg"
       >
         <Search className="h-5 w-5 mr-2" />
-        Rechercher des véhicules
+        {t("searchForm.searchButton")}
       </Button>
     </div>
   );
+
 };

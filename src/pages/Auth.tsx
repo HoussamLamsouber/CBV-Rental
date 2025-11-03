@@ -1,4 +1,4 @@
-// src/pages/Auth.tsx (version mobile optimisée)
+// src/pages/Auth.tsx (version mobile optimisée et internationalisée)
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Car, LogIn, UserPlus, Eye, EyeOff } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTranslation } from "react-i18next";
 
 const Auth = () => {
   const [loginEmail, setLoginEmail] = useState("");
@@ -23,6 +24,7 @@ const Auth = () => {
   const { toast } = useToast();
   const [fullName, setFullName] = useState("");
   const { isAuthenticated } = useAuth();
+  const { t } = useTranslation();
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -35,8 +37,8 @@ const Auth = () => {
     
     if (!fullName.trim()) {
       toast({
-        title: "Champ manquant",
-        description: "Veuillez saisir votre nom complet.",
+        title: t('auth.messages.missing_field'),
+        description: t('auth.messages.enter_full_name'),
         variant: "destructive",
       });
       return;
@@ -44,8 +46,8 @@ const Auth = () => {
 
     if (!signupEmail.trim()) {
       toast({
-        title: "Champ manquant",
-        description: "Veuillez saisir votre adresse email.",
+        title: t('auth.messages.missing_field'),
+        description: t('auth.messages.enter_email'),
         variant: "destructive",
       });
       return;
@@ -53,8 +55,8 @@ const Auth = () => {
 
     if (signupPassword.length < 6) {
       toast({
-        title: "Mot de passe trop court",
-        description: "Le mot de passe doit contenir au moins 6 caractères.",
+        title: t('auth.messages.password_too_short'),
+        description: t('auth.messages.password_min_length'),
         variant: "destructive",
       });
       return;
@@ -82,26 +84,26 @@ const Auth = () => {
         
         if (error.message?.includes("already registered") || error.code === 'user_already_exists') {
           toast({
-            title: "Compte existant",
-            description: "Cette adresse email est déjà utilisée. Essayez de vous connecter.",
+            title: t('auth.messages.existing_account'),
+            description: t('auth.messages.email_already_used'),
             variant: "destructive",
           });
         } else if (error.message?.includes("password")) {
           toast({
-            title: "Mot de passe invalide",
-            description: "Le mot de passe doit contenir au moins 6 caractères.",
+            title: t('auth.messages.invalid_password'),
+            description: t('auth.messages.password_min_length'),
             variant: "destructive",
           });
         } else if (error.message?.includes("email")) {
           toast({
-            title: "Email invalide",
-            description: "Veuillez saisir une adresse email valide.",
+            title: t('auth.messages.invalid_email'),
+            description: t('auth.messages.enter_valid_email'),
             variant: "destructive",
           });
         } else {
           toast({
-            title: "Erreur d'inscription",
-            description: error.message || "Une erreur est survenue lors de l'inscription.",
+            title: t('auth.messages.signup_error'),
+            description: error.message || t('auth.messages.unexpected_error'),
             variant: "destructive",
           });
         }
@@ -110,14 +112,14 @@ const Auth = () => {
         
         if (data.user && data.user.identities && data.user.identities.length === 0) {
           toast({
-            title: "Compte existant",
-            description: "Cette adresse email est déjà utilisée. Essayez de vous connecter.",
+            title: t('auth.messages.existing_account'),
+            description: t('auth.messages.email_already_used'),
             variant: "destructive",
           });
         } else {
           toast({
-            title: "Inscription réussie !",
-            description: "Votre compte a été créé avec succès. Vous pouvez maintenant vous connecter.",
+            title: t('auth.messages.signup_success'),
+            description: t('auth.messages.account_created_success'),
           });
           
           // Réinitialiser le formulaire
@@ -138,8 +140,8 @@ const Auth = () => {
     } catch (error: any) {
       console.error("Erreur inattendue:", error);
       toast({
-        title: "Erreur inattendue",
-        description: error.message || "Une erreur inattendue s'est produite.",
+        title: t('auth.messages.unexpected_error_title'),
+        description: error.message || t('auth.messages.unexpected_error'),
         variant: "destructive",
       });
     } finally {
@@ -152,8 +154,8 @@ const Auth = () => {
     
     if (!loginEmail.trim() || !loginPassword.trim()) {
       toast({
-        title: "Champs manquants",
-        description: "Veuillez saisir votre email et mot de passe.",
+        title: t('auth.messages.missing_fields'),
+        description: t('auth.messages.enter_email_password'),
         variant: "destructive",
       });
       return;
@@ -176,35 +178,35 @@ const Auth = () => {
         
         if (error.message?.includes("Invalid login credentials")) {
           toast({
-            title: "Identifiants incorrects",
-            description: "Email ou mot de passe incorrect.",
+            title: t('auth.messages.invalid_credentials'),
+            description: t('auth.messages.incorrect_email_password'),
             variant: "destructive",
           });
         } else if (error.message?.includes("Email not confirmed")) {
           toast({
-            title: "Email non confirmé",
-            description: "Veuillez vérifier vos emails et confirmer votre compte.",
+            title: t('auth.messages.email_not_confirmed'),
+            description: t('auth.messages.verify_email'),
             variant: "destructive",
           });
         } else {
           toast({
-            title: "Erreur de connexion",
-            description: error.message || "Une erreur est survenue lors de la connexion.",
+            title: t('auth.messages.login_error'),
+            description: error.message || t('auth.messages.unexpected_error'),
             variant: "destructive",
           });
         }
       } else {
         console.log("Connexion réussie:", data);
         toast({
-          title: "Connexion réussie !",
-          description: `Bienvenue ${data.user?.email || ''}`,
+          title: t('auth.messages.login_success'),
+          description: t('auth.messages.welcome', { email: data.user?.email || '' }),
         });
       }
     } catch (error: any) {
       console.error("Erreur inattendue:", error);
       toast({
-        title: "Erreur",
-        description: error.message || "Une erreur inattendue s'est produite.",
+        title: t("error"),
+        description: error.message || t('auth.messages.unexpected_error'),
         variant: "destructive",
       });
     } finally {
@@ -230,18 +232,18 @@ const Auth = () => {
         <div className="text-center mb-6">
           <div className="flex items-center justify-center gap-2 mb-3">
             <Car className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
-            <h1 className="text-xl sm:text-2xl font-bold text-primary">CarRental</h1>
+            <h1 className="text-xl sm:text-2xl font-bold text-primary">{t('auth.brand_name')}</h1>
           </div>
           <p className="text-muted-foreground text-sm sm:text-base">
-            Connectez-vous pour réserver votre véhicule
+            {t('auth.subtitle')}
           </p>
         </div>
 
         <Card className="w-full">
           <CardHeader className="pb-4">
-            <CardTitle className="text-lg sm:text-xl">Authentification</CardTitle>
+            <CardTitle className="text-lg sm:text-xl">{t('auth.title')}</CardTitle>
             <CardDescription className="text-sm sm:text-base">
-              Connectez-vous ou créez un nouveau compte
+              {t('auth.description')}
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-2">
@@ -249,22 +251,22 @@ const Auth = () => {
               <TabsList className="grid w-full grid-cols-2 h-10 sm:h-12">
                 <TabsTrigger value="login" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
                   <LogIn className="h-3 w-3 sm:h-4 sm:w-4" />
-                  <span>Connexion</span>
+                  <span>{t('auth.tabs.login')}</span>
                 </TabsTrigger>
                 <TabsTrigger value="signup" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
                   <UserPlus className="h-3 w-3 sm:h-4 sm:w-4" />
-                  <span>Inscription</span>
+                  <span>{t('auth.tabs.signup')}</span>
                 </TabsTrigger>
               </TabsList>
               
               <TabsContent value="login" className="space-y-4 mt-4">
                 <form onSubmit={handleSignIn} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="login-email" className="text-sm">Email</Label>
+                    <Label htmlFor="login-email" className="text-sm">{t('auth.fields.email')}</Label>
                     <Input
                       id="login-email"
                       type="email"
-                      placeholder="votre@email.com"
+                      placeholder={t('auth.placeholders.email')}
                       value={loginEmail}
                       onChange={(e) => setLoginEmail(e.target.value)}
                       required
@@ -274,12 +276,12 @@ const Auth = () => {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="login-password" className="text-sm">Mot de passe</Label>
+                    <Label htmlFor="login-password" className="text-sm">{t('auth.fields.password')}</Label>
                     <div className="relative">
                       <Input
                         id="login-password"
                         type={showLoginPassword ? "text" : "password"}
-                        placeholder="••••••••"
+                        placeholder={t('auth.placeholders.password')}
                         value={loginPassword}
                         onChange={(e) => setLoginPassword(e.target.value)}
                         required
@@ -307,7 +309,7 @@ const Auth = () => {
                     disabled={loading}
                     size="sm"
                   >
-                    {loading ? "Connexion..." : "Se connecter"}
+                    {loading ? t('auth.buttons.logging_in') : t('auth.buttons.login')}
                   </Button>
                 </form>
               </TabsContent>
@@ -315,11 +317,11 @@ const Auth = () => {
               <TabsContent value="signup" className="space-y-4 mt-4">
                 <form onSubmit={handleSignUp} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="signup-fullname" className="text-sm">Nom complet *</Label>
+                    <Label htmlFor="signup-fullname" className="text-sm">{t('auth.fields.full_name')} *</Label>
                     <Input
                       id="signup-fullname"
                       type="text"
-                      placeholder="Votre nom complet"
+                      placeholder={t('auth.placeholders.full_name')}
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
                       required
@@ -329,11 +331,11 @@ const Auth = () => {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="signup-email" className="text-sm">Email *</Label>
+                    <Label htmlFor="signup-email" className="text-sm">{t('auth.fields.email')} *</Label>
                     <Input
                       id="signup-email"
                       type="email"
-                      placeholder="votre@email.com"
+                      placeholder={t('auth.placeholders.email')}
                       value={signupEmail}
                       onChange={(e) => setSignupEmail(e.target.value)}
                       required
@@ -343,12 +345,12 @@ const Auth = () => {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="signup-password" className="text-sm">Mot de passe *</Label>
+                    <Label htmlFor="signup-password" className="text-sm">{t('auth.fields.password')} *</Label>
                     <div className="relative">
                       <Input
                         id="signup-password"
                         type={showSignupPassword ? "text" : "password"}
-                        placeholder="Au moins 6 caractères"
+                        placeholder={t('auth.placeholders.password_min_length')}
                         value={signupPassword}
                         onChange={(e) => setSignupPassword(e.target.value)}
                         required
@@ -371,7 +373,7 @@ const Auth = () => {
                       </button>
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Le mot de passe doit contenir au moins 6 caractères
+                      {t('auth.messages.password_min_length')}
                     </p>
                   </div>
                   <Button 
@@ -380,7 +382,7 @@ const Auth = () => {
                     disabled={loading}
                     size="sm"
                   >
-                    {loading ? "Inscription..." : "S'inscrire"}
+                    {loading ? t('auth.buttons.signing_up') : t('auth.buttons.signup')}
                   </Button>
                 </form>
               </TabsContent>
@@ -391,12 +393,12 @@ const Auth = () => {
         {/* Lien admin - Version mobile */}
         <div className="text-center mt-4">
           <p className="text-xs sm:text-sm text-muted-foreground">
-            Vous êtes administrateur ?{" "}
+            {t('auth.admin_link.text')}{" "}
             <button
               onClick={() => navigate("/admin")}
               className="text-primary hover:underline font-medium"
             >
-              Accéder au panneau admin
+              {t('auth.admin_link.button')}
             </button>
           </p>
         </div>

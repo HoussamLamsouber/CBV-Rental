@@ -1,0 +1,906 @@
+{
+    "home": "Home",
+    "offers": "Offers",
+    "my_reservations": "My bookings",
+    "about": "About",
+    "admin": "Administration",
+    "manage_vehicles": "Manage vehicles",
+    "manage_reservations": "Manage bookings",
+    "manage_users": "Manage users",
+    "my_account": "My account",
+    "profile": "Profile",
+    "change_password": "Change password",
+    "logout": "Logout",
+    "login": "Login",
+    "logout_success": "Logout successful",
+    "see_you_soon": "See you soon!",
+    "error": "Error",
+    "logout_error": "Unable to log out",
+    
+    "footer_description": "Your trusted partner for premium car rentals in Tangier and throughout Morocco.",
+    "navigation": "Navigation",
+    "contact": "Contact",
+    "phone": "Phone",
+    "address": "Address",
+    "morocco": "Morocco",
+    "opening_hours": "Opening Hours",
+    "monday_friday": "Mon - Fri",
+    "saturday": "Saturday",
+    "sunday": "Sunday",
+    "all_rights_reserved": "All rights reserved.",
+
+    "about_page": {
+        "title": "Prepare your arrival with peace of mind",
+        "subtitle": "A rental service designed for you: the right vehicle, at the right time. Enjoy a simple, fast and stress-free experience — before, during and after your booking.",
+        "card1": {
+            "title": "The right vehicle, at the right time",
+            "text": "Enjoy a wide selection of Volvo models suited to your needs — whether for a getaway or a business trip."
+        },
+        "card2": {
+            "title": "A dedicated advisor at your service",
+            "text": "Before, during and after your booking, a dedicated advisor supports you for a simple, fast and stress-free experience."
+        },
+        "card3": {
+            "title": "Drive freely as soon as you leave the train",
+            "text": "No need to wait or look for a car: your Volvo awaits you at the station, ready to take you wherever you want with style and comfort."
+        },
+        "card4": {
+            "title": "Safety and reliability",
+            "text": "All our vehicles are checked and maintained to ensure your safety and comfort on every trip."
+        },
+        "card5": {
+            "title": "Flexible hours",
+            "text": "Book at your own pace, pick up your car when it suits you best — no stress, no waiting."
+        },
+        "card6": {
+            "title": "Delivery to your chosen location",
+            "text": "Have your vehicle delivered directly to the station, your hotel or the address of your choice."
+        },
+        "button": "Discover our offers"
+    },
+
+    "admin_login": {
+        "title": "Admin Login",
+        "description": "Use your administrator credentials",
+        "email_label": "Administrator email",
+        "password_label": "Password",
+        "button_login": "Log in to administration",
+        "button_loading": "Logging in...",
+        "back_button": "Back to client site",
+        "access_restricted": "Access restricted to administrators",
+        "success_title": "Admin login successful",
+        "success_message": "Welcome to the administration panel.",
+        "error_login": "Login error",
+        "error_unauthorized": "You do not have administrator rights.",
+        "error_generic": "An unexpected error occurred."
+    },
+
+    "admin_reservations": {
+        "title": "Reservation Management",
+        "total_reservations": "total reservation(s)",
+        "client_reservations": "reservation(s) for this client",
+        "results": "result(s)",
+        
+        "search": {
+            "placeholder": "Search by name, email, model..."
+        },
+        
+        "filters": {
+            "title": "Filters",
+            "reset": "Reset",
+            "date": "Specific date",
+            "date_help": "Pickup, return or creation date",
+            "vehicle_model": "Vehicle model",
+            "vehicle_placeholder": "Ex: Tesla, SUV, BMW...",
+            "status": "Status",
+            "all_status": "All status"
+        },
+        
+        "status": {
+            "pending": "Pending",
+            "accepted": "Accepted",
+            "active": "Active",
+            "completed": "Completed",
+            "refused": "Refused"
+        },
+        
+        "actions": {
+            "back": "Back",
+            "back_users": "Back to users",
+            "see_all": "See all reservations",
+            "accept": "Accept",
+            "reject": "Reject"
+        },
+        
+        "reservation": {
+            "details": "Reservation Details",
+            "id": "ID",
+            "vehicle": "Vehicle",
+            "category": "Category",
+            "pickup": "Pickup",
+            "return": "Return",
+            "location": "Location",
+            "phone": "Phone",
+            "email": "Email",
+            "total_price": "Total Price",
+            "guest": "Guest",
+            "unidentified": "Unidentified client",
+            "not_provided": "Not provided",
+            "status": "Status",
+            "accepted_on": "accepted on",
+            "rejected_on": "rejected on"
+        },
+        
+        "messages": {
+            "loading": "Loading reservations...",
+            "no_reservations": "No reservations",
+            "no_results": "No results found",
+            "no_client_reservations": "No reservations for this client",
+            "try_search": "Try modifying your search criteria",
+            "client_no_reservations": "This client has not made any reservations yet.",
+            "new_reservations": "New reservations will appear here.",
+            "no_category_reservations": "No reservations in this category."
+        },
+        
+        "reject_modal": {
+            "title": "Reject Reservation",
+            "reason": "Reason for rejection *",
+            "placeholder": "Please enter the reason for rejection (this reason will be communicated to the client)...",
+            "cancel": "Cancel",
+            "confirm": "Confirm Rejection",
+            "missing_reason": "Missing reason",
+            "missing_reason_desc": "Please enter the reason for rejection."
+        },
+        
+        "toast": {
+            "reservation_accepted": "Reservation accepted",
+            "client_notified": "Client has been notified by email.",
+            "reservation_rejected": "Reservation rejected",
+            "client_notified_reason": "Client has been notified with the reason.",
+            "error": "Error",
+            "update_error": "Unable to update reservation."
+        }
+    },
+
+    "admin_vehicle_detail": {
+        "title": "Vehicle Details",
+        "back_to_vehicles": "Back to vehicles",
+        "back_to_home": "Back to home",
+        "access_denied": "Access denied",
+        "admin_required": "You must be an administrator to access this page.",
+        
+        "tabs": {
+            "availability": "Availability today",
+            "vehicles": "Individual vehicles",
+            "offers": "Special offers",
+            "reservations": "All reservations",
+            "calendar": "Calendar (30d)"
+        },
+        
+        "vehicle_info": {
+            "price_per_day": "Price:",
+            "total_stock": "Total stock",
+            "auto_sync": "Automatically synced:",
+            "vehicles_active": "active vehicle(s)"
+        },
+        
+        "availability": {
+            "vehicles_available": "Available vehicles",
+            "ready_to_rent": "Ready to be reserved",
+            "vehicles_reserved": "Reserved vehicles",
+            "currently_rented": "Currently rented",
+            "under_maintenance": "Under maintenance",
+            "temporarily_unavailable": "Temporarily unavailable"
+        },
+        
+        "vehicles_management": {
+            "individual_vehicles": "Individual vehicles",
+            "add_vehicle": "Add vehicle",
+            "total_vehicles": "Total vehicles",
+            "available": "Available",
+            "reserved": "Reserved",
+            "maintenance": "Under maintenance",
+            "license_plate": "License plate",
+            "obd_code": "OBD code",
+            "obd_date": "OBD date",
+            "object": "Object",
+            "status": "Status",
+            "change_status": "Change status",
+            "actions": "Actions",
+            "delete": "Delete",
+            "no_vehicles": "No vehicles found for this model",
+            "add_first_vehicle": "Add first vehicle"
+        },
+        
+        "offers_management": {
+            "special_offers": "Special offers",
+            "add_offer": "Add offer",
+            "period": "Period",
+            "price": "Price",
+            "special_price_for": "Special price for",
+            "no_offers": "No special offers for this model",
+            "create_first_offer": "Create first offer"
+        },
+        
+        "reservations": {
+            "all_reservations": "All reservations",
+            "client": "Client",
+            "period": "Period",
+            "locations": "Locations",
+            "registered_user": "Registered user",
+            "guest": "Guest",
+            "unknown": "Unknown",
+            "not_specified": "Not specified",
+            "no_reservations": "No reservations for this vehicle"
+        },
+        
+        "calendar": {
+            "availability_calendar": "Availability calendar - 30 days",
+            "days_availability": "Availability for",
+            "days": "days",
+            "reservation_calendar": "Reservation calendar",
+            "total_stock": "Total stock:",
+            "vehicles": "vehicles",
+            "available_today": "Vehicles available today",
+            "out_of": "out of",
+            "total": "total",
+            "current_reservations": "Current reservations",
+            "accepted_reservations": "Accepted reservations",
+            "occupancy_rate": "Occupancy rate",
+            "global_average": "Global average",
+            "available": "available",
+            "fully_available": "Available",
+            "partially_available": "Partially available",
+            "fully_booked": "Fully booked (0 available)",
+            "today": "Today",
+            "how_to_read": "How to read the calendar:",
+            "calendar_explanation": "The number indicates available vehicles out of total stock. The bar shows the availability rate."
+        },
+        
+        "modals": {
+            "add_vehicle": "Add vehicle",
+            "license_plate_required": "License plate *",
+            "license_plate_placeholder": "Ex: ABC-123",
+            "obd_code_label": "OBD code",
+            "obd_date_label": "OBD date",
+            "object_label": "Object",
+            "object_placeholder": "Additional information",
+            "cancel": "Cancel",
+            "add_vehicle_button": "Add vehicle",
+            "creating": "Creating...",
+            
+            "add_offer": "Add special offer",
+            "period_required": "Period *",
+            "period_placeholder": "Ex: 3 days, 1 week, 1 month...",
+            "price_required": "Price (MAD) *",
+            "price_placeholder": "Price for the period",
+            "create_offer": "Create offer",
+            "creating_offer": "Creating..."
+        },
+        
+        "status": {
+            "available": "Available",
+            "reserved": "Reserved",
+            "maintenance": "Under Maintenance"
+        },
+        
+        "messages": {
+            "vehicle_created": "Vehicle created",
+            "vehicle_archived": "Vehicle archived",
+            "offer_created": "Offer created",
+            "offer_archived": "Offer archived",
+            "status_updated": "Status updated",
+            "missing_field": "Missing field",
+            "missing_fields": "Missing fields",
+            "duplicate_license": "License plate already exists",
+            "checking_permissions": "Checking administrator permissions...",
+            "missing_id": "Missing ID",
+            "vehicle_not_found": "Vehicle not found",
+            "cannot_create_vehicle": "Unable to create vehicle.",
+            "cannot_archive_vehicle": "Unable to archive vehicle.",
+            "cannot_change_status": "Unable to change status.",
+            "cannot_create_offer": "Unable to create offer.",
+            "cannot_archive_offer": "Unable to archive offer.",
+            "confirm_archive_vehicle": "Are you sure you want to archive the vehicle",
+            "confirm_archive_offer": "Are you sure you want to archive this offer?",
+            "archive_warning": "It will no longer be visible but will remain in the database.",
+            "fill_all_offer_fields": "Please fill in all offer fields.",
+            "already_exists": "already exists",
+            "has_been_added": "has been added",
+            "stock_updated": "Stock has been automatically updated.",
+            "offer_created_success": "Offer has been successfully added.",
+            "offer_archived_success": "Offer has been successfully archived.",
+            "vehicles_reserved": "vehicle(s) reserved",
+            "day": "day",
+            "no_image": "No image",
+            "loading": "Loading..."
+        }
+    },
+
+    "admin_users": {
+        "title": "User Management",
+        "access_denied": "Access denied",
+        "admin_required": "You must be an administrator to access this page.",
+        "back_to_home": "Back to home",
+        
+        "tabs": {
+            "admins": "Administrators",
+            "clients": "Clients"
+        },
+        
+        "search": {
+            "placeholder": "Search by email, name or phone..."
+        },
+        
+        "roles": {
+            "admin": "Admin",
+            "client": "Client"
+        },
+        
+        "actions": {
+            "add_admin": "Add admin",
+            "view_reservations": "View reservations",
+            "delete_user": "Delete",
+            "remove_admin_rights": "Remove admin rights"
+        },
+        
+        "admin_count": "admin(s)",
+        "client_count": "client(s)",
+        
+        "modals": {
+            "add_admin": {
+            "title": "Promote client to administrator",
+            "info": "Select a client to give them administrator rights.",
+            "select_client": "Select a client",
+            "choose_client": "Choose a client...",
+            "no_clients_available": "No clients available",
+            "clients_available": "client(s) available for promotion",
+            "new_full_name": "New full name (optional)",
+            "keep_current_name": "Leave empty to keep current name",
+            "new_phone": "New phone (optional)",
+            "keep_current_phone": "Leave empty to keep current phone",
+            "cancel": "Cancel",
+            "promote_to_admin": "Promote to admin"
+            }
+        },
+        
+        "messages": {
+            "checking_permissions": "Checking permissions...",
+            "cannot_load_users": "Unable to load users.",
+            "promotion_success": "Promotion successful",
+            "now_admin": "{email} is now an administrator.",
+            "no_change": "No change",
+            "not_client_or_not_exists": "{email} was not a client or does not exist.",
+            "cannot_promote_user": "Unable to promote user.",
+            "confirm_remove_admin": "Are you sure you want to remove administrator rights from {email}?",
+            "rights_removed": "Rights removed",
+            "no_longer_admin": "{email} is no longer an administrator.",
+            "removal_failed": "Removal failed",
+            "cannot_remove_admin_rights": "Unable to remove administrator rights.",
+            "confirm_delete_user": "Are you sure you want to permanently delete {email} ({role})? This action is irreversible.",
+            "user_deleted": "User deleted",
+            "user_deleted_permanently": "{email} has been permanently deleted.",
+            "cannot_delete_user": "Unable to delete user.",
+            "never": "Never",
+            "loading_users": "Loading users...",
+            "no_results_title": "No {type} found",
+            "no_search_results": "No results for your search.",
+            "no_admins_yet": "Start by adding an administrator.",
+            "no_clients_yet": "No clients registered.",
+            "not_provided": "Not provided",
+            "registered_on": "Registered on:"
+        }
+    },
+
+    "admin_vehicles": {
+        "title": "Dashboard",
+        "subtitle": "Monitor your vehicle fleet performance",
+        
+        "stats": {
+            "total_vehicles": "Total Vehicles",
+            "in_fleet": "In fleet",
+            "performance": "Performance",
+            "reservation_ratio": "Reservation ratio",
+            "total_revenue": "Total Revenue",
+            "this_month": "This month",
+            "active_reservations": "Active Reservations",
+            "currently_ongoing": "Currently ongoing"
+        },
+        
+        "vehicle_models": {
+            "title": "Vehicle Models",
+            "subtitle": "Click to manage each model",
+            "model_count": "models"
+        },
+        
+        "recent_reservations": {
+            "title": "Recent Reservations",
+            "subtitle": "Last 7 days"
+        },
+        
+        "status": {
+            "available": "Available",
+            "unavailable": "Unavailable"
+        },
+        
+        "fuel_types": {
+            "gasoline": "Gasoline",
+            "diesel": "Diesel",
+            "electric": "Electric",
+            "hybrid": "Hybrid"
+        },
+        
+        "transmission_types": {
+            "manual": "Manual",
+            "automatic": "Automatic"
+        },
+        
+        "actions": {
+            "add_vehicle": "Add vehicle",
+            "see_all": "See all"
+        },
+        
+        "modals": {
+            "create_vehicle": {
+            "title": "New Vehicle Model",
+            "model_name": "Model name",
+            "model_name_placeholder": "Ex: Renault Clio",
+            "category": "Category",
+            "category_placeholder": "Ex: Compact",
+            "price_per_day": "Price per day (MAD)",
+            "initial_stock": "Initial stock",
+            "image_url": "Image URL",
+            "fuel": "Fuel",
+            "transmission": "Transmission",
+            "seats": "Number of seats",
+            "cancel": "Cancel",
+            "creating": "Creating...",
+            "create_model": "Create model"
+            }
+        },
+        
+        "messages": {
+            "cannot_load_data": "Unable to load data",
+            "missing_fields": "Missing fields",
+            "fill_required_fields": "Please fill in all required fields.",
+            "duplicate_model": "Duplicate model",
+            "model_already_exists": "A model with the name \"{name}\" already exists. Please modify the name.",
+            "model_created": "Model created",
+            "model_created_success": "The model {name} has been successfully created.",
+            "cannot_create_model": "Unable to create model.",
+            "no_vehicles": "No vehicles",
+            "add_first_vehicle": "Start by adding your first vehicle",
+            "new_model": "New model",
+            "no_recent_reservations": "No recent reservations",
+            "seats": "seats"
+        }
+    },
+
+    "auth": {
+        "brand_name": "CarRental",
+        "subtitle": "Log in to book your vehicle",
+        "title": "Authentication",
+        "description": "Log in or create a new account",
+        
+        "tabs": {
+            "login": "Login",
+            "signup": "Sign Up"
+        },
+        
+        "fields": {
+            "email": "Email",
+            "password": "Password",
+            "full_name": "Full Name"
+        },
+        
+        "placeholders": {
+            "email": "your@email.com",
+            "password": "••••••••",
+            "password_min_length": "At least 6 characters",
+            "full_name": "Your full name"
+        },
+        
+        "buttons": {
+            "login": "Log In",
+            "logging_in": "Logging in...",
+            "signup": "Sign Up",
+            "signing_up": "Signing up..."
+        },
+        
+        "messages": {
+            "missing_field": "Missing field",
+            "enter_full_name": "Please enter your full name.",
+            "enter_email": "Please enter your email address.",
+            "password_too_short": "Password too short",
+            "password_min_length": "Password must contain at least 6 characters.",
+            "existing_account": "Existing account",
+            "email_already_used": "This email address is already in use. Try logging in.",
+            "invalid_password": "Invalid password",
+            "invalid_email": "Invalid email",
+            "enter_valid_email": "Please enter a valid email address.",
+            "signup_error": "Sign up error",
+            "unexpected_error": "An unexpected error occurred.",
+            "unexpected_error_title": "Unexpected error",
+            "signup_success": "Sign up successful!",
+            "account_created_success": "Your account has been created successfully. You can now log in.",
+            "missing_fields": "Missing fields",
+            "enter_email_password": "Please enter your email and password.",
+            "invalid_credentials": "Invalid credentials",
+            "incorrect_email_password": "Incorrect email or password.",
+            "email_not_confirmed": "Email not confirmed",
+            "verify_email": "Please check your emails and confirm your account.",
+            "login_error": "Login error",
+            "login_success": "Login successful!",
+            "welcome": "Welcome {email}"
+        },
+        
+        "admin_link": {
+            "text": "Are you an administrator?",
+            "button": "Access admin panel"
+        }
+    },
+    
+    "index": {
+        "messages": {
+            "cannot_load_vehicles": "Unable to load vehicles",
+            "loading_error": "An error occurred while loading",
+            "missing_dates": "Missing dates",
+            "select_rental_dates": "Please select rental dates",
+            "search_complete": "Search complete",
+            "vehicles_available": "{count} vehicle(s) available for your dates",
+            "search_error": "Search error",
+            "search_error_description": "An error occurred during the search",
+            "missing_information": "Missing information",
+            "search_with_dates_first": "Please first perform a search with dates",
+            "loading_vehicles": "Loading vehicles...",
+            "search_in_progress": "Search in progress...",
+            "no_vehicles_available": "No vehicles available",
+            "no_vehicles_match_criteria": "No vehicles match your search criteria for the selected dates.",
+            "suggestions": "Suggestions",
+            "try_different_dates": "Try different dates",
+            "expand_search_categories": "Expand your search to other categories",
+            "check_other_locations": "Check other pickup locations"
+        }
+    },
+
+    "dashboard": {
+        "loading": "Loading...",
+        "login_prompt": "Please log in",
+        "welcome": "Welcome",
+        "change_vehicle_availability": "Change vehicle availability",
+        "user_can_reserve": "You can book a car"
+    },
+
+    "ma_reservation": {
+        "title": "My Reservations",
+        "currency": "Dhs",
+        "total_price": "Total price",
+        "pickup": "Pickup",
+        "return": "Return",
+        "client_info": "Client information",
+        
+        "status": {
+            "pending": "Pending",
+            "accepted": "Confirmed",
+            "active": "Active",
+            "completed": "Completed",
+            "refused": "Refused",
+            "cancelled": "Cancelled"
+        },
+        
+        "actions": {
+            "view_vehicles": "View vehicles",
+            "cancel_reservation": "Cancel reservation",
+            "cancelling": "Cancelling..."
+        },
+        
+        "messages": {
+            "loading_reservations": "Loading your reservations...",
+            "cannot_load_reservations": "Unable to retrieve your reservations",
+            "not_specified": "Not specified",
+            "guest": "Guest",
+            "confirm_cancellation": "Are you sure you want to cancel this reservation? This action is irreversible.",
+            "reservation_cancelled": "Reservation cancelled",
+            "reservation_cancelled_for": "Your reservation for {carName} has been cancelled.",
+            "cannot_cancel_reservation": "Unable to cancel reservation",
+            "no_reservations": "No reservations",
+            "no_reservations_user": "You haven't made any reservations yet.",
+            "no_reservations_guest": "You don't have any current reservations.",
+            "reservations_found": "{count} reservation(s) found",
+            "cannot_cancel": "This reservation cannot be cancelled",
+            "from_date": "From {date}",
+            "to_date": "To {date}"
+        }
+    },
+
+    "offers_page": {
+        "loadingOffers": "Loading offers...",
+        "title": "Our Vehicles and Offers",
+        "subtitle": "Discover our full fleet and enjoy our special offers for an exceptional rental experience",
+        "offer": "offer",
+        "offers_plural": "offers",
+        "defaultFuel": "Petrol",
+        "seats": "seats",
+        "startFrom": "From",
+        "perDay": "day",
+        "view": "View",
+        "noCarsTitle": "No vehicles available",
+        "noCarsSubtitle": "All our vehicles are currently rented out.",
+        "refresh": "Refresh page",
+        "standardPrice": "Standard price",
+        "dailyRental": "Daily rental",
+        "specialOffers": "Special offers",
+        "noSpecialOffers": "No special offers available",
+        "checkStandardRates": "Check our standard rates",
+        "bookNow": "Book now"
+    },
+
+    "mon_compte": {
+        "title": "My Account",
+        "personal_info": "Personal Information",
+        
+        "fields": {
+            "full_name": "Full Name",
+            "birth_date": "Birth Date",
+            "address": "Address",
+            "email": "Email",
+            "phone": "Phone"
+        },
+        
+        "placeholders": {
+            "full_name": "Your full name",
+            "address": "Your complete address",
+            "email": "your@email.com",
+            "phone": "+212 6 00 00 00 00"
+        },
+        
+        "actions": {
+            "edit": "Edit",
+            "cancel": "Cancel",
+            "save": "Save",
+            "saving": "Saving..."
+        },
+        
+        "messages": {
+            "loading_profile": "Loading your profile...",
+            "access_denied": "Access denied",
+            "please_login": "Please log in.",
+            "cannot_load_profile": "Unable to load profile data.",
+            "missing_user_id": "Missing user ID.",
+            "save_failed": "Failed to save information.",
+            "profile_updated": "Profile updated",
+            "profile_saved_success": "Your information has been successfully saved.",
+            "full_name_not_provided": "Full name not provided",
+            "not_configured": "NC"
+        }
+    },
+
+    "searchForm": {
+        "title": "Search for a car",
+        "pickupPlaceholder": "Pickup location",
+        "returnPlaceholder": "Return location",
+        "pickupDate": "Pickup date",
+        "returnDate": "Return date",
+        "pickupTime": "Pickup time",
+        "returnTime": "Return time",
+        "searchButton": "Search",
+        "swap": "Same locations"
+    },
+
+    "stations": {
+        "MohammedV": "Casablanca Voyageurs Train Station",
+        "Agadir": "Agadir Train Station",
+        "Assilah": "Assilah Train Station",
+        "BenGuerir": "Ben Guerir Train Station",
+        "Berrechid": "Berrechid Train Station",
+        "Kenitra": "Kenitra Train Station",
+        "Khouribga": "Khouribga Train Station",
+        "Marrakech": "Marrakech Train Station",
+        "Meknes": "Meknes Train Station",
+        "Mohammedia": "Mohammedia Train Station",
+        "NadorVille": "Nador Ville Train Station",
+        "Oujda": "Oujda Train Station",
+        "RabatAgdal": "Rabat Agdal Train Station",
+        "RabatVille": "Rabat Ville Train Station",
+        "SaleTabriquet": "Salé Tabriquet Train Station",
+        "SaleVille": "Salé Ville Train Station",
+        "Safi": "Safi Train Station",
+        "TangerVille": "Tangier Ville Train Station",
+        "TangerMed": "Tangier Med Train Station",
+        "Taourirt": "Taourirt Train Station",
+        "Temara": "Temara Train Station",
+        "CasaVoyageurs": "Casa-Voyageurs Train Station",
+        "CasaPort": "Casa-Port Train Station",
+        "CasaOasis": "Casa-Oasis Train Station",
+        "CasaMersSultan": "Casa-Mers Sultan Train Station",
+        "ElJadida": "El Jadida Train Station",
+        "Settat": "Settat Train Station",
+        "Skhirat": "Skhirat Train Station",
+        "Bouznika": "Bouznika Train Station",
+        "Zenata": "Zenata Train Station",
+        "AinSebaa": "Aïn Sebaâ Train Station",
+        "Bouskoura": "Bouskoura Train Station",
+        "Facultes": "Facultés Train Station",
+        "Ennassim": "Ennassim Train Station",
+        "SidiKacem": "Sidi Kacem Train Station",
+        "SidiSlimane": "Sidi Slimane Train Station",
+        "SidiYahyaElGharb": "Sidi Yahya El Gharb Train Station",
+        "KsarElKebir": "Ksar El Kebir Train Station",
+        "SoukElArbaa": "Souk El Arbaa Train Station",
+        "Melloussa": "Melloussa Train Station",
+        "KsarSghir": "Ksar Sghir Train Station"
+    },
+
+    "airports": {
+        "Agadir": "Agadir-Al Massira Airport (AGA)",
+        "AlHoceima": "Al Hoceïma-Cherif Al Idrissi Airport (AHU)",
+        "BeniMellal": "Beni Mellal Airport (BEM)",
+        "Casablanca": "Casablanca Mohammed V Airport (CMN)",
+        "Dakhla": "Dakhla Airport (VIL)",
+        "Errachidia": "Errachidia-Moulay Ali Chérif Airport (ERH)",
+        "Essaouira": "Essaouira-Mogador Airport (ESU)",
+        "Fes": "Fes-Saïss Airport (FEZ)",
+        "Guelmim": "Guelmim Airport (GLN)",
+        "Laayoune": "Laayoune-Hassan I Airport (EUN)",
+        "Marrakech": "Marrakech-Menara Airport (RAK)",
+        "Nador": "Nador-Al Aroui Airport (NDR)",
+        "Ouarzazate": "Ouarzazate Airport (OZZ)",
+        "Oujda": "Oujda-Angads Airport (OUD)",
+        "Rabat": "Rabat-Salé Airport (RBA)",
+        "Tanger": "Tangier-Ibn Battouta Airport (TNG)",
+        "Tetouan": "Tetouan-Sania Ramel Airport (TTU)",
+        "Zagora": "Zagora Airport (OZG)",
+        "TanTan": "Tan Tan Airport (TTA)",
+        "Smara": "Smara Airport (SMW)",
+        "Bouarfa": "Bouarfa Airport (UAR)",
+        "Benslimane": "Benslimane Airport (GMD)",
+        "Ifrane": "Ifrane Airport (IFR)",
+        "CasablancaTitMellil": "Casablanca-Tit Mellil Airport (CAS)"
+    },
+
+    "reservation_modal": {
+        "title": "Book {carName}",
+        "currency": "MAD",
+        "currency_per_day": "MAD / day",
+        "total_price": "Total price",
+        "at_time": "at",
+        "reservation_confirmation_note": "Your reservation will be confirmed after validation by our team.",
+        
+        "fields": {
+            "pickup_location": "Pickup location",
+            "return_location": "Return location",
+            "pickup_date": "Pickup date",
+            "return_date": "Return date",
+            "full_name": "Full name",
+            "email": "Email",
+            "phone": "Phone"
+        },
+        
+        "placeholders": {
+            "full_name": "Your full name",
+            "email": "your@email.com",
+            "phone": "Your phone number"
+        },
+        
+        "guest_info": {
+            "title": "Your information"
+        },
+        
+        "actions": {
+            "cancel": "Cancel",
+            "reserving": "Reserving...",
+            "unavailable": "Unavailable",
+            "confirm_reservation": "Confirm reservation"
+        },
+        
+        "messages": {
+            "missing_information": "Missing information",
+            "enter_full_name": "Please enter your full name.",
+            "enter_email": "Please enter your email address.",
+            "invalid_email": "Invalid email",
+            "enter_valid_email": "Please enter a valid email address.",
+            "vehicle_unavailable": "Vehicle unavailable",
+            "vehicle_unavailable_description": "This vehicle is no longer available for the selected dates.",
+            "vehicle_no_longer_available": "This vehicle is no longer available for the selected dates.",
+            "not_specified": "Not specified",
+            "not_provided": "Not provided",
+            "request_sent": "Request sent!",
+            "request_sent_description": "Your request has been sent to our team. You will receive a confirmation email after processing.",
+            "cannot_make_reservation": "Unable to make reservation."
+        }
+    },
+
+    "hero": {
+        "title": {
+            "line1": "Rent the car",
+            "line2": "of your dreams"
+        },
+        "subtitle": "Quality vehicles available throughout Morocco. Simple and fast booking.",
+        "image_alt": "Luxury car"
+    },
+
+    "car_card": {
+        "currency": "Dhs",
+        "per_day": "day",
+        "seats": "seats",
+        
+        "status": {
+            "unavailable": "Unavailable"
+        },
+        
+        "fuel_types": {
+            "electric": "Electric",
+            "diesel": "Diesel",
+            "gasoline": "Gasoline",
+            "hybrid": "Hybrid"
+        },
+        
+        "transmission_types": {
+            "automatic": "Automatic",
+            "manual": "Manual"
+        },
+        
+        "actions": {
+            "reserve_now": "Reserve now",
+            "unavailable": "Unavailable"
+        },
+        
+        "messages": {
+            "not_specified": "Not specified",
+            "not_available": "N/A",
+            "complete_search_to_reserve": "Complete search to reserve"
+        }
+    },
+
+    "car_grid": {
+        "title": "Available Vehicles",
+        "available_count": "{available} vehicles available out of {total}",
+        
+        "filter": {
+            "placeholder": "Filter by...",
+            "all_vehicles": "All vehicles",
+            "available_only": "Available only"
+        },
+        
+        "sort": {
+            "placeholder": "Sort by...",
+            "price_asc": "Price ascending",
+            "price_desc": "Price descending",
+            "name_asc": "Name A-Z"
+        },
+        
+        "quick_filters": {
+            "all": "All",
+            "available": "Available"
+        },
+        
+        "categories": {
+            "berlin": "Berlin",
+            "electric": "Electric",
+            "suv": "SUV",
+            "suv_urban": "Urban SUV"
+        },
+        
+        "messages": {
+            "no_vehicles_match": "No vehicles match your criteria"
+        }
+    },
+
+    "loadingSpinner": {
+        "message": "Loading..."
+    },
+
+    "protected_route": {
+        "messages": {
+            "checking_session": "Checking your session...",
+            "access_denied": "Access denied",
+            "must_be_logged_in": "You must be logged in to access this page.",
+            "access_forbidden": "Access forbidden",
+            "admin_rights_required": "You don't have the required administrator rights."
+        },
+        "actions": {
+            "back_to_home": "Back to home",
+            "go_to_dashboard": "Go to dashboard"
+        }
+    }
+}

@@ -1,17 +1,18 @@
-import { Menu, X, LogOut, ChevronDown } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
-import { useToast } from '@/hooks/use-toast';
+import { Menu, X, LogOut, ChevronDown, Globe } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
-} from '@/components/ui/dropdown-menu';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { useTranslation } from "react-i18next";
 
 export const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -19,181 +20,240 @@ export const Header = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { t, i18n } = useTranslation();
 
   const handleSignOut = async () => {
     try {
       await signOut();
-      toast({ title: "Déconnexion réussie", description: "À bientôt !" });
-      navigate('/');
+      toast({ title: t("logout_success"), description: t("see_you_soon") });
+      navigate("/");
     } catch {
-      toast({ title: "Erreur", description: "Impossible de vous déconnecter", variant: "destructive" });
+      toast({
+        title: t("error"),
+        description: t("logout_error"),
+        variant: "destructive",
+      });
     }
   };
 
+  const toggleLanguage = () => {
+    const newLang = i18n.language === "fr" ? "en" : "fr";
+    i18n.changeLanguage(newLang);
+  };
+
+  const navLink = (path: string, label: string) => (
+    <Link
+      to={path}
+      className={
+        location.pathname === path
+          ? "text-white font-semibold"
+          : "text-blue-200 hover:text-white transition"
+      }
+    >
+      {label}
+    </Link>
+  );
+
   return (
     <header className="bg-gradient-to-br from-blue-900 to-blue-800 text-white sticky top-0 z-50">
-  <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-    {/* Logo */}
-    <Link to="/" className="flex items-center space-x-2">
-      <img src="/logo-white.webp" alt="Logo" className="h-8 md:h-16" />
-    </Link>
+      <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+        {/* Logo */}
+        <Link to="/" className="flex items-center space-x-2">
+          <img src="/logo-white.webp" alt="Logo" className="h-8 md:h-16" />
+        </Link>
 
-    {/* Navigation principale */}
-    <nav className="hidden md:flex items-center gap-8">
-      <Link
-        to="/"
-        className={location.pathname === '/' ? 'text-white font-semibold' : 'text-blue-200 hover:text-white transition'}
-      >
-        Accueil
-      </Link>
-      <Link
-        to="/offres"
-        className={location.pathname === '/offres' ? 'text-white font-semibold' : 'text-blue-200 hover:text-white transition'}
-      >
-        Offres
-      </Link>
-      <Link
-        to="/ma-reservation"
-        className={location.pathname === '/ma-reservation' ? 'text-white font-semibold' : 'text-blue-200 hover:text-white transition'}
-      >
-        Mes réservations
-      </Link>
-      <Link
-        to="/about"
-        className={location.pathname === '/about' ? 'text-white font-semibold' : 'text-blue-200 hover:text-white transition'}
-      >
-        À propos
-      </Link>
+        {/* Navigation principale */}
+        <nav className="hidden md:flex items-center gap-8">
+          {navLink("/", t("home"))}
+          {navLink("/offres", t("offers"))}
+          {navLink("/ma-reservation", t("my_reservations"))}
+          {navLink("/about", t("about"))}
 
-      {/* Menu admin */}
-      {isUserAdmin && (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button
-              className={`flex items-center gap-1 ${
-                location.pathname.startsWith('/admin')
-                  ? 'text-white font-semibold'
-                  : 'text-blue-200 hover:text-white transition'
-              }`}
-            >
-              Administration
-              <ChevronDown className="h-4 w-4" />
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start">
-            <DropdownMenuItem asChild>
-              <Link to="/admin/vehicles">Gestion des véhicules</Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link to="/admin/reservations">Gestion des réservations</Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link to="/admin/users">Gestion des utilisateurs</Link>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      )}
-    </nav>
-
-    {/* Espace utilisateur (droite) */}
-    <div className="flex items-center gap-4">
-      {/* Menu mobile */}
-      <Button
-        variant="ghost"
-        size="sm"
-        className="md:hidden text-white"
-        onClick={() => setIsMenuOpen(!isMenuOpen)}
-      >
-        {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-      </Button>
-
-      {/* Zone utilisateur desktop */}
-      {!authLoading && (
-        <div className="hidden md:flex items-center">
-          {isAuthenticated ? (
+          {/* Menu admin */}
+          {isUserAdmin && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-2 text-sm text-white hover:text-blue-200 transition font-medium">
-                  <Avatar className="h-8 w-8 border text-gray-700 border-gray-700">
-                    <AvatarImage
-                      src={user?.user_metadata?.avatar_url || '/images/default-avatar.png'}
-                      alt="Profil"
-                    />
-                    <AvatarFallback>
-                      {(user?.user_metadata?.full_name?.[0] || user?.email?.[0] || 'U').toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  {user?.user_metadata?.full_name || user?.email || "Mon compte"}
+                <button
+                  className={`flex items-center gap-1 ${
+                    location.pathname.startsWith("/admin")
+                      ? "text-white font-semibold"
+                      : "text-blue-200 hover:text-white transition"
+                  }`}
+                >
+                  {t("admin")}
                   <ChevronDown className="h-4 w-4" />
                 </button>
               </DropdownMenuTrigger>
-
-              <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuContent align="start">
                 <DropdownMenuItem asChild>
-                  <Link to="/mon-compte">Profil</Link>
+                  <Link to="/admin/vehicles">{t("manage_vehicles")}</Link>
                 </DropdownMenuItem>
-
-                <DropdownMenuItem disabled>
-                  Changer de mot de passe
+                <DropdownMenuItem asChild>
+                  <Link to="/admin/reservations">
+                    {t("manage_reservations")}
+                  </Link>
                 </DropdownMenuItem>
-
-                <DropdownMenuSeparator />
-
-                <DropdownMenuItem
-                  onClick={handleSignOut}
-                  className="text-red-400 focus:text-red-600"
-                >
-                  <LogOut className="h-4 w-4 mr-2" /> Déconnexion
+                <DropdownMenuItem asChild>
+                  <Link to="/admin/users">{t("manage_users")}</Link>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-          ) : (
-            <Button asChild variant="default" size="sm">
-              <Link to="/auth">
-                Connexion
-              </Link>
-            </Button>
           )}
+        </nav>
+
+        {/* Espace utilisateur + bouton langue */}
+        <div className="flex items-center gap-3">
+
+          {/* Zone utilisateur desktop */}
+          {!authLoading && (
+            <div className="hidden md:flex items-center">
+              {isAuthenticated ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button className="flex items-center gap-2 text-sm text-white hover:text-blue-200 transition font-medium">
+                      <Avatar className="h-8 w-8 border text-gray-700 border-gray-700">
+                        <AvatarImage
+                          src={
+                            user?.user_metadata?.avatar_url ||
+                            "/images/default-avatar.png"
+                          }
+                          alt="Profil"
+                        />
+                        <AvatarFallback>
+                          {(
+                            user?.user_metadata?.full_name?.[0] ||
+                            user?.email?.[0] ||
+                            "U"
+                          ).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      {user?.user_metadata?.full_name ||
+                        user?.email ||
+                        t("my_account")}
+                      <ChevronDown className="h-4 w-4" />
+                    </button>
+                  </DropdownMenuTrigger>
+
+                  <DropdownMenuContent align="end" className="w-48">
+                    <DropdownMenuItem asChild>
+                      <Link to="/mon-compte">{t("profile")}</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem disabled>
+                      {t("change_password")}
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={handleSignOut}
+                      className="text-red-400 focus:text-red-600"
+                    >
+                      <LogOut className="h-4 w-4 mr-2" /> {t("logout")}
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : (
+                <Button asChild variant="default" size="sm">
+                  <Link to="/auth">{t("login")}</Link>
+                </Button>
+              )}
+            </div>
+          )}
+
+          {/* Bouton de langue */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={toggleLanguage}
+            className="flex items-center gap-2 text-blue-800 border-white hover:bg-white hover:text-blue-900 transition"
+          >
+            <Globe size={16} />
+            {i18n.language === "fr" ? "English" : "Français"}
+          </Button>
+
+          {/* Bouton menu mobile */}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="md:hidden text-white"
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+          >
+            {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </Button>
+        </div>
+      </div>
+
+      {/* Menu mobile */}
+      {isMenuOpen && (
+        <div className="md:hidden border-t border-blue-700 bg-gradient-to-br from-blue-900 to-blue-800 text-white">
+          <div className="flex flex-col space-y-3 px-4 py-3">
+            {navLink("/", t("home"))}
+            {navLink("/offres", t("offers"))}
+            {navLink("/ma-reservation", t("my_reservations"))}
+            {navLink("/about", t("about"))}
+
+            {isUserAdmin && (
+              <div className="flex flex-col space-y-1">
+                <span className="font-semibold text-sm text-blue-200 mt-2">
+                  {t("admin")}
+                </span>
+                <Link to="/admin/vehicles" onClick={() => setIsMenuOpen(false)}>
+                  {t("manage_vehicles")}
+                </Link>
+                <Link
+                  to="/admin/reservations"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  {t("manage_reservations")}
+                </Link>
+                <Link to="/admin/users" onClick={() => setIsMenuOpen(false)}>
+                  {t("manage_users")}
+                </Link>
+              </div>
+            )}
+
+            {!authLoading && isAuthenticated ? (
+              <>
+                <Link
+                  to="/mon-compte"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  {t("my_account")}
+                </Link>
+                <span className="text-blue-200 text-sm">
+                  {t("change_password")}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleSignOut}
+                  className="text-white border-white hover:bg-white hover:text-blue-900"
+                >
+                  <LogOut className="h-4 w-4" /> {t("logout")}
+                </Button>
+              </>
+            ) : (
+              <Button
+                asChild
+                variant="default"
+                size="sm"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                <Link to="/auth">{t("login")}</Link>
+              </Button>
+            )}
+
+            {/* Bouton langue mobile */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={toggleLanguage}
+            className="flex items-center gap-2 text-blue-800 border-white hover:bg-white hover:text-blue-900 transition"
+          >
+            <Globe size={16} />
+            {i18n.language === "fr" ? "English" : "Français"}
+          </Button>
+          </div>
         </div>
       )}
-    </div>
-  </div>
-
-  {/* Menu mobile */}
-  {isMenuOpen && (
-    <div className="md:hidden border-t border-blue-700 bg-gradient-to-br from-blue-900 to-blue-800 text-white">
-      <div className="flex flex-col space-y-3 px-4 py-3">
-        <Link to="/" onClick={() => setIsMenuOpen(false)}>Accueil</Link>
-        <Link to="/offres" onClick={() => setIsMenuOpen(false)}>Offres</Link>
-        <Link to="/ma-reservation" onClick={() => setIsMenuOpen(false)}>Mes réservations</Link>
-        <Link to="/about" onClick={() => setIsMenuOpen(false)}>À propos</Link>
-        {isUserAdmin && (
-          <div className="flex flex-col space-y-1">
-            <span className="font-semibold text-sm text-blue-200 mt-2">Administration</span>
-            <Link to="/admin/vehicles" onClick={() => setIsMenuOpen(false)}>Gestion des véhicules</Link>
-            <Link to="/admin/reservations" onClick={() => setIsMenuOpen(false)}>Gestion des réservations</Link>
-            <Link to="/admin/users" onClick={() => setIsMenuOpen(false)}>Gestion des utilisateurs</Link>
-          </div>
-        )}
-        {!authLoading && isAuthenticated ? (
-          <>
-            <Link to="/mon-compte" onClick={() => setIsMenuOpen(false)}>Mon compte</Link>
-            <span className="text-blue-200 text-sm">Changer de mot de passe</span>
-            <Button variant="outline" size="sm" onClick={handleSignOut} className="text-white border-white hover:bg-white hover:text-blue-900">
-              <LogOut className="h-4 w-4" /> Déconnexion
-            </Button>
-          </>
-        ) : (
-          <Button asChild variant="default" size="sm" onClick={() => setIsMenuOpen(false)}>
-            <Link to="/auth">
-              Connexion
-            </Link>
-          </Button>
-        )}
-      </div>
-    </div>
-  )}
-</header>
-
+    </header>
   );
 };

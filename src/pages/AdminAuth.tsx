@@ -1,4 +1,3 @@
-// src/pages/AdminLogin.tsx
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -9,8 +8,10 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Shield, Car, ArrowLeft } from "lucide-react";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
+import { useTranslation } from "react-i18next";
 
 const AdminLogin = () => {
+  const { t } = useTranslation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -29,14 +30,11 @@ const AdminLogin = () => {
     setLoading(true);
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
       if (error) {
         toast({
-          title: "Erreur de connexion",
+          title: t("admin_login.error_login"),
           description: error.message,
           variant: "destructive",
         });
@@ -44,33 +42,32 @@ const AdminLogin = () => {
       }
 
       if (data.user) {
-        // 🔹 Vérification du rôle admin dans `profiles`
         const { data: profile, error: roleError } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', data.user.id)
+          .from("profiles")
+          .select("role")
+          .eq("id", data.user.id)
           .single();
 
-        if (roleError || !profile || profile.role !== 'admin') {
+        if (roleError || !profile || profile.role !== "admin") {
           await supabase.auth.signOut();
           toast({
-            title: "Accès refusé",
-            description: "Vous n'avez pas les droits administrateur.",
+            title: t("error"),
+            description: t("admin_login.error_unauthorized"),
             variant: "destructive",
           });
           return;
         }
 
         toast({
-          title: "Connexion admin réussie",
-          description: "Bienvenue dans l'administration.",
+          title: t("admin_login.success_title"),
+          description: t("admin_login.success_message"),
         });
         navigate("/");
       }
-    } catch (error) {
+    } catch {
       toast({
-        title: "Erreur",
-        description: "Une erreur inattendue s'est produite.",
+        title: t("error"),
+        description: t("admin_login.error_generic"),
         variant: "destructive",
       });
     } finally {
@@ -81,7 +78,6 @@ const AdminLogin = () => {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4 sm:p-6">
       <div className="w-full max-w-md">
-        {/* Header mobile optimisé */}
         <div className="text-center mb-6 sm:mb-8">
           <div className="flex items-center justify-center gap-2 mb-3 sm:mb-4">
             <Car className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
@@ -89,7 +85,7 @@ const AdminLogin = () => {
             <h1 className="text-xl sm:text-2xl font-bold text-primary">CarRental Admin</h1>
           </div>
           <p className="text-sm sm:text-base text-muted-foreground">
-            Accès réservé aux administrateurs
+            {t("admin_login.access_restricted")}
           </p>
         </div>
 
@@ -97,17 +93,18 @@ const AdminLogin = () => {
           <CardHeader className="pb-4 sm:pb-6">
             <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
               <Shield className="h-4 w-4 sm:h-5 sm:w-5" />
-              Connexion Administration
+              {t("admin_login.title")}
             </CardTitle>
             <CardDescription className="text-sm sm:text-base">
-              Utilisez vos identifiants administrateur
+              {t("admin_login.description")}
             </CardDescription>
           </CardHeader>
+
           <CardContent className="space-y-4 sm:space-y-6">
             <form onSubmit={handleSignIn} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="admin-email" className="text-sm sm:text-base">
-                  Email administrateur
+                  {t("admin_login.email_label")}
                 </Label>
                 <Input
                   id="admin-email"
@@ -119,9 +116,10 @@ const AdminLogin = () => {
                   className="h-11 sm:h-12 text-sm sm:text-base"
                 />
               </div>
+
               <div className="space-y-2">
                 <Label htmlFor="admin-password" className="text-sm sm:text-base">
-                  Mot de passe
+                  {t("admin_login.password_label")}
                 </Label>
                 <Input
                   id="admin-password"
@@ -133,23 +131,24 @@ const AdminLogin = () => {
                   className="h-11 sm:h-12 text-sm sm:text-base"
                 />
               </div>
-              <Button 
-                type="submit" 
-                className="w-full h-11 sm:h-12 text-sm sm:text-base font-medium" 
+
+              <Button
+                type="submit"
+                className="w-full h-11 sm:h-12 text-sm sm:text-base font-medium"
                 disabled={loading}
               >
-                {loading ? "Connexion..." : "Se connecter à l'administration"}
+                {loading ? t("admin_login.button_loading") : t("admin_login.button_login")}
               </Button>
             </form>
 
             <div className="pt-4 sm:pt-6 border-t">
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 className="w-full h-10 sm:h-11 text-sm sm:text-base"
-                onClick={() => navigate('/auth')}
+                onClick={() => navigate("/auth")}
               >
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                Retour au site client
+                {t("admin_login.back_button")}
               </Button>
             </div>
           </CardContent>

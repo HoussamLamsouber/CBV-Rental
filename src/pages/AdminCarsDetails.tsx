@@ -13,6 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { ArrowLeft, Calendar, Trash2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 type CarRow = {
   id: string;
@@ -72,6 +73,7 @@ export default function AdminVehicleDetail() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { authLoading, adminLoading, isUserAdmin } = useAuth();
+  const { t } = useTranslation();
   
   const [vehicle, setVehicle] = useState<CarRow | null>(null);
   const [reservations, setReservations] = useState<ReservationRow[]>([]);
@@ -206,7 +208,7 @@ export default function AdminVehicleDetail() {
       } catch (err: any) {
         console.error("Erreur load vehicle detail:", err);
         toast({ 
-          title: "Erreur", 
+          title: t("error"), 
           description: String(err.message || err), 
           variant: "destructive" 
         });
@@ -217,7 +219,7 @@ export default function AdminVehicleDetail() {
 
     load();
     return () => { mounted = false; };
-  }, [id, toast]);
+  }, [id, toast, t]);
 
   const loadOffers = async () => {
     if (!id) return;
@@ -267,32 +269,32 @@ export default function AdminVehicleDetail() {
   const getClientInfo = (reservation: ReservationRow) => {
     if (reservation.profiles) {
       return {
-        name: reservation.profiles.full_name || "Non renseigné",
+        name: reservation.profiles.full_name || t('admin_vehicle_detail.reservations.not_specified'),
         email: reservation.profiles.email,
-        type: "Utilisateur enregistré"
+        type: t('admin_vehicle_detail.reservations.registered_user')
       };
     }
     
     if (reservation.guest_name || reservation.guest_email) {
       return {
-        name: reservation.guest_name || "Non renseigné",
-        email: reservation.guest_email || "Non renseigné",
-        type: "Invité"
+        name: reservation.guest_name || t('admin_vehicle_detail.reservations.not_specified'),
+        email: reservation.guest_email || t('admin_vehicle_detail.reservations.not_specified'),
+        type: t('admin_vehicle_detail.reservations.guest')
       };
     }
     
     return {
-      name: "Non spécifié",
-      email: "Non spécifié",
-      type: "Inconnu"
+      name: t('admin_vehicle_detail.reservations.not_specified'),
+      email: t('admin_vehicle_detail.reservations.not_specified'),
+      type: t('admin_vehicle_detail.reservations.unknown')
     };
   };
 
   const handleCreateVehicle = async () => {
     if (!newVehicle.matricule) {
       toast({
-        title: "Champ manquant",
-        description: "Le matricule est obligatoire.",
+        title: t('admin_vehicle_detail.messages.missing_field'),
+        description: t('admin_vehicle_detail.modals.license_plate_required'),
         variant: "destructive",
       });
       return;
@@ -308,8 +310,8 @@ export default function AdminVehicleDetail() {
   
       if (existingVehicle) {
         toast({
-          title: "Matricule déjà existant",
-          description: `Un véhicule avec le matricule "${newVehicle.matricule}" existe déjà.`,
+          title: t('admin_vehicle_detail.messages.duplicate_license'),
+          description: t('admin_vehicle_detail.messages.duplicate_license') + ` "${newVehicle.matricule}" ${t('admin_vehicle_detail.messages.already_exists')}`,
           variant: "destructive",
         });
         return;
@@ -332,8 +334,8 @@ export default function AdminVehicleDetail() {
       if (error) throw error;
   
       toast({
-        title: "Véhicule créé",
-        description: `Le véhicule ${newVehicle.matricule} a été ajouté.`,
+        title: t('admin_vehicle_detail.messages.vehicle_created'),
+        description: t('admin_vehicle_detail.messages.vehicle_created') + ` ${newVehicle.matricule} ${t('admin_vehicle_detail.messages.has_been_added')}`,
       });
   
       setNewVehicle({
@@ -367,8 +369,8 @@ export default function AdminVehicleDetail() {
     } catch (error: any) {
       console.error("Erreur création véhicule:", error);
       toast({
-        title: "Erreur",
-        description: error.message || "Impossible de créer le véhicule.",
+        title: t("error"),
+        description: error.message || t('admin_vehicle_detail.messages.cannot_create_vehicle'),
         variant: "destructive",
       });
     } finally {
@@ -379,7 +381,7 @@ export default function AdminVehicleDetail() {
   // Afficher un spinner pendant le chargement de l'authentification
   if (authLoading || adminLoading) {
     return (
-      <LoadingSpinner message="Vérification des permissions administrateur..." />
+      <LoadingSpinner message={t('admin_vehicle_detail.messages.checking_permissions')} />
     );
   }
 
@@ -388,17 +390,17 @@ export default function AdminVehicleDetail() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">Accès refusé</h1>
+          <h1 className="text-2xl font-bold mb-4">{t('admin_vehicle_detail.access_denied')}</h1>
           <p className="text-muted-foreground mb-6">
-            Vous devez être administrateur pour accéder à cette page.
+            {t('admin_vehicle_detail.admin_required')}
           </p>
           <div className="flex gap-4 justify-center">
             <Button onClick={() => navigate("/admin/vehicles")}>
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Retour aux véhicules
+              {t('admin_vehicle_detail.back_to_vehicles')}
             </Button>
             <Button variant="outline" onClick={() => navigate("/")}>
-              Retour à l'accueil
+              {t('admin_vehicle_detail.back_to_home')}
             </Button>
           </div>
         </div>
@@ -410,17 +412,17 @@ export default function AdminVehicleDetail() {
   const getVehicleStatus = (vehicleItem: Vehicle) => {
     const statusConfig = {
       available: { 
-        text: 'Disponible', 
+        text: t('admin_vehicle_detail.status.available'), 
         color: 'bg-green-100 text-green-800 border border-green-200',
         icon: '✅'
       },
       reserved: { 
-        text: 'Réservé', 
+        text: t('admin_vehicle_detail.status.reserved'), 
         color: 'bg-blue-100 text-blue-800 border border-blue-200',
         icon: '🚗'
       },
       maintenance: { 
-        text: 'En Maintenance', 
+        text: t('admin_vehicle_detail.status.maintenance'), 
         color: 'bg-orange-100 text-orange-800 border border-orange-200',
         icon: '🔧'
       }
@@ -432,9 +434,9 @@ export default function AdminVehicleDetail() {
   // Fonction utilitaire pour obtenir le texte du statut
   const getStatusText = (status: string) => {
     const statusMap = {
-      available: 'Disponible',
-      reserved: 'Réservé', 
-      maintenance: 'En Maintenance'
+      available: t('admin_vehicle_detail.status.available'),
+      reserved: t('admin_vehicle_detail.status.reserved'), 
+      maintenance: t('admin_vehicle_detail.status.maintenance')
     };
     return statusMap[status as keyof typeof statusMap] || status;
   };
@@ -451,7 +453,7 @@ export default function AdminVehicleDetail() {
   };
 
   const handleDeleteVehicle = async (vehicleId: string, matricule: string) => {
-    if (!confirm(`Êtes-vous sûr de vouloir archiver le véhicule "${matricule}" ? Il ne sera plus visible mais restera dans la base de données.`)) {
+    if (!confirm(t('admin_vehicle_detail.messages.confirm_archive_vehicle') + ` "${matricule}" ? ` + t('admin_vehicle_detail.messages.archive_warning'))) {
       return;
     }
   
@@ -467,8 +469,8 @@ export default function AdminVehicleDetail() {
       if (error) throw error;
   
       toast({
-        title: "Véhicule archivé",
-        description: `Le véhicule ${matricule} a été archivé. Le stock a été mis à jour automatiquement.`,
+        title: t('admin_vehicle_detail.messages.vehicle_archived'),
+        description: t('admin_vehicle_detail.messages.vehicle_archived') + ` ${matricule} ` + t('admin_vehicle_detail.messages.stock_updated'),
       });
   
       // Recharger la liste des véhicules
@@ -494,8 +496,8 @@ export default function AdminVehicleDetail() {
     } catch (error: any) {
       console.error("Erreur archivage véhicule:", error);
       toast({
-        title: "Erreur",
-        description: error.message || "Impossible d'archiver le véhicule.",
+        title: t("error"),
+        description: error.message || t('admin_vehicle_detail.messages.cannot_archive_vehicle'),
         variant: "destructive",
       });
     }
@@ -524,15 +526,15 @@ export default function AdminVehicleDetail() {
       );
 
       toast({
-        title: "Statut mis à jour",
-        description: `Le véhicule est maintenant ${getStatusText(newStatus).toLowerCase()}.`,
+        title: t('admin_vehicle_detail.messages.status_updated'),
+        description: t('admin_vehicle_detail.messages.status_updated') + ` ${getStatusText(newStatus).toLowerCase()}.`,
       });
 
     } catch (error: any) {
       console.error("Erreur changement statut:", error);
       toast({
-        title: "Erreur",
-        description: error.message || "Impossible de changer le statut.",
+        title: t("error"),
+        description: error.message || t('admin_vehicle_detail.messages.cannot_change_status'),
         variant: "destructive",
       });
     }
@@ -542,8 +544,8 @@ export default function AdminVehicleDetail() {
   const handleCreateOffer = async () => {
     if (!newOffer.period || !newOffer.price) {
       toast({
-        title: "Champs manquants",
-        description: "Veuillez remplir tous les champs de l'offre.",
+        title: t('admin_vehicle_detail.messages.missing_fields'),
+        description: t('admin_vehicle_detail.messages.fill_all_offer_fields'),
         variant: "destructive",
       });
       return;
@@ -565,8 +567,8 @@ export default function AdminVehicleDetail() {
       if (error) throw error;
 
       toast({
-        title: "Offre créée",
-        description: `L'offre a été ajoutée avec succès.`,
+        title: t('admin_vehicle_detail.messages.offer_created'),
+        description: t('admin_vehicle_detail.messages.offer_created_success'),
       });
 
       setNewOffer({ period: "", price: "" });
@@ -576,8 +578,8 @@ export default function AdminVehicleDetail() {
     } catch (error: any) {
       console.error("Erreur création offre:", error);
       toast({
-        title: "Erreur",
-        description: error.message || "Impossible de créer l'offre.",
+        title: t("error"),
+        description: error.message || t('admin_vehicle_detail.messages.cannot_create_offer'),
         variant: "destructive",
       });
     } finally {
@@ -587,7 +589,7 @@ export default function AdminVehicleDetail() {
 
   // Fonction pour supprimer une offre
   const handleDeleteOffer = async (offerId: string) => {
-    if (!confirm("Êtes-vous sûr de vouloir archiver cette offre ?")) {
+    if (!confirm(t('admin_vehicle_detail.messages.confirm_archive_offer'))) {
       return;
     }
 
@@ -603,16 +605,16 @@ export default function AdminVehicleDetail() {
       if (error) throw error;
 
       toast({
-        title: "Offre archivée",
-        description: "L'offre a été archivée avec succès.",
+        title: t('admin_vehicle_detail.messages.offer_archived'),
+        description: t('admin_vehicle_detail.messages.offer_archived_success'),
       });
 
       await loadOffers();
     } catch (error: any) {
       console.error("Erreur archivage offre:", error);
       toast({
-        title: "Erreur",
-        description: error.message || "Impossible d'archiver l'offre.",
+        title: t("error"),
+        description: error.message || t('admin_vehicle_detail.messages.cannot_archive_offer'),
         variant: "destructive",
       });
     }
@@ -620,15 +622,15 @@ export default function AdminVehicleDetail() {
 
   // RETOURS CONDITIONNELS FINAUX
   if (!id) { 
-    return <div><main className="container mx-auto p-6">ID manquant</main><Footer/></div>;
+    return <div><main className="container mx-auto p-6">{t('admin_vehicle_detail.messages.missing_id')}</main><Footer/></div>;
   } 
   
   if (loading) { 
-    return <div><main className="container mx-auto p-6">Chargement...</main><Footer/></div>;
+    return <div><main className="container mx-auto p-6">{t('admin_vehicle_detail.messages.loading')}</main><Footer/></div>;
   }
   
   if (!vehicle) { 
-    return <div><main className="container mx-auto p-6">Véhicule introuvable</main><Footer/></div>;
+    return <div><main className="container mx-auto p-6">{t('admin_vehicle_detail.messages.vehicle_not_found')}</main><Footer/></div>;
   }
 
   // Le reste du rendu JSX
@@ -643,30 +645,30 @@ export default function AdminVehicleDetail() {
             {vehicle.image_url ? (
               <img src={vehicle.image_url} alt={vehicle.name} className="w-full h-auto object-cover rounded-lg" />
             ) : (
-              <div className="w-full h-32 bg-gray-100 rounded-lg flex items-center justify-center">No image</div>
+              <div className="w-full h-32 bg-gray-100 rounded-lg flex items-center justify-center">{t('admin_vehicle_detail.messages.no_image')}</div>
             )}
           </div>
 
           <div className="flex-1">
             <h1 className="text-2xl font-bold">{vehicle.name}</h1>
             <p className="text-muted-foreground mb-2">{vehicle.category}</p>
-            <p className="mb-2">Prix: <strong>{vehicle.price} / jour</strong></p>
+            <p className="mb-2">{t('admin_vehicle_detail.vehicle_info.price_per_day')} <strong>{vehicle.price} / {t('admin_vehicle_detail.messages.day')}</strong></p>
 
             {/* Stock affiché simplement sans input */}
             <div className="mb-4">
-              <label className="block text-sm text-gray-600 mb-1">Stock total</label>
+              <label className="block text-sm text-gray-600 mb-1">{t('admin_vehicle_detail.vehicle_info.total_stock')}</label>
               <div className="flex items-center gap-2">
                 <div className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-gray-900 font-medium min-w-20">
                   {vehicle.quantity}
                 </div>
                 <span className="text-sm text-gray-500">
-                  (Synchronisé automatiquement: {vehicles.length} véhicule(s) actif(s))
+                  ({t('admin_vehicle_detail.vehicle_info.auto_sync')} {vehicles.length} {t('admin_vehicle_detail.vehicle_info.vehicles_active')})
                 </span>
               </div>
             </div>
 
             <div className="flex gap-2">
-              <Button onClick={() => navigate("/admin/vehicles")}>Retour</Button>
+              <Button onClick={() => navigate("/admin/vehicles")}>{t('admin_vehicle_detail.back_to_vehicles')}</Button>
             </div>
           </div>
         </div>
@@ -684,7 +686,7 @@ export default function AdminVehicleDetail() {
               }`}
               onClick={() => setActiveTab('availability')}
             >
-              Disponibilité aujourd'hui
+              {t('admin_vehicle_detail.tabs.availability')}
             </button>
             <button
               className={`py-2 px-1 font-medium text-sm border-b-2 transition-colors ${
@@ -694,7 +696,7 @@ export default function AdminVehicleDetail() {
               }`}
               onClick={() => setActiveTab('vehicles')}
             >
-              Véhicules individuels ({vehicles.length})
+              {t('admin_vehicle_detail.tabs.vehicles')} ({vehicles.length})
             </button>
             <button
               className={`py-2 px-1 font-medium text-sm border-b-2 transition-colors ${
@@ -704,7 +706,7 @@ export default function AdminVehicleDetail() {
               }`}
               onClick={() => setActiveTab('offers')}
             >
-              Offres spéciales ({offers.length})
+              {t('admin_vehicle_detail.tabs.offers')} ({offers.length})
             </button>
             <button
               className={`py-2 px-1 font-medium text-sm border-b-2 transition-colors ${
@@ -714,7 +716,7 @@ export default function AdminVehicleDetail() {
               }`}
               onClick={() => setActiveTab('reservations')}
             >
-              Toutes les réservations ({allReservations.length})
+              {t('admin_vehicle_detail.tabs.reservations')} ({allReservations.length})
             </button>
             <button
               className={`py-2 px-1 font-medium text-sm border-b-2 transition-colors ${
@@ -724,7 +726,7 @@ export default function AdminVehicleDetail() {
               }`}
               onClick={() => setActiveTab('calendar')}
             >
-              Calendrier (30j)
+              {t('admin_vehicle_detail.tabs.calendar')}
             </button>
           </div>
         </div>
@@ -732,48 +734,48 @@ export default function AdminVehicleDetail() {
         {/* Contenu des onglets */}
         {activeTab === 'availability' && (
           <>
-            <h2 className="text-xl font-semibold mb-3">Disponibilité aujourd'hui</h2>
+            <h2 className="text-xl font-semibold mb-3">{t('admin_vehicle_detail.tabs.availability')}</h2>
             
             {/* Cartes de statut */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
               <Card>
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-lg">Véhicules disponibles</CardTitle>
+                  <CardTitle className="text-lg">{t('admin_vehicle_detail.availability.vehicles_available')}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-bold text-green-600">
                     {vehicles.filter(v => v.status === 'available').length}
                   </div>
                   <p className="text-sm text-muted-foreground mt-2">
-                    Prêts à être réservés
+                    {t('admin_vehicle_detail.availability.ready_to_rent')}
                   </p>
                 </CardContent>
               </Card>
 
               <Card>
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-lg">Véhicules réservés</CardTitle>
+                  <CardTitle className="text-lg">{t('admin_vehicle_detail.availability.vehicles_reserved')}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-bold text-blue-600">
                     {vehicles.filter(v => v.status === 'reserved').length}
                   </div>
                   <p className="text-sm text-muted-foreground mt-2">
-                    Actuellement en location
+                    {t('admin_vehicle_detail.availability.currently_rented')}
                   </p>
                 </CardContent>
               </Card>
 
               <Card>
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-lg">En maintenance</CardTitle>
+                  <CardTitle className="text-lg">{t('admin_vehicle_detail.availability.under_maintenance')}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-bold text-orange-600">
                     {vehicles.filter(v => v.status === 'maintenance').length}
                   </div>
                   <p className="text-sm text-muted-foreground mt-2">
-                    Indisponibles temporairement
+                    {t('admin_vehicle_detail.availability.temporarily_unavailable')}
                   </p>
                 </CardContent>
               </Card>
@@ -784,9 +786,9 @@ export default function AdminVehicleDetail() {
         {activeTab === 'vehicles' && (
           <>
             <div className="flex justify-between items-center mb-3">
-              <h2 className="text-xl font-semibold">Véhicules individuels</h2>
+              <h2 className="text-xl font-semibold">{t('admin_vehicle_detail.vehicles_management.individual_vehicles')}</h2>
               <Button onClick={() => setIsCreateVehicleModalOpen(true)}>
-                + Ajouter un véhicule
+                + {t('admin_vehicle_detail.vehicles_management.add_vehicle')}
               </Button>
             </div>
             
@@ -794,22 +796,22 @@ export default function AdminVehicleDetail() {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
               <div className="bg-white p-4 rounded-lg border shadow-sm">
                 <div className="text-2xl font-bold text-gray-900">{stats.total}</div>
-                <div className="text-sm text-gray-600">Total véhicules</div>
+                <div className="text-sm text-gray-600">{t('admin_vehicle_detail.vehicles_management.total_vehicles')}</div>
               </div>
               <div className="bg-white p-4 rounded-lg border shadow-sm border-green-200">
                 <div className="text-2xl font-bold text-green-600">{stats.available}</div>
-                <div className="text-sm text-gray-600">Disponibles</div>
-                <div className="text-xs text-green-600 mt-1">✅ Prêts à être réservés</div>
+                <div className="text-sm text-gray-600">{t('admin_vehicle_detail.vehicles_management.available')}</div>
+                <div className="text-xs text-green-600 mt-1">✅ {t('admin_vehicle_detail.availability.ready_to_rent')}</div>
               </div>
               <div className="bg-white p-4 rounded-lg border shadow-sm border-blue-200">
                 <div className="text-2xl font-bold text-blue-600">{stats.reserved}</div>
-                <div className="text-sm text-gray-600">Réservés</div>
-                <div className="text-xs text-blue-600 mt-1">🚗 En location</div>
+                <div className="text-sm text-gray-600">{t('admin_vehicle_detail.vehicles_management.reserved')}</div>
+                <div className="text-xs text-blue-600 mt-1">🚗 {t('admin_vehicle_detail.availability.currently_rented')}</div>
               </div>
               <div className="bg-white p-4 rounded-lg border shadow-sm border-orange-200">
                 <div className="text-2xl font-bold text-orange-600">{stats.maintenance}</div>
-                <div className="text-sm text-gray-600">En maintenance</div>
-                <div className="text-xs text-orange-600 mt-1">🔧 Indisponibles</div>
+                <div className="text-sm text-gray-600">{t('admin_vehicle_detail.vehicles_management.maintenance')}</div>
+                <div className="text-xs text-orange-600 mt-1">🔧 {t('admin_vehicle_detail.availability.temporarily_unavailable')}</div>
               </div>
             </div>
 
@@ -818,13 +820,13 @@ export default function AdminVehicleDetail() {
               <table className="w-full">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="p-4 text-left font-semibold">Matricule</th>
-                    <th className="p-4 text-left font-semibold">OBD</th>
-                    <th className="p-4 text-left font-semibold">Date OBD</th>
-                    <th className="p-4 text-left font-semibold">Objet</th>
-                    <th className="p-4 text-left font-semibold">Statut</th>
-                    <th className="p-4 text-left font-semibold">Changer statut</th>
-                    <th className="p-4 text-left font-semibold">Actions</th>
+                    <th className="p-4 text-left font-semibold">{t('admin_vehicle_detail.vehicles_management.license_plate')}</th>
+                    <th className="p-4 text-left font-semibold">{t('admin_vehicle_detail.vehicles_management.obd_code')}</th>
+                    <th className="p-4 text-left font-semibold">{t('admin_vehicle_detail.vehicles_management.obd_date')}</th>
+                    <th className="p-4 text-left font-semibold">{t('admin_vehicle_detail.vehicles_management.object')}</th>
+                    <th className="p-4 text-left font-semibold">{t('admin_vehicle_detail.vehicles_management.status')}</th>
+                    <th className="p-4 text-left font-semibold">{t('admin_vehicle_detail.vehicles_management.change_status')}</th>
+                    <th className="p-4 text-left font-semibold">{t('admin_vehicle_detail.vehicles_management.actions')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -850,9 +852,9 @@ export default function AdminVehicleDetail() {
                             onChange={(e) => handleChangeVehicleStatus(vehicleItem.id, e.target.value as any)}
                             className="text-sm border rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
                           >
-                            <option value="available">Disponible</option>
-                            <option value="reserved">Réservé</option>
-                            <option value="maintenance">Maintenance</option>
+                            <option value="available">{t('admin_vehicle_detail.status.available')}</option>
+                            <option value="reserved">{t('admin_vehicle_detail.status.reserved')}</option>
+                            <option value="maintenance">{t('admin_vehicle_detail.status.maintenance')}</option>
                           </select>
                         </td>
                         <td className="p-4">
@@ -861,7 +863,7 @@ export default function AdminVehicleDetail() {
                             size="sm"
                             onClick={() => handleDeleteVehicle(vehicleItem.id, vehicleItem.matricule)}
                           >
-                            Supprimer
+                            {t('admin_vehicle_detail.vehicles_management.delete')}
                           </Button>
                         </td>
                       </tr>
@@ -873,12 +875,12 @@ export default function AdminVehicleDetail() {
               {vehicles.length === 0 && (
                 <div className="p-8 text-center text-gray-500">
                   <div className="text-4xl mb-4">🚗</div>
-                  <p>Aucun véhicule trouvé pour ce modèle</p>
+                  <p>{t('admin_vehicle_detail.vehicles_management.no_vehicles')}</p>
                   <Button 
                     onClick={() => setIsCreateVehicleModalOpen(true)}
                     className="mt-4"
                   >
-                    Ajouter le premier véhicule
+                    {t('admin_vehicle_detail.vehicles_management.add_first_vehicle')}
                   </Button>
                 </div>
               )}
@@ -889,9 +891,9 @@ export default function AdminVehicleDetail() {
         {activeTab === 'offers' && (
           <>
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-semibold">Offres spéciales</h2>
+              <h2 className="text-xl font-semibold">{t('admin_vehicle_detail.offers_management.special_offers')}</h2>
               <Button onClick={() => setIsCreateOfferModalOpen(true)}>
-                + Ajouter une offre
+                + {t('admin_vehicle_detail.offers_management.add_offer')}
               </Button>
             </div>
 
@@ -899,9 +901,9 @@ export default function AdminVehicleDetail() {
               <Card>
                 <CardContent className="py-8 text-center">
                   <div className="text-4xl mb-4">🎯</div>
-                  <p className="text-muted-foreground mb-4">Aucune offre spéciale pour ce modèle</p>
+                  <p className="text-muted-foreground mb-4">{t('admin_vehicle_detail.offers_management.no_offers')}</p>
                   <Button onClick={() => setIsCreateOfferModalOpen(true)}>
-                    Créer la première offre
+                    {t('admin_vehicle_detail.offers_management.create_first_offer')}
                   </Button>
                 </CardContent>
               </Card>
@@ -927,7 +929,7 @@ export default function AdminVehicleDetail() {
                         {offer.price} MAD
                       </p>
                       <p className="text-sm text-muted-foreground mt-2">
-                        Prix spécial pour {offer.period.toLowerCase()}
+                        {t('admin_vehicle_detail.offers_management.special_price_for')} {offer.period.toLowerCase()}
                       </p>
                     </CardContent>
                   </Card>
@@ -940,17 +942,17 @@ export default function AdminVehicleDetail() {
         {/* Contenu de l'onglet réservations */}
         {activeTab === 'reservations' && (
           <>
-            <h2 className="text-xl font-semibold mb-3">Toutes les réservations</h2>
+            <h2 className="text-xl font-semibold mb-3">{t('admin_vehicle_detail.reservations.all_reservations')}</h2>
             
             <div className="bg-white rounded-lg border shadow-sm overflow-hidden">
               <table className="w-full">
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="p-4 text-left">ID</th>
-                    <th className="p-4 text-left">Client</th>
-                    <th className="p-4 text-left">Période</th>
-                    <th className="p-4 text-left">Statut</th>
-                    <th className="p-4 text-left">Lieux</th>
+                    <th className="p-4 text-left">{t('admin_vehicle_detail.reservations.client')}</th>
+                    <th className="p-4 text-left">{t('admin_vehicle_detail.reservations.period')}</th>
+                    <th className="p-4 text-left">{t('admin_vehicle_detail.reservations.status')}</th>
+                    <th className="p-4 text-left">{t('admin_vehicle_detail.reservations.locations')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -979,9 +981,9 @@ export default function AdminVehicleDetail() {
                               ? 'bg-yellow-100 text-yellow-800'
                               : 'bg-red-100 text-red-800'
                           }`}>
-                            {reservation.status === 'accepted' ? '✅ Acceptée' : 
-                            reservation.status === 'pending' ? '⏳ En attente' : 
-                            '❌ Refusée'}
+                            {reservation.status === 'accepted' ? '✅ ' + t('admin_reservations.status.accepted') : 
+                            reservation.status === 'pending' ? '⏳ ' + t('admin_reservations.status.pending') : 
+                            '❌ ' + t('admin_reservations.status.refused')}
                           </span>
                         </td>
                         <td className="p-4 text-sm">
@@ -995,7 +997,7 @@ export default function AdminVehicleDetail() {
               
               {allReservations.length === 0 && (
                 <div className="p-8 text-center text-gray-500">
-                  Aucune réservation pour ce véhicule
+                  {t('admin_vehicle_detail.reservations.no_reservations')}
                 </div>
               )}
             </div>
@@ -1003,167 +1005,165 @@ export default function AdminVehicleDetail() {
         )}
 
         {/* Nouvel onglet Calendrier */}
-// Section du calendrier modifiée
-{activeTab === 'calendar' && (
-  <>
-    <div className="flex justify-between items-center mb-6">
-      <h2 className="text-xl font-semibold">Calendrier de disponibilité - 30 jours</h2>
-      <div className="flex items-center gap-2 text-sm text-gray-600">
-        <Calendar className="h-4 w-4" />
-        <span>Disponibilité sur {dates.length} jours</span>
-      </div>
-    </div>
+        {activeTab === 'calendar' && (
+          <>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-semibold">{t('admin_vehicle_detail.calendar.availability_calendar')}</h2>
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <Calendar className="h-4 w-4" />
+                <span>{t('admin_vehicle_detail.calendar.days_availability')} {dates.length} {t('admin_vehicle_detail.calendar.days')}</span>
+              </div>
+            </div>
 
-    {/* Timeline de disponibilité améliorée */}
-    <div className="bg-white rounded-xl shadow-sm border p-6">
-      <div className="flex items-center justify-between mb-4">
-        <h4 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
-          <Calendar className="h-4 w-4" />
-          Calendrier des réservations
-        </h4>
-        <div className="text-sm text-gray-500">
-          Stock total: {vehicle.quantity} véhicules
-        </div>
-      </div>
-      
-      <div className="overflow-x-auto">
-        <div className="flex gap-1 min-w-max">
-          {dates.map((date) => {
-            const available = getDailyAvailability(date);
-            const reserved = getReservedCountForDate(date);
-            const isToday = date === format(new Date(), "yyyy-MM-dd");
-            const isFullyBooked = available === 0;
-            const isPartiallyAvailable = available > 0 && available < vehicle.quantity;
-            const isFullyAvailable = available === vehicle.quantity;
-            
-            return (
-              <div
-                key={date}
-                className={`flex flex-col items-center p-2 rounded-lg border text-xs font-medium min-w-12 transition-all duration-200 ${
-                  isFullyBooked 
-                    ? "bg-red-50 border-red-200 text-red-700" 
-                    : isPartiallyAvailable
-                    ? "bg-yellow-50 border-yellow-200 text-yellow-700"
-                    : "bg-green-50 border-green-200 text-green-700"
-                } ${isToday ? "ring-2 ring-blue-500 ring-opacity-50 transform scale-105" : ""}`}
-                title={`${format(new Date(date), "dd/MM/yyyy")}
-${available} véhicule(s) disponible(s)
-${reserved} véhicule(s) réservé(s)
-Stock total: ${vehicle.quantity} véhicules`}
-              >
-                <span className="font-semibold">{format(new Date(date), "dd")}</span>
-                <span className="text-[10px] opacity-70">{format(new Date(date), "MMM")}</span>
-                <div className="mt-1 flex flex-col items-center space-y-0.5">
-                  {/* Indicateur visuel simple */}
-                  <div className="flex items-center gap-1">
-                    <span className={`text-xs font-bold ${
-                      isFullyBooked ? "text-red-600" :
-                      isPartiallyAvailable ? "text-yellow-600" :
-                      "text-green-600"
-                    }`}>
-                      {available}
-                    </span>
-                    <span className="text-[10px] text-gray-500">dispo</span>
-                  </div>
-                  
-                  {/* Barre de progression visuelle */}
-                  <div className="w-8 h-1 bg-gray-200 rounded-full overflow-hidden">
-                    <div 
-                      className={`h-full rounded-full ${
-                        isFullyBooked ? "bg-red-400" :
-                        isPartiallyAvailable ? "bg-yellow-400" :
-                        "bg-green-400"
-                      }`}
-                      style={{ 
-                        width: `${vehicle.quantity > 0 ? (available / vehicle.quantity) * 100 : 0}%` 
-                      }}
-                    />
-                  </div>
+            {/* Timeline de disponibilité améliorée */}
+            <div className="bg-white rounded-xl shadow-sm border p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h4 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                  <Calendar className="h-4 w-4" />
+                  {t('admin_vehicle_detail.calendar.reservation_calendar')}
+                </h4>
+                <div className="text-sm text-gray-500">
+                  {t('admin_vehicle_detail.calendar.total_stock')} {vehicle.quantity} {t('admin_vehicle_detail.calendar.vehicles')}
                 </div>
               </div>
-            );
-          })}
-        </div>
-      </div>
+              
+              <div className="overflow-x-auto">
+                <div className="flex gap-1 min-w-max">
+                  {dates.map((date) => {
+                    const available = getDailyAvailability(date);
+                    const reserved = getReservedCountForDate(date);
+                    const isToday = date === format(new Date(), "yyyy-MM-dd");
+                    const isFullyBooked = available === 0;
+                    const isPartiallyAvailable = available > 0 && available < vehicle.quantity;
+                    const isFullyAvailable = available === vehicle.quantity;
+                    
+                    return (
+                      <div
+                        key={date}
+                        className={`flex flex-col items-center p-2 rounded-lg border text-xs font-medium min-w-12 transition-all duration-200 ${
+                          isFullyBooked 
+                            ? "bg-red-50 border-red-200 text-red-700" 
+                            : isPartiallyAvailable
+                            ? "bg-yellow-50 border-yellow-200 text-yellow-700"
+                            : "bg-green-50 border-green-200 text-green-700"
+                        } ${isToday ? "ring-2 ring-blue-500 ring-opacity-50 transform scale-105" : ""}`}
+                        title={`${format(new Date(date), "dd/MM/yyyy")}
+                        ${available} ${t('admin_vehicle_detail.calendar.available')}
+                        ${reserved} ${t('admin_vehicle_detail.messages.vehicles_reserved')}
+                        ${t('admin_vehicle_detail.calendar.total_stock')} ${vehicle.quantity} ${t('admin_vehicle_detail.calendar.vehicles')}`}
+                      >
+                        <span className="font-semibold">{format(new Date(date), "dd")}</span>
+                        <span className="text-[10px] opacity-70">{format(new Date(date), "MMM")}</span>
+                        <div className="mt-1 flex flex-col items-center space-y-0.5">
+                          {/* Indicateur visuel simple */}
+                          <div className="flex items-center gap-1">
+                            <span className={`text-xs font-bold ${
+                              isFullyBooked ? "text-red-600" :
+                              isPartiallyAvailable ? "text-yellow-600" :
+                              "text-green-600"
+                            }`}>
+                              {available}
+                            </span>
+                            <span className="text-[10px] text-gray-500">{t('admin_vehicle_detail.calendar.available')}</span>
+                          </div>
+                          
+                          {/* Barre de progression visuelle */}
+                          <div className="w-8 h-1 bg-gray-200 rounded-full overflow-hidden">
+                            <div 
+                              className={`h-full rounded-full ${
+                                isFullyBooked ? "bg-red-400" :
+                                isPartiallyAvailable ? "bg-yellow-400" :
+                                "bg-green-400"
+                              }`}
+                              style={{ 
+                                width: `${vehicle.quantity > 0 ? (available / vehicle.quantity) * 100 : 0}%` 
+                              }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
 
-      {/* Légende simplifiée */}
-      <div className="flex flex-wrap items-center justify-center gap-4 mt-6 text-xs text-gray-600">
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 bg-green-100 border border-green-200 rounded"></div>
-          <span>Disponible ({vehicle.quantity} véhicules)</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 bg-yellow-100 border border-yellow-200 rounded"></div>
-          <span>Partiellement disponible</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 bg-red-100 border border-red-200 rounded"></div>
-          <span>Complet (0 disponible)</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 ring-2 ring-blue-500 ring-opacity-50 rounded"></div>
-          <span>Aujourd'hui</span>
-        </div>
-      </div>
+              {/* Légende simplifiée */}
+              <div className="flex flex-wrap items-center justify-center gap-4 mt-6 text-xs text-gray-600">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 bg-green-100 border border-green-200 rounded"></div>
+                  <span>{t('admin_vehicle_detail.calendar.fully_available')} ({vehicle.quantity} {t('admin_vehicle_detail.calendar.vehicles')})</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 bg-yellow-100 border border-yellow-200 rounded"></div>
+                  <span>{t('admin_vehicle_detail.calendar.partially_available')}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 bg-red-100 border border-red-200 rounded"></div>
+                  <span>{t('admin_vehicle_detail.calendar.fully_booked')}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 ring-2 ring-blue-500 ring-opacity-50 rounded"></div>
+                  <span>{t('admin_vehicle_detail.calendar.today')}</span>
+                </div>
+              </div>
 
-      {/* Explication du système */}
-      <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-        <p className="text-xs text-blue-800 text-center">
-          <strong>Comment lire le calendrier :</strong> Le nombre indique les véhicules disponibles sur le stock total de {vehicle.quantity}. 
-          La barre montre le taux de disponibilité.
-        </p>
-      </div>
-    </div>
+              {/* Explication du système */}
+              <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-xs text-blue-800 text-center">
+                  <strong>{t('admin_vehicle_detail.calendar.how_to_read')}</strong> {t('admin_vehicle_detail.calendar.calendar_explanation')}
+                </p>
+              </div>
+            </div>
 
-    {/* Statistiques de réservation */}
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg">Véhicules disponibles aujourd'hui</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold text-green-600">
-            {getDailyAvailability(format(new Date(), "yyyy-MM-dd"))}
-          </div>
-          <p className="text-sm text-muted-foreground mt-2">
-            sur {vehicle.quantity} au total
-          </p>
-        </CardContent>
-      </Card>
+            {/* Statistiques de réservation */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg">{t('admin_vehicle_detail.calendar.available_today')}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-green-600">
+                    {getDailyAvailability(format(new Date(), "yyyy-MM-dd"))}
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    {t('admin_vehicle_detail.calendar.out_of')} {vehicle.quantity} {t('admin_vehicle_detail.calendar.total')}
+                  </p>
+                </CardContent>
+              </Card>
 
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg">Réservations en cours</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold text-blue-600">
-            {acceptedReservations.length}
-          </div>
-          <p className="text-sm text-muted-foreground mt-2">
-            Réservations acceptées
-          </p>
-        </CardContent>
-      </Card>
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg">{t('admin_vehicle_detail.calendar.current_reservations')}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-blue-600">
+                    {acceptedReservations.length}
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    {t('admin_vehicle_detail.calendar.accepted_reservations')}
+                  </p>
+                </CardContent>
+              </Card>
 
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg">Taux d'occupation</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold text-purple-600">
-            {vehicle.quantity > 0 
-              ? `${Math.round((acceptedReservations.length / vehicle.quantity) * 100)}%`
-              : '0%'
-            }
-          </div>
-          <p className="text-sm text-muted-foreground mt-2">
-            Moyenne globale
-          </p>
-        </CardContent>
-      </Card>
-    </div>
-  </>
-)}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg">{t('admin_vehicle_detail.calendar.occupancy_rate')}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-purple-600">
+                    {vehicle.quantity > 0 
+                      ? `${Math.round((acceptedReservations.length / vehicle.quantity) * 100)}%`
+                      : '0%'
+                    }
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    {t('admin_vehicle_detail.calendar.global_average')}
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+          </>
+        )}
 
         {/* Modal de création de véhicule individuel */}
         <Dialog open={isCreateVehicleModalOpen} onClose={() => setIsCreateVehicleModalOpen(false)} className="relative z-50">
@@ -1171,33 +1171,33 @@ Stock total: ${vehicle.quantity} véhicules`}
           <div className="fixed inset-0 flex items-center justify-center p-4">
             <Dialog.Panel className="bg-white rounded-lg p-6 w-full max-w-md">
               <Dialog.Title className="text-lg font-semibold mb-4">
-                Ajouter un véhicule
+                {t('admin_vehicle_detail.modals.add_vehicle')}
               </Dialog.Title>
 
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="matricule">Matricule *</Label>
+                  <Label htmlFor="matricule">{t('admin_vehicle_detail.modals.license_plate_required')}</Label>
                   <Input
                     id="matricule"
                     value={newVehicle.matricule}
                     onChange={(e) => setNewVehicle({...newVehicle, matricule: e.target.value})}
-                    placeholder="Ex: ABC-123"
+                    placeholder={t('admin_vehicle_detail.modals.license_plate_placeholder')}
                     required
                   />
                 </div>
 
                 <div>
-                  <Label htmlFor="obd">Code OBD</Label>
+                  <Label htmlFor="obd">{t('admin_vehicle_detail.modals.obd_code_label')}</Label>
                   <Input
                     id="obd"
                     value={newVehicle.obd}
                     onChange={(e) => setNewVehicle({...newVehicle, obd: e.target.value})}
-                    placeholder="Code OBD"
+                    placeholder={t('admin_vehicle_detail.modals.obd_code_label')}
                   />
                 </div>
 
                 <div>
-                  <Label htmlFor="date_obd">Date OBD</Label>
+                  <Label htmlFor="date_obd">{t('admin_vehicle_detail.modals.obd_date_label')}</Label>
                   <Input
                     id="date_obd"
                     type="date"
@@ -1207,22 +1207,22 @@ Stock total: ${vehicle.quantity} véhicules`}
                 </div>
 
                 <div>
-                  <Label htmlFor="objet">Objet</Label>
+                  <Label htmlFor="objet">{t('admin_vehicle_detail.modals.object_label')}</Label>
                   <Input
                     id="objet"
                     value={newVehicle.objet}
                     onChange={(e) => setNewVehicle({...newVehicle, objet: e.target.value})}
-                    placeholder="Informations supplémentaires"
+                    placeholder={t('admin_vehicle_detail.modals.object_placeholder')}
                   />
                 </div>
               </div>
 
               <div className="flex justify-end gap-2 mt-6">
                 <Button variant="secondary" onClick={() => setIsCreateVehicleModalOpen(false)}>
-                  Annuler
+                  {t('admin_vehicle_detail.modals.cancel')}
                 </Button>
                 <Button onClick={handleCreateVehicle} disabled={saving}>
-                  {saving ? "Création..." : "Ajouter le véhicule"}
+                  {saving ? t('admin_vehicle_detail.modals.creating') : t('admin_vehicle_detail.modals.add_vehicle_button')}
                 </Button>
               </div>
             </Dialog.Panel>
@@ -1235,29 +1235,29 @@ Stock total: ${vehicle.quantity} véhicules`}
           <div className="fixed inset-0 flex items-center justify-center p-4">
             <Dialog.Panel className="bg-white rounded-lg p-6 w-full max-w-md">
               <Dialog.Title className="text-lg font-semibold mb-4">
-                Ajouter une offre spéciale
+                {t('admin_vehicle_detail.modals.add_offer')}
               </Dialog.Title>
 
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="period">Période *</Label>
+                  <Label htmlFor="period">{t('admin_vehicle_detail.modals.period_required')}</Label>
                   <Input
                     id="period"
                     value={newOffer.period}
                     onChange={(e) => setNewOffer({...newOffer, period: e.target.value})}
-                    placeholder="Ex: 3 jours, 1 semaine, 1 mois..."
+                    placeholder={t('admin_vehicle_detail.modals.period_placeholder')}
                     required
                   />
                 </div>
 
                 <div>
-                  <Label htmlFor="price">Prix (MAD) *</Label>
+                  <Label htmlFor="price">{t('admin_vehicle_detail.modals.price_required')}</Label>
                   <Input
                     id="price"
                     type="number"
                     value={newOffer.price}
                     onChange={(e) => setNewOffer({...newOffer, price: e.target.value})}
-                    placeholder="Prix pour la période"
+                    placeholder={t('admin_vehicle_detail.modals.price_placeholder')}
                     required
                   />
                 </div>
@@ -1265,10 +1265,10 @@ Stock total: ${vehicle.quantity} véhicules`}
 
               <div className="flex justify-end gap-2 mt-6">
                 <Button variant="secondary" onClick={() => setIsCreateOfferModalOpen(false)}>
-                  Annuler
+                  {t('admin_vehicle_detail.modals.cancel')}
                 </Button>
                 <Button onClick={handleCreateOffer} disabled={saving}>
-                  {saving ? "Création..." : "Créer l'offre"}
+                  {saving ? t('admin_vehicle_detail.modals.creating_offer') : t('admin_vehicle_detail.modals.create_offer')}
                 </Button>
               </div>
             </Dialog.Panel>

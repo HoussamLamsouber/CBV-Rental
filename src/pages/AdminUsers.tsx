@@ -1,4 +1,4 @@
-// src/pages/AdminUsers.tsx (version corrigée)
+// src/pages/AdminUsers.tsx (version internationalisée)
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -25,6 +25,7 @@ import {
 import { Dialog } from "@headlessui/react";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTranslation } from "react-i18next";
 
 type Profile = {
   id: string;
@@ -43,6 +44,7 @@ export default function AdminUsers() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { authLoading, adminLoading, isUserAdmin, user, role } = useAuth();
+  const { t } = useTranslation();
 
   const [activeTab, setActiveTab] = useState<'admins' | 'clients'>('admins');
   const [profiles, setProfiles] = useState<Profile[]>([]);
@@ -62,18 +64,18 @@ export default function AdminUsers() {
 
   // Vérification des permissions admin
   if (authLoading || adminLoading) {
-    return <LoadingSpinner message="Vérification des permissions..." />;
+    return <LoadingSpinner message={t('admin_users.messages.checking_permissions')} />;
   }
 
   if (!isUserAdmin) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">Accès refusé</h1>
+          <h1 className="text-2xl font-bold mb-4">{t('admin_users.access_denied')}</h1>
           <p className="text-muted-foreground mb-6">
-            Vous devez être administrateur pour accéder à cette page.
+            {t('admin_users.admin_required')}
           </p>
-          <Button onClick={() => navigate("/")}>Retour à l'accueil</Button>
+          <Button onClick={() => navigate("/")}>{t('admin_users.back_to_home')}</Button>
         </div>
       </div>
     );
@@ -123,8 +125,8 @@ const loadProfiles = async () => {
   } catch (error: any) {
     console.error("💥 Erreur chargement profils:", error);
     toast({
-      title: "Erreur",
-      description: "Impossible de charger les utilisateurs.",
+      title: t("error"),
+      description: t('admin_users.messages.cannot_load_users'),
       variant: "destructive",
     });
   } finally {
@@ -192,13 +194,13 @@ const handleAddAdmin = async () => {
 
     if (verificationData?.role === 'admin') {
       toast({
-        title: "Promotion réussie",
-        description: `${cleanEmail} est maintenant administrateur.`,
+        title: t('admin_users.messages.promotion_success'),
+        description: t('admin_users.messages.now_admin', { email: cleanEmail }),
       });
     } else {
       toast({
-        title: "Aucun changement",
-        description: `${cleanEmail} n'était pas un client ou n'existe pas.`,
+        title: t('admin_users.messages.no_change'),
+        description: t('admin_users.messages.not_client_or_not_exists', { email: cleanEmail }),
         variant: "default",
       });
     }
@@ -214,15 +216,15 @@ const handleAddAdmin = async () => {
   } catch (error: any) {
     console.error("💥 Erreur:", error);
     toast({
-      title: "Erreur",
-      description: "Impossible de promouvoir l'utilisateur.",
+      title: t("error"),
+      description: t('admin_users.messages.cannot_promote_user'),
       variant: "destructive",
     });
   }
 };
 
 const handleRemoveAdmin = async (profileId: string, email: string) => {
-  if (!confirm(`Êtes-vous sûr de vouloir retirer les droits administrateur à ${email} ?`)) {
+  if (!confirm(t('admin_users.messages.confirm_remove_admin', { email }))) {
     return;
   }
 
@@ -251,11 +253,11 @@ const handleRemoveAdmin = async (profileId: string, email: string) => {
 
     if (verificationData?.role === 'client') {
       toast({
-        title: "Droits retirés",
-        description: `${email} n'est plus administrateur.`,
+        title: t('admin_users.messages.rights_removed'),
+        description: t('admin_users.messages.no_longer_admin', { email }),
       });
     } else {
-      throw new Error("Le retrait n'a pas fonctionné");
+      throw new Error(t('admin_users.messages.removal_failed'));
     }
 
     await loadProfiles();
@@ -272,16 +274,16 @@ const handleRemoveAdmin = async (profileId: string, email: string) => {
       if (rpcError) throw rpcError;
 
       toast({
-        title: "Droits retirés",
-        description: `${email} n'est plus administrateur.`,
+        title: t('admin_users.messages.rights_removed'),
+        description: t('admin_users.messages.no_longer_admin', { email }),
       });
 
       await loadProfiles();
 
     } catch (rpcError: any) {
       toast({
-        title: "Erreur",
-        description: "Impossible de retirer les droits administrateur.",
+        title: t("error"),
+        description: t('admin_users.messages.cannot_remove_admin_rights'),
         variant: "destructive",
       });
     }
@@ -289,7 +291,9 @@ const handleRemoveAdmin = async (profileId: string, email: string) => {
 };
 
 const handleDeleteUser = async (profileId: string, email: string, userRole: string) => {
-  if (!confirm(`Êtes-vous sûr de vouloir supprimer définitivement ${email} (${userRole}) ? Cette action est irréversible.`)) {
+  const roleText = userRole === 'admin' ? t('admin_users.roles.admin') : t('admin_users.roles.client');
+  
+  if (!confirm(t('admin_users.messages.confirm_delete_user', { email, role: roleText }))) {
     return;
   }
 
@@ -321,8 +325,8 @@ const handleDeleteUser = async (profileId: string, email: string, userRole: stri
     console.log("✅ Utilisateur supprimé");
 
     toast({
-      title: "Utilisateur supprimé",
-      description: `${email} a été supprimé définitivement.`,
+      title: t('admin_users.messages.user_deleted'),
+      description: t('admin_users.messages.user_deleted_permanently', { email }),
     });
 
     await loadProfiles();
@@ -339,16 +343,16 @@ const handleDeleteUser = async (profileId: string, email: string, userRole: stri
       if (rpcError) throw rpcError;
 
       toast({
-        title: "Utilisateur supprimé",
-        description: `${email} a été supprimé définitivement.`,
+        title: t('admin_users.messages.user_deleted'),
+        description: t('admin_users.messages.user_deleted_permanently', { email }),
       });
 
       await loadProfiles();
 
     } catch (rpcError: any) {
       toast({
-        title: "Erreur",
-        description: "Impossible de supprimer l'utilisateur.",
+        title: t("error"),
+        description: t('admin_users.messages.cannot_delete_user'),
         variant: "destructive",
       });
     }
@@ -356,7 +360,7 @@ const handleDeleteUser = async (profileId: string, email: string, userRole: stri
 };
 
   const formatDateTime = (dateString: string | null) => {
-    if (!dateString) return "Jamais";
+    if (!dateString) return t('admin_users.messages.never');
     return new Date(dateString).toLocaleDateString('fr-FR', {
       day: '2-digit',
       month: '2-digit',
@@ -376,16 +380,16 @@ const handleDeleteUser = async (profileId: string, email: string, userRole: stri
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
           <div className="flex items-center gap-4">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Gestion des Utilisateurs</h1>
+              <h1 className="text-3xl font-bold text-gray-900">{t('admin_users.title')}</h1>
               <p className="text-gray-600 mt-1">
-                {adminsCount} admin(s) • {clientsCount} client(s)
+                {adminsCount} {t('admin_users.admin_count')} • {clientsCount} {t('admin_users.client_count')}
               </p>
             </div>
           </div>
           
           <Button onClick={() => setIsAddAdminModalOpen(true)}>
             <UserPlus className="h-4 w-4 mr-2" />
-            Ajouter un admin
+            {t('admin_users.actions.add_admin')}
           </Button>
         </div>
 
@@ -401,7 +405,7 @@ const handleDeleteUser = async (profileId: string, email: string, userRole: stri
               onClick={() => setActiveTab('admins')}
             >
               <UserCog className="h-4 w-4" />
-              Administrateurs ({adminsCount})
+              {t('admin_users.tabs.admins')} ({adminsCount})
             </button>
             <button
               className={`py-2 px-1 font-medium text-sm border-b-2 transition-colors flex items-center gap-2 ${
@@ -412,7 +416,7 @@ const handleDeleteUser = async (profileId: string, email: string, userRole: stri
               onClick={() => setActiveTab('clients')}
             >
               <Users className="h-4 w-4" />
-              Clients ({clientsCount})
+              {t('admin_users.tabs.clients')} ({clientsCount})
             </button>
           </div>
         </div>
@@ -423,7 +427,7 @@ const handleDeleteUser = async (profileId: string, email: string, userRole: stri
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <Input
-                placeholder={`Rechercher par email, nom ou téléphone...`}
+                placeholder={t('admin_users.search.placeholder')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
@@ -435,7 +439,7 @@ const handleDeleteUser = async (profileId: string, email: string, userRole: stri
         {/* Liste */}
         {loading ? (
           <div className="flex justify-center py-12">
-            <LoadingSpinner message="Chargement des utilisateurs..." />
+            <LoadingSpinner message={t('admin_users.messages.loading_users')} />
           </div>
         ) : (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -445,12 +449,12 @@ const handleDeleteUser = async (profileId: string, email: string, userRole: stri
                   <div className="flex justify-between items-start">
                     <div>
                       <CardTitle className="flex items-center gap-2 text-lg">
-                        {profile.full_name || "Non renseigné"}
+                        {profile.full_name || t('admin_users.messages.not_provided')}
                         {profile.role === 'admin' && (
-                          <Badge variant="default">Admin</Badge>
+                          <Badge variant="default">{t('admin_users.roles.admin')}</Badge>
                         )}
                         {profile.role === 'client' && (
-                          <Badge variant="secondary">Client</Badge>
+                          <Badge variant="secondary">{t('admin_users.roles.client')}</Badge>
                         )}
                       </CardTitle>
                     </div>
@@ -462,7 +466,7 @@ const handleDeleteUser = async (profileId: string, email: string, userRole: stri
                         variant="ghost"
                         size="sm"
                         onClick={() => navigate(`/admin/reservations?user=${profile.id}`)}
-                        title="Voir les réservations"
+                        title={t('admin_users.actions.view_reservations')}
                       >
                         <Eye className="h-4 w-4" />
                       </Button>
@@ -472,7 +476,9 @@ const handleDeleteUser = async (profileId: string, email: string, userRole: stri
                         variant="ghost"
                         size="sm"
                         onClick={() => handleDeleteUser(profile.id, profile.email, profile.role)}
-                        title={`Supprimer ${profile.role === 'admin' ? "l'administrateur" : "le client"}`}
+                        title={t('admin_users.actions.delete_user', { 
+                          role: profile.role === 'admin' ? t('admin_users.roles.admin') : t('admin_users.roles.client')
+                        })}
                       >
                         <Trash2 className="h-4 w-4 text-red-600" />
                       </Button>
@@ -483,7 +489,7 @@ const handleDeleteUser = async (profileId: string, email: string, userRole: stri
                           variant="ghost"
                           size="sm"
                           onClick={() => handleRemoveAdmin(profile.id, profile.email)}
-                          title="Retirer les droits administrateur"
+                          title={t('admin_users.actions.remove_admin_rights')}
                         >
                           <UserX className="h-4 w-4 text-orange-600" />
                         </Button>
@@ -507,7 +513,7 @@ const handleDeleteUser = async (profileId: string, email: string, userRole: stri
                   
                   <div className="flex items-center gap-2 text-sm text-gray-600">
                     <Calendar className="h-4 w-4" />
-                    <span>Inscrit le: {formatDateTime(profile.created_at)}</span>
+                    <span>{t('admin_users.messages.registered_on')} {formatDateTime(profile.created_at)}</span>
                   </div>
                 </CardContent>
               </Card>
@@ -521,102 +527,103 @@ const handleDeleteUser = async (profileId: string, email: string, userRole: stri
             <CardContent className="py-12 text-center">
               <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                Aucun {activeTab === 'admins' ? 'administrateur' : 'client'} trouvé
+                {t('admin_users.messages.no_results_title', { 
+                  type: activeTab === 'admins' ? t('admin_users.tabs.admins') : t('admin_users.tabs.clients')
+                })}
               </h3>
               <p className="text-gray-600 mb-4">
-                {searchTerm ? "Aucun résultat pour votre recherche." : 
-                 activeTab === 'admins' ? "Commencez par ajouter un administrateur." : "Aucun client inscrit."}
+                {searchTerm ? t('admin_users.messages.no_search_results') : 
+                 activeTab === 'admins' ? t('admin_users.messages.no_admins_yet') : t('admin_users.messages.no_clients_yet')}
               </p>
               {activeTab === 'admins' && (
                 <Button onClick={() => setIsAddAdminModalOpen(true)}>
-                  Ajouter un administrateur
+                  {t('admin_users.actions.add_admin')}
                 </Button>
               )}
             </CardContent>
           </Card>
         )}
 
+        {/* Modal d'ajout d'admin */}
+        <Dialog open={isAddAdminModalOpen} onClose={() => setIsAddAdminModalOpen(false)} className="relative z-50">
+          <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
+          <div className="fixed inset-0 flex items-center justify-center p-4">
+            <Dialog.Panel className="bg-white rounded-lg p-6 w-full max-w-md">
+              <Dialog.Title className="text-lg font-semibold mb-4">
+                {t('admin_users.modals.add_admin.title')}
+              </Dialog.Title>
 
-{/* Modal d'ajout d'admin */}
-<Dialog open={isAddAdminModalOpen} onClose={() => setIsAddAdminModalOpen(false)} className="relative z-50">
-  <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
-  <div className="fixed inset-0 flex items-center justify-center p-4">
-    <Dialog.Panel className="bg-white rounded-lg p-6 w-full max-w-md">
-      <Dialog.Title className="text-lg font-semibold mb-4">
-        Promouvoir un client en administrateur
-      </Dialog.Title>
+              <div className="space-y-4 mb-4">
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  <p className="text-sm text-blue-800">
+                    {t('admin_users.modals.add_admin.info')}
+                  </p>
+                </div>
 
-      <div className="space-y-4 mb-4">
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-          <p className="text-sm text-blue-800">
-            <strong>Information :</strong> Sélectionnez un client pour lui donner les droits administrateur.
-          </p>
-        </div>
+                <div>
+                  <Label htmlFor="user-select">{t('admin_users.modals.add_admin.select_client')} *</Label>
+                  <select
+                    id="user-select"
+                    value={selectedEmail}
+                    onChange={(e) => setSelectedEmail(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    required
+                  >
+                    <option value="">{t('admin_users.modals.add_admin.choose_client')}</option>
+                    {allEmails.length === 0 ? (
+                      <option value="" disabled>{t('admin_users.modals.add_admin.no_clients_available')}</option>
+                    ) : (
+                      allEmails.map((profile) => (
+                        <option key={profile.email} value={profile.email}>
+                          {profile.email} {profile.full_name ? `(${profile.full_name})` : ''}
+                        </option>
+                      ))
+                    )}
+                  </select>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {allEmails.length} {t('admin_users.modals.add_admin.clients_available')}
+                  </p>
+                </div>
 
-        <div>
-          <Label htmlFor="user-select">Sélectionner un client *</Label>
-          <select
-            id="user-select"
-            value={selectedEmail}
-            onChange={(e) => setSelectedEmail(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            required
-          >
-            <option value="">Choisir un client...</option>
-            {allEmails.length === 0 ? (
-              <option value="" disabled>Aucun client disponible</option>
-            ) : (
-              allEmails.map((profile) => (
-                <option key={profile.email} value={profile.email}>
-                  {profile.email} {profile.full_name ? `(${profile.full_name})` : ''}
-                </option>
-              ))
-            )}
-          </select>
-          <p className="text-xs text-gray-500 mt-1">
-            {allEmails.length} client(s) disponible(s) pour promotion
-          </p>
-        </div>
+                <div>
+                  <Label htmlFor="full_name">{t('admin_users.modals.add_admin.new_full_name')}</Label>
+                  <Input
+                    id="full_name"
+                    value={newAdmin.full_name}
+                    onChange={(e) => setNewAdmin({...newAdmin, full_name: e.target.value})}
+                    placeholder={t('admin_users.modals.add_admin.keep_current_name')}
+                  />
+                </div>
 
-        <div>
-          <Label htmlFor="full_name">Nouveau nom complet (optionnel)</Label>
-          <Input
-            id="full_name"
-            value={newAdmin.full_name}
-            onChange={(e) => setNewAdmin({...newAdmin, full_name: e.target.value})}
-            placeholder="Laisser vide pour conserver le nom actuel"
-          />
-        </div>
+                <div>
+                  <Label htmlFor="telephone">{t('admin_users.modals.add_admin.new_phone')}</Label>
+                  <Input
+                    id="telephone"
+                    value={newAdmin.telephone}
+                    onChange={(e) => setNewAdmin({...newAdmin, telephone: e.target.value})}
+                    placeholder={t('admin_users.modals.add_admin.keep_current_phone')}
+                  />
+                </div>
+              </div>
 
-        <div>
-          <Label htmlFor="telephone">Nouveau téléphone (optionnel)</Label>
-          <Input
-            id="telephone"
-            value={newAdmin.telephone}
-            onChange={(e) => setNewAdmin({...newAdmin, telephone: e.target.value})}
-            placeholder="Laisser vide pour conserver le téléphone actuel"
-          />
-        </div>
-      </div>
-
-      <div className="flex justify-end gap-2 mt-6">
-        <Button variant="secondary" onClick={() => {
-          setIsAddAdminModalOpen(false);
-          setSelectedEmail("");
-          setNewAdmin({ email: "", full_name: "", telephone: "", password: "" });
-        }}>
-          Annuler
-        </Button>
-        <Button 
-          onClick={handleAddAdmin}
-          disabled={!selectedEmail || allEmails.length === 0}
-        >
-          Promouvoir en admin
-        </Button>
-      </div>
-    </Dialog.Panel>
-  </div>
-</Dialog>
+              <div className="flex justify-end gap-2 mt-6">
+                <Button variant="secondary" onClick={() => {
+                  setIsAddAdminModalOpen(false);
+                  setSelectedEmail("");
+                  setNewAdmin({ email: "", full_name: "", telephone: "", password: "" });
+                }}>
+                  {t('admin_users.modals.add_admin.cancel')}
+                </Button>
+                <Button 
+                  onClick={handleAddAdmin}
+                  disabled={!selectedEmail || allEmails.length === 0}
+                >
+                  {t('admin_users.modals.add_admin.promote_to_admin')}
+                </Button>
+              </div>
+            </Dialog.Panel>
+          </div>
+        </Dialog>
       </main>
       
       <Footer />

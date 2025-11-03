@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { emailJSService } from "@/services/emailJSService";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useTranslation } from "react-i18next";
 
 type Car = Database["public"]["Tables"]["cars"]["Row"];
 type SearchData = {
@@ -48,6 +49,7 @@ export const ReservationModal = ({
   });
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const { t } = useTranslation();
 
   useEffect(() => {
     if (isOpen) {
@@ -121,8 +123,8 @@ export const ReservationModal = ({
   const validateGuestInfo = () => {
     if (!guestInfo.full_name.trim()) {
       toast({
-        title: "Information manquante",
-        description: "Veuillez saisir votre nom complet.",
+        title: t('reservation_modal.messages.missing_information'),
+        description: t('reservation_modal.messages.enter_full_name'),
         variant: "destructive",
       });
       return false;
@@ -130,8 +132,8 @@ export const ReservationModal = ({
 
     if (!guestInfo.email.trim()) {
       toast({
-        title: "Information manquante",
-        description: "Veuillez saisir votre adresse email.",
+        title: t('reservation_modal.messages.missing_information'),
+        description: t('reservation_modal.messages.enter_email'),
         variant: "destructive",
       });
       return false;
@@ -140,8 +142,8 @@ export const ReservationModal = ({
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(guestInfo.email)) {
       toast({
-        title: "Email invalide",
-        description: "Veuillez saisir une adresse email valide.",
+        title: t('reservation_modal.messages.invalid_email'),
+        description: t('reservation_modal.messages.enter_valid_email'),
         variant: "destructive",
       });
       return false;
@@ -150,138 +152,138 @@ export const ReservationModal = ({
     return true;
   };
 
-const handleConfirm = async () => {
-  if (!car || !searchData) return;
+  const handleConfirm = async () => {
+    if (!car || !searchData) return;
 
-  if (!user && !validateGuestInfo()) return;
+    if (!user && !validateGuestInfo()) return;
 
-  const isAvailable = await checkRealTimeAvailability();
-  if (!isAvailable) {
-    toast({
-      title: "Véhicule non disponible",
-      description: "Ce véhicule n'est plus disponible pour les dates sélectionnées.",
-      variant: "destructive",
-    });
-    return;
-  }
-
-  setIsLoading(true);
-
-  try {
-    const pickupDateStr = searchData.pickupDate.toISOString().split('T')[0];
-    const returnDateStr = searchData.returnDate.toISOString().split('T')[0];
-    const totalPrice = calculateTotalPrice();
-
-    let newReservationId;
-    let clientEmail = "";
-    let clientName = "";
-    let clientPhone = "";
-
-    // Préparer les données de réservation communes
-    const reservationData: any = {
-      car_id: car.id,
-      car_name: car.name,
-      car_category: car.category || 'Non spécifié',
-      car_price: car.price,
-      car_image: car.image_url || null,
-      pickup_location: searchData.pickupLocation,
-      return_location: searchData.sameLocation
-        ? searchData.pickupLocation
-        : searchData.returnLocation || searchData.pickupLocation,
-      pickup_date: pickupDateStr,
-      pickup_time: searchData.pickupTime,
-      return_date: returnDateStr,
-      return_time: searchData.returnTime,
-      total_price: totalPrice,
-      status: "pending", // Statut initial en attente
-      date: new Date().toISOString().split('T')[0],
-    };
-
-    if (user) {
-      // Utilisateur connecté
-      reservationData.user_id = user.id;
-      
-      const { data: newReservation, error } = await supabase
-        .from("reservations")
-        .insert([reservationData])
-        .select()
-        .single();
-
-      if (error) throw error;
-      newReservationId = newReservation.id;
-
-      // Récupérer les infos utilisateur
-      const { data: userProfile } = await supabase
-        .from("profiles")
-        .select("full_name, telephone, email")
-        .eq("id", user.id)
-        .single();
-
-      clientEmail = userProfile?.email || user.email;
-      clientName = userProfile?.full_name || user.email;
-      clientPhone = userProfile?.telephone || "Non renseigné";
-
-    } else {
-      // Utilisateur non connecté - ajouter les infos invité
-      reservationData.guest_name = guestInfo.full_name;
-      reservationData.guest_email = guestInfo.email.toLowerCase();
-      reservationData.guest_phone = guestInfo.telephone || '';
-
-      const { data: newReservation, error } = await supabase
-        .from("reservations")
-        .insert([reservationData])
-        .select()
-        .single();
-
-      if (error) throw error;
-      newReservationId = newReservation.id;
-
-      clientEmail = guestInfo.email;
-      clientName = guestInfo.full_name;
-      clientPhone = guestInfo.telephone || "Non renseigné";
-
-      // Stocker dans localStorage pour le suivi
-      const guestReservations = localStorage.getItem("guest_reservations");
-      const reservationsArray = guestReservations ? JSON.parse(guestReservations) : [];
-      reservationsArray.push(newReservationId);
-      localStorage.setItem("guest_reservations", JSON.stringify(reservationsArray));
+    const isAvailable = await checkRealTimeAvailability();
+    if (!isAvailable) {
+      toast({
+        title: t('reservation_modal.messages.vehicle_unavailable'),
+        description: t('reservation_modal.messages.vehicle_unavailable_description'),
+        variant: "destructive",
+      });
+      return;
     }
 
-    // 🔥 MODIFICATION : Envoyer SEULEMENT l'email à l'admin
-    await emailJSService.sendNewReservationAdminEmail({
-      reservationId: newReservationId,
-      clientName,
-      clientEmail,
-      clientPhone,
-      carName: car.name,
-      carCategory: car.category,
-      pickupDate: searchData.pickupDate.toLocaleDateString('fr-FR'),
-      pickupTime: searchData.pickupTime,
-      returnDate: searchData.returnDate.toLocaleDateString('fr-FR'),
-      returnTime: searchData.returnTime,
-      pickupLocation: searchData.pickupLocation,
-      returnLocation: searchData.sameLocation ? searchData.pickupLocation : (searchData.returnLocation || searchData.pickupLocation),
-      totalPrice,
-    });
+    setIsLoading(true);
 
-    toast({
-      title: "Demande envoyée !",
-      description: "Votre demande a été transmise à notre équipe. Vous recevrez une confirmation par email après traitement.",
-    });
+    try {
+      const pickupDateStr = searchData.pickupDate.toISOString().split('T')[0];
+      const returnDateStr = searchData.returnDate.toISOString().split('T')[0];
+      const totalPrice = calculateTotalPrice();
 
-    onReserved();
-    onClose();
-  } catch (err: any) {
-    console.error("❌ Erreur réservation:", err);
-    toast({
-      title: "Erreur",
-      description: err.message || "Impossible d'effectuer la réservation.",
-      variant: "destructive",
-    });
-  } finally {
-    setIsLoading(false);
-  }
-};
+      let newReservationId;
+      let clientEmail = "";
+      let clientName = "";
+      let clientPhone = "";
+
+      // Préparer les données de réservation communes
+      const reservationData: any = {
+        car_id: car.id,
+        car_name: car.name,
+        car_category: car.category || t('reservation_modal.messages.not_specified'),
+        car_price: car.price,
+        car_image: car.image_url || null,
+        pickup_location: searchData.pickupLocation,
+        return_location: searchData.sameLocation
+          ? searchData.pickupLocation
+          : searchData.returnLocation || searchData.pickupLocation,
+        pickup_date: pickupDateStr,
+        pickup_time: searchData.pickupTime,
+        return_date: returnDateStr,
+        return_time: searchData.returnTime,
+        total_price: totalPrice,
+        status: "pending", // Statut initial en attente
+        date: new Date().toISOString().split('T')[0],
+      };
+
+      if (user) {
+        // Utilisateur connecté
+        reservationData.user_id = user.id;
+        
+        const { data: newReservation, error } = await supabase
+          .from("reservations")
+          .insert([reservationData])
+          .select()
+          .single();
+
+        if (error) throw error;
+        newReservationId = newReservation.id;
+
+        // Récupérer les infos utilisateur
+        const { data: userProfile } = await supabase
+          .from("profiles")
+          .select("full_name, telephone, email")
+          .eq("id", user.id)
+          .single();
+
+        clientEmail = userProfile?.email || user.email;
+        clientName = userProfile?.full_name || user.email;
+        clientPhone = userProfile?.telephone || t('reservation_modal.messages.not_provided');
+
+      } else {
+        // Utilisateur non connecté - ajouter les infos invité
+        reservationData.guest_name = guestInfo.full_name;
+        reservationData.guest_email = guestInfo.email.toLowerCase();
+        reservationData.guest_phone = guestInfo.telephone || '';
+
+        const { data: newReservation, error } = await supabase
+          .from("reservations")
+          .insert([reservationData])
+          .select()
+          .single();
+
+        if (error) throw error;
+        newReservationId = newReservation.id;
+
+        clientEmail = guestInfo.email;
+        clientName = guestInfo.full_name;
+        clientPhone = guestInfo.telephone || t('reservation_modal.messages.not_provided');
+
+        // Stocker dans localStorage pour le suivi
+        const guestReservations = localStorage.getItem("guest_reservations");
+        const reservationsArray = guestReservations ? JSON.parse(guestReservations) : [];
+        reservationsArray.push(newReservationId);
+        localStorage.setItem("guest_reservations", JSON.stringify(reservationsArray));
+      }
+
+      // 🔥 MODIFICATION : Envoyer SEULEMENT l'email à l'admin
+      await emailJSService.sendNewReservationAdminEmail({
+        reservationId: newReservationId,
+        clientName,
+        clientEmail,
+        clientPhone,
+        carName: car.name,
+        carCategory: car.category,
+        pickupDate: searchData.pickupDate.toLocaleDateString('fr-FR'),
+        pickupTime: searchData.pickupTime,
+        returnDate: searchData.returnDate.toLocaleDateString('fr-FR'),
+        returnTime: searchData.returnTime,
+        pickupLocation: searchData.pickupLocation,
+        returnLocation: searchData.sameLocation ? searchData.pickupLocation : (searchData.returnLocation || searchData.pickupLocation),
+        totalPrice,
+      });
+
+      toast({
+        title: t('reservation_modal.messages.request_sent'),
+        description: t('reservation_modal.messages.request_sent_description'),
+      });
+
+      onReserved();
+      onClose();
+    } catch (err: any) {
+      console.error("❌ Erreur réservation:", err);
+      toast({
+        title: t("error"),
+        description: err.message || t('reservation_modal.messages.cannot_make_reservation'),
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   if (!car || !searchData) return null;
 
@@ -295,7 +297,7 @@ const handleConfirm = async () => {
     >
       <Dialog.Panel className="bg-white rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
         <Dialog.Title className="text-lg font-semibold mb-4">
-          Réserver {car.name}
+          {t('reservation_modal.title', { carName: car.name })}                                                                       {/* CARNAME */}
         </Dialog.Title>
 
         <img
@@ -305,50 +307,50 @@ const handleConfirm = async () => {
         />
 
         <p className="mb-2 text-sm text-gray-600">{car.category}</p>
-        <p className="mb-4 font-semibold">{car.price} MAD / jour</p>
+        <p className="mb-4 font-semibold">{car.price} {t('reservation_modal.currency_per_day')}</p>
 
         {/* Détails de la réservation */}
         <div className="mb-4 space-y-2 text-sm">
-          <p><strong>Lieu de prise:</strong> {searchData.pickupLocation}</p>
-          <p><strong>Lieu de retour:</strong> {searchData.sameLocation ? searchData.pickupLocation : (searchData.returnLocation || searchData.pickupLocation)}</p>
-          <p><strong>Date de prise:</strong> {searchData.pickupDate.toLocaleDateString('fr-FR')} à {searchData.pickupTime}</p>
-          <p><strong>Date de retour:</strong> {searchData.returnDate.toLocaleDateString('fr-FR')} à {searchData.returnTime}</p>
+          <p><strong>{t('reservation_modal.fields.pickup_location')}:</strong> {searchData.pickupLocation}</p>
+          <p><strong>{t('reservation_modal.fields.return_location')}:</strong> {searchData.sameLocation ? searchData.pickupLocation : (searchData.returnLocation || searchData.pickupLocation)}</p>
+          <p><strong>{t('reservation_modal.fields.pickup_date')}:</strong> {searchData.pickupDate.toLocaleDateString('fr-FR')} {t('reservation_modal.at_time')} {searchData.pickupTime}</p>
+          <p><strong>{t('reservation_modal.fields.return_date')}:</strong> {searchData.returnDate.toLocaleDateString('fr-FR')} {t('reservation_modal.at_time')} {searchData.returnTime}</p>
         </div>
 
         {/* Informations invité */}
         {!user && (
           <div className="mb-4 space-y-3">
-            <h4 className="font-medium text-sm">Vos informations</h4>
+            <h4 className="font-medium text-sm">{t('reservation_modal.guest_info.title')}</h4>
             <div>
-              <Label htmlFor="full_name">Nom complet *</Label>
+              <Label htmlFor="full_name">{t('reservation_modal.fields.full_name')} *</Label>
               <Input
                 id="full_name"
                 value={guestInfo.full_name}
                 onChange={(e) => setGuestInfo({...guestInfo, full_name: e.target.value})}
-                placeholder="Votre nom complet"
+                placeholder={t('reservation_modal.placeholders.full_name')}
                 className="mt-1"
                 required
               />
             </div>
             <div>
-              <Label htmlFor="email">Email *</Label>
+              <Label htmlFor="email">{t('reservation_modal.fields.email')} *</Label>
               <Input
                 id="email"
                 type="email"
                 value={guestInfo.email}
                 onChange={(e) => setGuestInfo({...guestInfo, email: e.target.value})}
-                placeholder="votre@email.com"
+                placeholder={t('reservation_modal.placeholders.email')}
                 className="mt-1"
                 required
               />
             </div>
             <div>
-              <Label htmlFor="telephone">Téléphone</Label>
+              <Label htmlFor="telephone">{t('reservation_modal.fields.phone')}</Label>
               <Input
                 id="telephone"
                 value={guestInfo.telephone}
                 onChange={(e) => setGuestInfo({...guestInfo, telephone: e.target.value})}
-                placeholder="Votre numéro de téléphone"
+                placeholder={t('reservation_modal.placeholders.phone')}
                 className="mt-1"
               />
             </div>
@@ -358,30 +360,36 @@ const handleConfirm = async () => {
         {!isAvailable && (
           <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded">
             <p className="text-red-600 text-sm">
-              ⚠️ Ce véhicule n'est plus disponible pour les dates sélectionnées.
+              ⚠️ {t('reservation_modal.messages.vehicle_no_longer_available')}
             </p>
           </div>
         )}
 
         <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded">
           <p className="text-blue-700 text-sm">
-            <strong>Prix total:</strong> <span className="font-semibold text-lg">{totalPrice} MAD</span>
+            <strong>{t('reservation_modal.total_price')}:</strong> <span className="font-semibold text-lg">{totalPrice} {t('reservation_modal.currency')}</span>
           </p>
           <p className="text-blue-600 text-xs mt-1">
-            Votre réservation sera confirmée après validation par notre équipe.
+            {t('reservation_modal.reservation_confirmation_note')}
           </p>
         </div>
 
         <div className="flex justify-end gap-2">
           <Button variant="secondary" onClick={onClose} disabled={isLoading}>
-            Annuler
+            {t('reservation_modal.actions.cancel')}
           </Button>
           <Button 
             onClick={handleConfirm}
             disabled={!isAvailable || isLoading}
             className="bg-green-600 hover:bg-green-700"
           >
-            {isLoading ? "Réservation..." : (!isAvailable ? 'Indisponible' : 'Confirmer la réservation')}
+            {isLoading 
+              ? t('reservation_modal.actions.reserving') 
+              : (!isAvailable 
+                  ? t('reservation_modal.actions.unavailable') 
+                  : t('reservation_modal.actions.confirm_reservation')
+                )
+            }
           </Button>
         </div>
       </Dialog.Panel>

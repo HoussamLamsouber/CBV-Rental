@@ -1,6 +1,7 @@
 import { Database } from "@/integrations/supabase/types";
 import { Button } from "@/components/ui/button";
 import { Fuel, Users, Cog, Zap, Car } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 type Car = Database["public"]["Tables"]["cars"]["Row"];
 
@@ -13,6 +14,8 @@ interface CarCardProps {
 }
 
 export const CarCard = ({ car, onReserve, canReserve }: CarCardProps) => {
+  const { t } = useTranslation();
+  
   // Utilisez isAvailable si fourni, sinon fallback sur car.available
   const isCarAvailable = car.isAvailable !== undefined ? car.isAvailable : car.available;
 
@@ -33,15 +36,15 @@ export const CarCard = ({ car, onReserve, canReserve }: CarCardProps) => {
   const getFuelLabel = (fuelType: string | null) => {
     switch (fuelType?.toLowerCase()) {
       case 'electrique':
-        return 'Électrique';
+        return t('car_card.fuel_types.electric');
       case 'diesel':
-        return 'Diesel';
+        return t('car_card.fuel_types.diesel');
       case 'essence':
-        return 'Essence';
+        return t('car_card.fuel_types.gasoline');
       case 'hybride':
-        return 'Hybride';
+        return t('car_card.fuel_types.hybrid');
       default:
-        return fuelType || 'Non spécifié';
+        return fuelType || t('car_card.messages.not_specified');
     }
   };
 
@@ -49,11 +52,11 @@ export const CarCard = ({ car, onReserve, canReserve }: CarCardProps) => {
   const getTransmissionLabel = (transmission: string | null) => {
     switch (transmission?.toLowerCase()) {
       case 'automatic':
-        return 'Automatique';
+        return t('car_card.transmission_types.automatic');
       case 'manual':
-        return 'Manuelle';
+        return t('car_card.transmission_types.manual');
       default:
-        return transmission || 'Non spécifié';
+        return transmission || t('car_card.messages.not_specified');
     }
   };
 
@@ -68,7 +71,7 @@ export const CarCard = ({ car, onReserve, canReserve }: CarCardProps) => {
         {!isCarAvailable && (
           <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
             <span className="bg-red-600 text-white px-3 py-1 rounded-full text-sm font-semibold">
-              Non disponible
+              {t('car_card.status.unavailable')}
             </span>
           </div>
         )}
@@ -83,7 +86,7 @@ export const CarCard = ({ car, onReserve, canReserve }: CarCardProps) => {
         </div>
         
         <p className="text-2xl font-bold text-primary mb-4">
-          {car.price} Dhs <span className="text-sm text-gray-500 font-normal">/ jour</span>
+          {car.price} {t('car_card.currency')} <span className="text-sm text-gray-500 font-normal">/ {t('car_card.per_day')}</span>
         </p>
 
         {/* Spécifications détaillées */}
@@ -104,7 +107,7 @@ export const CarCard = ({ car, onReserve, canReserve }: CarCardProps) => {
           <div className="flex justify-between text-sm text-gray-600">
             <div className="flex items-center gap-2">
               <Users className="h-4 w-4" />
-              <span>{car.seats || 'N/A'} places</span>
+              <span>{car.seats || t('car_card.messages.not_available')} {t('car_card.seats')}</span>
             </div>
           </div>
         </div>
@@ -115,12 +118,15 @@ export const CarCard = ({ car, onReserve, canReserve }: CarCardProps) => {
           disabled={!canReserve || !isCarAvailable}
           size="lg"
         >
-          {!isCarAvailable ? 'Indisponible' : 'Réserver maintenant'}
+          {!isCarAvailable 
+            ? t('car_card.actions.unavailable') 
+            : t('car_card.actions.reserve_now')
+          }
         </Button>
 
         {!canReserve && (
           <p className="text-xs text-gray-500 text-center mt-2">
-            Complétez la recherche pour réserver
+            {t('car_card.messages.complete_search_to_reserve')}
           </p>
         )}
       </div>

@@ -9,6 +9,7 @@ import { SearchData } from "@/components/SearchForm";
 import { Database } from "@/integrations/supabase/types";
 import { ReservationModal } from "@/components/ReservationModal";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { useTranslation } from "react-i18next";
 
 type Car = Database["public"]["Tables"]["cars"]["Row"];
 type Reservation = Database["public"]["Tables"]["reservations"]["Row"];
@@ -25,6 +26,7 @@ const Index = () => {
 
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   // Charger les voitures
   useEffect(() => {
@@ -39,8 +41,8 @@ const Index = () => {
         if (error) {
           console.error("Erreur fetch cars:", error);
           toast({
-            title: "Erreur",
-            description: "Impossible de charger les véhicules",
+            title: t("error"),
+            description: t('index.messages.cannot_load_vehicles'),
             variant: "destructive",
           });
         } else if (data) {
@@ -50,8 +52,8 @@ const Index = () => {
       } catch (err) {
         console.error("Erreur fetchCars:", err);
         toast({
-          title: "Erreur",
-          description: "Une erreur est survenue lors du chargement",
+          title: t("error"),
+          description: t('index.messages.loading_error'),
           variant: "destructive",
         });
       } finally {
@@ -60,7 +62,7 @@ const Index = () => {
     };
 
     fetchCars();
-  }, [toast]);
+  }, [toast, t]);
 
   // Authentification
   useEffect(() => {
@@ -173,8 +175,8 @@ const Index = () => {
 
     if (!startDate || !endDate) {
       toast({
-        title: "Dates manquantes",
-        description: "Veuillez sélectionner les dates de location",
+        title: t('index.messages.missing_dates'),
+        description: t('index.messages.select_rental_dates'),
         variant: "destructive",
       });
       setSearchLoading(false);
@@ -215,14 +217,14 @@ const Index = () => {
       setSearchResults(finalCars);
 
       toast({
-        title: "Recherche terminée",
-        description: `${finalCars.length} véhicule(s) disponible(s) pour vos dates`,
+        title: t('index.messages.search_complete'),
+        description: t('index.messages.vehicles_available').replace('{count}', finalCars.length.toString())
       });
     } catch (err) {
       console.error("Erreur recherche:", err);
       toast({
-        title: "Erreur de recherche",
-        description: "Une erreur est survenue lors de la recherche",
+        title: t('index.messages.search_error'),
+        description: t('index.messages.search_error_description'),
         variant: "destructive",
       });
     } finally {
@@ -233,8 +235,8 @@ const Index = () => {
   const handleOpenReserve = (car: Car) => {
     if (!searchData?.pickupDate || !searchData?.returnDate) {
       toast({
-        title: "Informations manquantes",
-        description: "Veuillez d'abord effectuer une recherche avec des dates",
+        title: t('index.messages.missing_information'),
+        description: t('index.messages.search_with_dates_first'),
         variant: "destructive",
       });
       return;
@@ -253,7 +255,7 @@ const Index = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <LoadingSpinner message="Chargement des véhicules..." />
+        <LoadingSpinner message={t('index.messages.loading_vehicles')} />
       </div>
     );
   }
@@ -270,7 +272,7 @@ const Index = () => {
             <div className="bg-white/90 backdrop-blur-sm rounded-lg px-4 py-2 shadow-lg flex items-center gap-2">
               <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
               <span className="text-sm font-medium text-gray-700">
-                Recherche en cours...
+                {t('index.messages.search_in_progress')}
               </span>
             </div>
           </div>
@@ -305,19 +307,19 @@ const Index = () => {
             <div className="text-center py-12">
               <div className="text-gray-400 text-6xl mb-4">🔍</div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                Aucun véhicule disponible
+                {t('index.messages.no_vehicles_available')}
               </h3>
               <p className="text-gray-600 max-w-md mx-auto mb-6">
-                Aucun véhicule ne correspond à vos critères de recherche pour les dates sélectionnées.
+                {t('index.messages.no_vehicles_match_criteria')}
               </p>
               <div className="space-y-3">
                 <p className="text-sm text-gray-500">
-                  Suggestions :
+                  {t('index.messages.suggestions')} :
                 </p>
                 <ul className="text-sm text-gray-600 space-y-1">
-                  <li>• Essayez des dates différentes</li>
-                  <li>• Élargissez votre recherche à d'autres catégories</li>
-                  <li>• Vérifiez d'autres lieux de retrait</li>
+                  <li>• {t('index.messages.try_different_dates')}</li>
+                  <li>• {t('index.messages.expand_search_categories')}</li>
+                  <li>• {t('index.messages.check_other_locations')}</li>
                 </ul>
               </div>
             </div>

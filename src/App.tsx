@@ -20,7 +20,7 @@ import { Header } from './components/Header';
 import { AuthProvider } from './contexts/AuthContext';
 import AdminUsers from "./pages/AdminUsers";
 import AdminReservations from "./pages/AdminReservations";
-// import './i18n';
+import "@/i18n.ts";
 
 const queryClient = new QueryClient();
 

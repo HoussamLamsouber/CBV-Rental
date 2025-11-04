@@ -187,11 +187,11 @@ const Index = () => {
       let query = supabase.from("cars").select("*").eq("available", true);
 
       const categoryMap: Record<string, string[]> = {
-        all: ["Electique", "SUV", "SUV Urbain", "Berlin"],
+        all: ["Electique", "SUV", "SUV Urbain", "Berline"],
         electrique: ["Electique"],
         suv: ["SUV"],
         "suv urbain": ["SUV Urbain"],
-        berlin: ["Berlin"],
+        berline: ["Berline"],
       };
 
       const { data: allCars, error } = await query as {

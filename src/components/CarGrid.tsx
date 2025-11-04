@@ -30,7 +30,8 @@ export const CarGrid = ({ cars, onReserve, canReserve }: CarGridProps) => {
     if (filterBy === "available") {
       return car.isAvailable !== undefined ? car.isAvailable : car.available;
     }
-    return car.category.toLowerCase().includes(filterBy.toLowerCase());
+    // Utilisez directement la comparaison avec la clé de catégorie
+    return car.category === filterBy;
   });
 
   const sortedCars = [...filteredCars].sort((a, b) => {
@@ -72,10 +73,10 @@ export const CarGrid = ({ cars, onReserve, canReserve }: CarGridProps) => {
                 <SelectContent>
                   <SelectItem value="all">{t('car_grid.filter.all_vehicles')}</SelectItem>
                   <SelectItem value="available">{t('car_grid.filter.available_only')}</SelectItem>
-                  <SelectItem value="Berlin">{t('car_grid.categories.berlin')}</SelectItem>
-                  <SelectItem value="Electrique">{t('car_grid.categories.electric')}</SelectItem>
-                  <SelectItem value="SUV">{t('car_grid.categories.suv')}</SelectItem>
-                  <SelectItem value="SUV Urbain">{t('car_grid.categories.suv_urban')}</SelectItem>
+                  <SelectItem value="category_sedan">{t('car_grid.categories.sedan')}</SelectItem>
+                  <SelectItem value="category_electric">{t('car_grid.categories.electric')}</SelectItem>
+                  <SelectItem value="category_suv">{t('car_grid.categories.suv')}</SelectItem>
+                  <SelectItem value="category_urban_suv">{t('car_grid.categories.suv_urban')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -113,30 +114,30 @@ export const CarGrid = ({ cars, onReserve, canReserve }: CarGridProps) => {
             {t('car_grid.quick_filters.available')}
           </Badge>
           <Badge
-            variant={filterBy === "SUV" ? "default" : "outline"}
+            variant={filterBy === "category_suv" ? "default" : "outline"}
             className="cursor-pointer hover:bg-accent/20 transition-colors"
-            onClick={() => setFilterBy("SUV")}
+            onClick={() => setFilterBy("category_suv")}
           >
             {t('car_grid.categories.suv')}
           </Badge>
           <Badge
-            variant={filterBy === "Berlin" ? "default" : "outline"}
+            variant={filterBy === "category_sedan" ? "default" : "outline"}
             className="cursor-pointer hover:bg-accent/20 transition-colors"
-            onClick={() => setFilterBy("Berlin")}
+            onClick={() => setFilterBy("category_sedan")}
           >
-            {t('car_grid.categories.berlin')}
+            {t('car_grid.categories.sedan')}
           </Badge>
           <Badge
-            variant={filterBy === "Electrique" ? "default" : "outline"}
+            variant={filterBy === "category_electric" ? "default" : "outline"}
             className="cursor-pointer hover:bg-accent/20 transition-colors"
-            onClick={() => setFilterBy("Electrique")}
+            onClick={() => setFilterBy("category_electric")}
           >
             {t('car_grid.categories.electric')}
           </Badge>
           <Badge
-            variant={filterBy === "SUV Urbain" ? "default" : "outline"}
+            variant={filterBy === "category_urban_suv" ? "default" : "outline"}
             className="cursor-pointer hover:bg-accent/20 transition-colors"
-            onClick={() => setFilterBy("SUV Urbain")}
+            onClick={() => setFilterBy("category_urban_suv")}
           >
             {t('car_grid.categories.suv_urban')}
           </Badge>

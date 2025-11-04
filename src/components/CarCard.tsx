@@ -7,7 +7,7 @@ type Car = Database["public"]["Tables"]["cars"]["Row"];
 
 interface CarCardProps {
   car: Car & {
-    isAvailable?: boolean; // Ajoutez cette ligne
+    isAvailable?: boolean;
   };
   onReserve: (car: Car) => void;
   canReserve: boolean;
@@ -34,30 +34,40 @@ export const CarCard = ({ car, onReserve, canReserve }: CarCardProps) => {
 
   // Fonction pour obtenir le label de carburant
   const getFuelLabel = (fuelType: string | null) => {
-    switch (fuelType?.toLowerCase()) {
-      case 'electrique':
-        return t('car_card.fuel_types.electric');
-      case 'diesel':
-        return t('car_card.fuel_types.diesel');
-      case 'essence':
-        return t('car_card.fuel_types.gasoline');
-      case 'hybride':
-        return t('car_card.fuel_types.hybrid');
-      default:
-        return fuelType || t('car_card.messages.not_specified');
+    if (!fuelType) return t('car_card.messages.not_specified');
+    
+    const translation = t(`car_card.fuel_types.${fuelType}`);
+    
+    // Fallback pour les anciennes données
+    if (translation.startsWith('car_card.fuel_types.')) {
+      const fallbackMap = {
+        'Essence': 'Essence',
+        'Electrique': 'Électrique',
+        'Diesel': 'Diesel',
+        'Hybride': 'Hybride'
+      };
+      return fallbackMap[fuelType] || fuelType;
     }
+    
+    return translation;
   };
 
   // Fonction pour obtenir le label de transmission
   const getTransmissionLabel = (transmission: string | null) => {
-    switch (transmission?.toLowerCase()) {
-      case 'automatic':
-        return t('car_card.transmission_types.automatic');
-      case 'manual':
-        return t('car_card.transmission_types.manual');
-      default:
-        return transmission || t('car_card.messages.not_specified');
+    if (!transmission) return t('car_card.messages.not_specified');
+    
+    const translation = t(`car_card.transmission_types.${transmission}`);
+    
+    // Fallback pour les anciennes données
+    if (translation.startsWith('car_card.transmission_types.')) {
+      const fallbackMap = {
+        'Manuelle': 'Manuelle',
+        'Automatique': 'Automatique'
+      };
+      return fallbackMap[transmission] || transmission;
     }
+    
+    return translation;
   };
 
   return (
@@ -81,7 +91,7 @@ export const CarCard = ({ car, onReserve, canReserve }: CarCardProps) => {
         <div className="flex justify-between items-start mb-2">
           <h3 className="text-lg font-bold text-gray-900">{car.name}</h3>
           <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full font-medium">
-            {car.category}
+            {t(`car_card.categories.${car.category}`)}
           </span>
         </div>
         

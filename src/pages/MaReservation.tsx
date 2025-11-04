@@ -233,7 +233,7 @@ const MaReservation = () => {
 
       toast({ 
         title: t('ma_reservation.messages.reservation_cancelled'), 
-        description: t('ma_reservation.messages.reservation_cancelled_for', { carName: res.car_name }) 
+        description: t('ma_reservation.messages.reservation_cancelled_for').replace('{carName}', res.car_name)
       });
       
       setReservations(prev => prev.filter(r => r.id !== res.id));
@@ -247,6 +247,19 @@ const MaReservation = () => {
     } finally {
       setCancellingId(null);
     }
+  };
+
+  const getTranslatedLocation = (locationKey: string) => {
+    // Vérifie si c'est un aéroport
+    if (locationKey.startsWith('airport_')) {
+      return t(`airports.${locationKey.replace('airport_', '')}`);
+    }
+    // Vérifie si c'est une station
+    if (locationKey.startsWith('station_')) {
+      return t(`stations.${locationKey.replace('station_', '')}`);
+    }
+    // Fallback pour les anciennes données
+    return locationKey;
   };
 
   const getStatusBadge = (status: string) => {
@@ -363,7 +376,7 @@ const MaReservation = () => {
                           <h2 className="font-semibold text-lg text-gray-900">{res.car_name}</h2>
                         </div>
                         <div className="flex flex-wrap items-center gap-2">
-                          <Badge variant="outline">{res.car_category}</Badge>
+                          <Badge variant="outline">{t(`ma_reservation.categories.${res.car_category}`)}</Badge>
                           {getStatusBadge(res.status)}
                         </div>
                       </div>
@@ -405,7 +418,7 @@ const MaReservation = () => {
                           <MapPin className="h-4 w-4 text-gray-400 flex-shrink-0 mt-0.5" />
                           <div>
                             <div className="font-medium">{t('ma_reservation.pickup')}</div>
-                            <div className="text-gray-600">{res.pickup_location}</div>
+                            <div className="text-gray-600">{getTranslatedLocation(res.pickup_location)}</div>
                           </div>
                         </div>
                         
@@ -414,7 +427,7 @@ const MaReservation = () => {
                             <MapPin className="h-4 w-4 text-gray-400 flex-shrink-0 mt-0.5" />
                             <div>
                               <div className="font-medium">{t('ma_reservation.return')}</div>
-                              <div className="text-gray-600">{res.return_location}</div>
+                              <div className="text-gray-600">{getTranslatedLocation(res.return_location)}</div>
                             </div>
                           </div>
                         )}

@@ -92,6 +92,11 @@ const Offres = () => {
   const currentCarOffers = selectedCarId ? offers[selectedCarId] || [] : [];
   const currentCar = selectedCarId ? cars.find((c) => c.id === selectedCarId) : null;
 
+  const getTranslatedPeriod = (periodKey: string) => {
+    const translation = t(`offers_page.periods.${periodKey}`);
+    return translation.startsWith('offers_page.periods.') ? periodKey : translation;
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -136,10 +141,10 @@ const Offres = () => {
                     </h3>
                     <div className="flex flex-wrap items-center gap-1 mt-1">
                       <Badge variant="secondary" className="text-xs">
-                        {car.category}
+                        {t(`offers_page.categories.${car.category}`)}
                       </Badge>
                       <Badge variant="outline" className="text-xs">
-                        {car.transmission}
+                        {t(`car_card.transmission_types.${car.transmission}`)}
                       </Badge>
                     </div>
                   </div>
@@ -147,7 +152,7 @@ const Offres = () => {
                   <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
                     <div className="flex items-center gap-1">
                       <span>⛽</span>
-                      <span>{car.fuel || t("offers_page.defaultFuel")}</span>
+                      <span>{t(`car_card.fuel_types.${car.fuel}`)}</span>
                     </div>
                     <div className="flex items-center gap-1">
                       <span>👤</span>
@@ -195,7 +200,7 @@ const Offres = () => {
                   <img src={currentCar.image_url} alt={currentCar.name} className="w-12 h-12 object-cover rounded-lg" />
                   <div>
                     <h2 className="font-bold text-gray-900 text-lg">{currentCar.name}</h2>
-                    <p className="text-gray-600 text-sm">{currentCar.category}</p>
+                    <p className="text-gray-600 text-sm">{t(`offers_page.categories.${currentCar.category}`)}</p>
                   </div>
                 </div>
                 <Button variant="ghost" size="sm" onClick={closeOffersModal} className="h-8 w-8 p-0">
@@ -229,7 +234,9 @@ const Offres = () => {
                         <div key={idx} className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-lg">
                           <div className="flex items-center gap-2">
                             <Calendar className="h-4 w-4 text-green-600" />
-                            <span className="font-medium text-green-900">{offer.period}</span>
+                            <span className="font-medium text-green-900">
+                              {getTranslatedPeriod(offer.period)}
+                            </span>
                           </div>
                           <span className="text-lg font-bold text-green-600">{offer.price}</span>
                         </div>

@@ -117,7 +117,10 @@ export const ReservationModal = ({
     const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     
-    return car.price * diffDays;
+    // Au minimum 1 jour, même si c'est le même jour
+    const numberOfDays = Math.max(diffDays, 1);
+    
+    return car.price * numberOfDays;
   };
 
   const validateGuestInfo = () => {
@@ -297,7 +300,7 @@ export const ReservationModal = ({
     >
       <Dialog.Panel className="bg-white rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
         <Dialog.Title className="text-lg font-semibold mb-4">
-          {t('reservation_modal.title', { carName: car.name })}                                                                       {/* CARNAME */}
+          {t('reservation_modal.title').replace('{carName}', car.name)}                                                                      {/* CARNAME */}
         </Dialog.Title>
 
         <img

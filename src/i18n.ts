@@ -12,7 +12,12 @@ i18n
     },
     lng: localStorage.getItem("lang") || "fr",
     fallbackLng: "fr",
-    interpolation: { escapeValue: false },
+    interpolation: { 
+      escapeValue: false 
+    },
+    keySeparator: ".",
+    nsSeparator: ".",
+    defaultNS: "translation"
   });
 
 // Persister la langue à chaque changement

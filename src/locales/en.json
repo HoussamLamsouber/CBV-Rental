@@ -610,6 +610,13 @@
             "cannot_cancel": "This reservation cannot be cancelled",
             "from_date": "From {date}",
             "to_date": "To {date}"
+        },
+
+        "categories": {
+            "category_electric": "Electric",
+            "category_suv": "SUV", 
+            "category_urban_suv": "Urban SUV",
+            "category_sedan": "Sedan"
         }
     },
 
@@ -632,7 +639,30 @@
         "specialOffers": "Special offers",
         "noSpecialOffers": "No special offers available",
         "checkStandardRates": "Check our standard rates",
-        "bookNow": "Book now"
+        "bookNow": "Book now",
+
+        "periods": {
+            "period_1_3_days": "1-3 days",
+            "period_4_10_days": "4-10 days", 
+            "period_11_20_days": "11-20 days",
+            "period_21_29_days": "21-29 days",
+            "period_1_month": "1 month (30d)",
+            "period_week_end": "Weekend (Friday 2pm - Sunday 8pm)"
+        },
+
+        "categories": {
+            "category_electric": "Electric",
+            "category_suv": "SUV",
+            "category_urban_suv": "Urban SUV", 
+            "category_sedan": "Sedan"
+        },
+
+        "fuel_types": {
+            "fuel_gasoline": "Gasoline",
+            "fuel_electric": "Electric",
+            "fuel_diesel": "Diesel",
+            "fuel_hybrid": "Hybrid"
+        }
     },
 
     "mon_compte": {
@@ -687,75 +717,75 @@
         "swap": "Same locations"
     },
 
-    "stations": {
-        "MohammedV": "Casablanca Voyageurs Train Station",
-        "Agadir": "Agadir Train Station",
-        "Assilah": "Assilah Train Station",
-        "BenGuerir": "Ben Guerir Train Station",
-        "Berrechid": "Berrechid Train Station",
-        "Kenitra": "Kenitra Train Station",
-        "Khouribga": "Khouribga Train Station",
-        "Marrakech": "Marrakech Train Station",
-        "Meknes": "Meknes Train Station",
-        "Mohammedia": "Mohammedia Train Station",
-        "NadorVille": "Nador Ville Train Station",
-        "Oujda": "Oujda Train Station",
-        "RabatAgdal": "Rabat Agdal Train Station",
-        "RabatVille": "Rabat Ville Train Station",
-        "SaleTabriquet": "Salé Tabriquet Train Station",
-        "SaleVille": "Salé Ville Train Station",
-        "Safi": "Safi Train Station",
-        "TangerVille": "Tangier Ville Train Station",
-        "TangerMed": "Tangier Med Train Station",
-        "Taourirt": "Taourirt Train Station",
-        "Temara": "Temara Train Station",
-        "CasaVoyageurs": "Casa-Voyageurs Train Station",
-        "CasaPort": "Casa-Port Train Station",
-        "CasaOasis": "Casa-Oasis Train Station",
-        "CasaMersSultan": "Casa-Mers Sultan Train Station",
-        "ElJadida": "El Jadida Train Station",
-        "Settat": "Settat Train Station",
-        "Skhirat": "Skhirat Train Station",
-        "Bouznika": "Bouznika Train Station",
-        "Zenata": "Zenata Train Station",
-        "AinSebaa": "Aïn Sebaâ Train Station",
-        "Bouskoura": "Bouskoura Train Station",
-        "Facultes": "Facultés Train Station",
-        "Ennassim": "Ennassim Train Station",
-        "SidiKacem": "Sidi Kacem Train Station",
-        "SidiSlimane": "Sidi Slimane Train Station",
-        "SidiYahyaElGharb": "Sidi Yahya El Gharb Train Station",
-        "KsarElKebir": "Ksar El Kebir Train Station",
-        "SoukElArbaa": "Souk El Arbaa Train Station",
-        "Melloussa": "Melloussa Train Station",
-        "KsarSghir": "Ksar Sghir Train Station"
-    },
-
     "airports": {
-        "Agadir": "Agadir-Al Massira Airport (AGA)",
-        "AlHoceima": "Al Hoceïma-Cherif Al Idrissi Airport (AHU)",
-        "BeniMellal": "Beni Mellal Airport (BEM)",
-        "Casablanca": "Casablanca Mohammed V Airport (CMN)",
-        "Dakhla": "Dakhla Airport (VIL)",
-        "Errachidia": "Errachidia-Moulay Ali Chérif Airport (ERH)",
-        "Essaouira": "Essaouira-Mogador Airport (ESU)",
-        "Fes": "Fes-Saïss Airport (FEZ)",
-        "Guelmim": "Guelmim Airport (GLN)",
-        "Laayoune": "Laayoune-Hassan I Airport (EUN)",
-        "Marrakech": "Marrakech-Menara Airport (RAK)",
-        "Nador": "Nador-Al Aroui Airport (NDR)",
-        "Ouarzazate": "Ouarzazate Airport (OZZ)",
-        "Oujda": "Oujda-Angads Airport (OUD)",
-        "Rabat": "Rabat-Salé Airport (RBA)",
-        "Tanger": "Tangier-Ibn Battouta Airport (TNG)",
-        "Tetouan": "Tetouan-Sania Ramel Airport (TTU)",
-        "Zagora": "Zagora Airport (OZG)",
-        "TanTan": "Tan Tan Airport (TTA)",
-        "Smara": "Smara Airport (SMW)",
-        "Bouarfa": "Bouarfa Airport (UAR)",
-        "Benslimane": "Benslimane Airport (GMD)",
-        "Ifrane": "Ifrane Airport (IFR)",
-        "CasablancaTitMellil": "Casablanca-Tit Mellil Airport (CAS)"
+        "agadir": "Agadir-Al Massira Airport (AGA)",
+        "al_hoceima": "Al Hoceïma-Cherif Al Idrissi Airport (AHU)",
+        "beni_mellal": "Beni Mellal Airport (BEM)",
+        "casablanca": "Casablanca Mohammed V International Airport (CMN)",
+        "dakhla": "Dakhla Airport (VIL)",
+        "errachidia": "Errachidia Moulay Ali Cherif Airport (ERH)",
+        "essaouira": "Essaouira-Mogador Airport (ESU)",
+        "fes": "Fès–Saïs Airport (FEZ)",
+        "guelmim": "Guelmim Airport (GLN)",
+        "laayoune": "Laayoune Airport (EUN)",
+        "marrakech": "Marrakesh Menara Airport (RAK)",
+        "nador": "Nador International Airport (NDR)",
+        "ouarzazate": "Ouarzazate Airport (OZZ)",
+        "oujda": "Angads Airport (OUD)",
+        "rabat": "Rabat–Salé Airport (RBA)",
+        "tanger": "Tanger-Ibn Battouta Airport (TNG)",
+        "tetouan": "Tétouan–Sania Rmel Airport (TTU)",
+        "zagora": "Zagora Airport",
+        "tan_tan": "Tan Tan Airport (TTA)",
+        "smara": "Smara Airport",
+        "bouarfa": "Bouarfa Airport",
+        "benslimane": "Benslimane Airport",
+        "ifrane": "Ifrane Airport",
+        "casablanca_tit_mellil": "Casablanca Tit Mellil Airport"
+    },
+    
+    "stations": {
+        "mohammed_v": "Mohammed V Airport Station",
+        "agadir": "Agadir Station",
+        "assilah": "Assilah Station",
+        "ben_guerir": "Ben Guerir Station",
+        "berrechid": "Berrechid Station",
+        "kenitra": "Kenitra Station",
+        "khouribga": "Khouribga Station",
+        "marrakech": "Marrakech Station",
+        "meknes": "Meknes Station",
+        "mohammedia": "Mohammedia Station",
+        "nador_ville": "Nador Ville Station",
+        "oujda": "Oujda Station",
+        "rabat_agdal": "Rabat Agdal Station",
+        "rabat_ville": "Rabat Ville Station",
+        "sale_tabriquet": "Salé Tabriquet Station",
+        "sale_ville": "Salé Ville Station",
+        "safi": "Safi Station",
+        "tanger_ville": "Tanger Ville Station",
+        "tanger_med": "Tanger Med Station",
+        "taourirt": "Taourirt Station",
+        "temara": "Témara Station",
+        "casa_voyageurs": "Casa-Voyageurs Station",
+        "casa_port": "Casa-Port Station",
+        "casa_oasis": "Casa-Oasis Station",
+        "casa_mers_sultan": "Mers Sultan Station",
+        "el_jadida": "El Jadida Station",
+        "settat": "Settat Station",
+        "skhirat": "Skhirat Station",
+        "bouznika": "Bouznika Station",
+        "zenata": "Zenata Station",
+        "ain_sebaa": "Ain Sebaâ Station",
+        "bouskoura": "Bouskoura Station",
+        "facultes": "Facultés Station",
+        "ennassim": "Ennassim Station",
+        "sidi_kacem": "Sidi Kacem Station",
+        "sidi_slimane": "Sidi Slimane Station",
+        "sidi_yahya_el_gharb": "Sidi Yahya El Gharb Station",
+        "ksar_el_kebir": "Ksar El Kébir Station",
+        "souk_el_arbaa": "Souk El Arbaa Station",
+        "melloussa": "Melloussa Station",
+        "ksar_sghir": "Ksar Sghir Station"
     },
 
     "reservation_modal": {
@@ -829,15 +859,15 @@
         },
         
         "fuel_types": {
-            "electric": "Electric",
-            "diesel": "Diesel",
-            "gasoline": "Gasoline",
-            "hybrid": "Hybrid"
+            "fuel_gasoline": "Gasoline",
+            "fuel_electric": "Electric", 
+            "fuel_diesel": "Diesel",
+            "fuel_hybrid": "Hybrid"
         },
         
         "transmission_types": {
-            "automatic": "Automatic",
-            "manual": "Manual"
+            "transmission_manual": "Manual",
+            "transmission_automatic": "Automatic"
         },
         
         "actions": {
@@ -849,6 +879,13 @@
             "not_specified": "Not specified",
             "not_available": "N/A",
             "complete_search_to_reserve": "Complete search to reserve"
+        },
+
+        "categories": {
+            "category_electric": "Electric",
+            "category_suv": "SUV",
+            "category_urban_suv": "Urban SUV", 
+            "category_sedan": "Sedan"
         }
     },
 
@@ -875,7 +912,7 @@
         },
         
         "categories": {
-            "berlin": "Berlin",
+            "sedan": "Sedan",
             "electric": "Electric",
             "suv": "SUV",
             "suv_urban": "Urban SUV"

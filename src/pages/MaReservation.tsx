@@ -229,6 +229,18 @@ const MaReservation = () => {
     }
   };
 
+  const isReservationPassed = (res: ReservationWithProfile): boolean => {
+    const now = new Date();
+    
+    // Combiner la date de retour et l'heure de retour
+    const [returnHours, returnMinutes] = res.return_time.split(':').map(Number);
+    const returnDateTime = new Date(res.return_date);
+    returnDateTime.setHours(returnHours, returnMinutes, 0, 0);
+    
+    // Vérifier si la date/heure de retour est passée
+    return now > returnDateTime;
+  };
+
   const getTranslatedLocation = (locationKey: string) => {
     if (locationKey.startsWith('airport_')) {
       return t(`airports.${locationKey.replace('airport_', '')}`);
@@ -422,7 +434,7 @@ const MaReservation = () => {
                       </div>
                     </div>
 
-                    {res.status === 'pending' || res.status === 'accepted' ? (
+                    {(res.status === 'pending' || res.status === 'accepted') && !isReservationPassed(res) ? (
                       <div className="mt-4 pt-4 border-t border-gray-200">
                         <Button
                           variant="destructive"
@@ -448,7 +460,10 @@ const MaReservation = () => {
                       <div className="mt-4 pt-4 border-t border-gray-200">
                         <div className="flex items-center gap-2 text-sm text-gray-600">
                           <AlertTriangle className="h-4 w-4 text-gray-400" />
-                          {t('ma_reservation.messages.cannot_cancel')}
+                          {isReservationPassed(res) 
+                            ? t('ma_reservation.messages.cannot_cancel_passed')
+                            : t('ma_reservation.messages.cannot_cancel')
+                          }
                         </div>
                       </div>
                     )}

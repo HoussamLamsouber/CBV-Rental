@@ -644,7 +644,8 @@
             "no_reservations_user": "You haven't made any reservations yet.",
             "no_reservations_guest": "You don't have any current reservations.",
             "reservations_found": "{count} reservation(s) found",
-            "cannot_cancel": "This reservation cannot be cancelled",
+            "cannot_cancel": "This reservation cannot be canceled - it was declined",
+            "cannot_cancel_passed": "This reservation cannot be canceled - the rental period is over",
             "from_date": "From {date}",
             "to_date": "To {date}"
         },

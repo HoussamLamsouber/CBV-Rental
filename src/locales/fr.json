@@ -644,7 +644,8 @@
             "no_reservations_user": "Vous n'avez pas encore effectué de réservation.",
             "no_reservations_guest": "Vous n'avez pas de réservation en cours.",
             "reservations_found": "{count} réservation(s) trouvée(s)",
-            "cannot_cancel": "Cette réservation ne peut pas être annulée",
+            "cannot_cancel": "Cette réservation ne peut pas être annulée - elle a été refusée par l'hôte",
+            "cannot_cancel_passed": "Cette réservation ne peut pas être annulée - la période de location est terminée",
             "from_date": "Du {date}",
             "to_date": "Au {date}"
         },

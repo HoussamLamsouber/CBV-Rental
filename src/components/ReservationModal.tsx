@@ -8,6 +8,7 @@ import { emailJSService } from "@/services/emailJSService";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useTranslation } from "react-i18next";
+import { formatDisplayDate, calculateDaysDifference, formatDateForDB } from "@/utils/dateUtils";
 
 type Car = Database["public"]["Tables"]["cars"]["Row"];
 type SearchData = {
@@ -69,7 +70,6 @@ export const ReservationModal = ({
     if (!car || !searchData?.pickupDate || !searchData?.returnDate) return false;
 
     try {
-      // Vérifier d'abord si le modèle de voiture est disponible
       const { data: carData, error } = await supabase
         .from('cars')
         .select('available, quantity')
@@ -79,28 +79,25 @@ export const ReservationModal = ({
 
       if (error) throw error;
 
-      // Si le modèle n'est pas disponible, retourner false immédiatement
       if (!carData.available) {
         return false;
       }
 
-      // Vérifier s'il y a des conflits de réservation pour cette période
-      const startDate = searchData.pickupDate.toISOString().split('T')[0];
-      const endDate = searchData.returnDate.toISOString().split('T')[0];
+      const startUTC = formatDateForDB(searchData.pickupDate);
+      const endUTC = formatDateForDB(searchData.returnDate);
 
       const { data: reservations, error: reservationsError } = await supabase
         .from('reservations')
         .select('id')
         .eq('car_id', car.id)
-        .eq('status', 'accepted') // Seulement les réservations acceptées
-        .or(`and(pickup_date.lte.${endDate},return_date.gte.${startDate})`);
+        .eq('status', 'accepted')
+        .or(`and(pickup_date.lte.${endUTC},return_date.gte.${startUTC})`);
 
       if (reservationsError) throw reservationsError;
 
       const totalReserved = reservations?.length || 0;
       const availableQuantity = carData.quantity - totalReserved;
 
-      // Retourner true s'il reste au moins une voiture disponible
       return availableQuantity >= 1;
       
     } catch (error) {
@@ -111,15 +108,7 @@ export const ReservationModal = ({
 
   const calculateTotalPrice = () => {
     if (!car || !searchData) return 0;
-    
-    const startDate = new Date(searchData.pickupDate);
-    const endDate = new Date(searchData.returnDate);
-    const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
-    // Au minimum 1 jour, même si c'est le même jour
-    const numberOfDays = Math.max(diffDays, 1);
-    
+    const numberOfDays = calculateDaysDifference(searchData.pickupDate, searchData.returnDate);
     return car.price * numberOfDays;
   };
 
@@ -173,8 +162,8 @@ export const ReservationModal = ({
     setIsLoading(true);
 
     try {
-      const pickupDateStr = searchData.pickupDate.toISOString().split('T')[0];
-      const returnDateStr = searchData.returnDate.toISOString().split('T')[0];
+      const pickupDateStr = formatDateForDB(searchData.pickupDate);
+      const returnDateStr = formatDateForDB(searchData.returnDate);
       const totalPrice = calculateTotalPrice();
 
       let newReservationId;
@@ -182,7 +171,6 @@ export const ReservationModal = ({
       let clientName = "";
       let clientPhone = "";
 
-      // Préparer les données de réservation communes
       const reservationData: any = {
         car_id: car.id,
         car_name: car.name,
@@ -198,12 +186,11 @@ export const ReservationModal = ({
         return_date: returnDateStr,
         return_time: searchData.returnTime,
         total_price: totalPrice,
-        status: "pending", // Statut initial en attente
-        date: new Date().toISOString().split('T')[0],
+        status: "pending",
+        date: formatDateForDB(new Date()),
       };
 
       if (user) {
-        // Utilisateur connecté
         reservationData.user_id = user.id;
         
         const { data: newReservation, error } = await supabase
@@ -215,7 +202,6 @@ export const ReservationModal = ({
         if (error) throw error;
         newReservationId = newReservation.id;
 
-        // Récupérer les infos utilisateur
         const { data: userProfile } = await supabase
           .from("profiles")
           .select("full_name, telephone, email")
@@ -227,7 +213,6 @@ export const ReservationModal = ({
         clientPhone = userProfile?.telephone || t('reservation_modal.messages.not_provided');
 
       } else {
-        // Utilisateur non connecté - ajouter les infos invité
         reservationData.guest_name = guestInfo.full_name;
         reservationData.guest_email = guestInfo.email.toLowerCase();
         reservationData.guest_phone = guestInfo.telephone || '';
@@ -245,14 +230,12 @@ export const ReservationModal = ({
         clientName = guestInfo.full_name;
         clientPhone = guestInfo.telephone || t('reservation_modal.messages.not_provided');
 
-        // Stocker dans localStorage pour le suivi
         const guestReservations = localStorage.getItem("guest_reservations");
         const reservationsArray = guestReservations ? JSON.parse(guestReservations) : [];
         reservationsArray.push(newReservationId);
         localStorage.setItem("guest_reservations", JSON.stringify(reservationsArray));
       }
 
-      // 🔥 MODIFICATION : Envoyer SEULEMENT l'email à l'admin
       await emailJSService.sendNewReservationAdminEmail({
         reservationId: newReservationId,
         clientName,
@@ -260,9 +243,9 @@ export const ReservationModal = ({
         clientPhone,
         carName: car.name,
         carCategory: car.category,
-        pickupDate: searchData.pickupDate.toLocaleDateString('fr-FR'),
+        pickupDate: formatDisplayDate(searchData.pickupDate.toString()),
         pickupTime: searchData.pickupTime,
-        returnDate: searchData.returnDate.toLocaleDateString('fr-FR'),
+        returnDate: formatDisplayDate(searchData.returnDate.toString()),
         returnTime: searchData.returnTime,
         pickupLocation: searchData.pickupLocation,
         returnLocation: searchData.sameLocation ? searchData.pickupLocation : (searchData.returnLocation || searchData.pickupLocation),
@@ -277,7 +260,7 @@ export const ReservationModal = ({
       onReserved();
       onClose();
     } catch (err: any) {
-      console.error("❌ Erreur réservation:", err);
+      console.error("Erreur réservation:", err);
       toast({
         title: t("error"),
         description: err.message || t('reservation_modal.messages.cannot_make_reservation'),
@@ -300,7 +283,7 @@ export const ReservationModal = ({
     >
       <Dialog.Panel className="bg-white rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
         <Dialog.Title className="text-lg font-semibold mb-4">
-          {t('reservation_modal.title').replace('{carName}', car.name)}                                                                      {/* CARNAME */}
+          {t('reservation_modal.title').replace('{carName}', car.name)}
         </Dialog.Title>
 
         <img
@@ -312,15 +295,13 @@ export const ReservationModal = ({
         <p className="mb-2 text-sm text-gray-600">{car.category}</p>
         <p className="mb-4 font-semibold">{car.price} {t('reservation_modal.currency_per_day')}</p>
 
-        {/* Détails de la réservation */}
         <div className="mb-4 space-y-2 text-sm">
           <p><strong>{t('reservation_modal.fields.pickup_location')}:</strong> {searchData.pickupLocation}</p>
           <p><strong>{t('reservation_modal.fields.return_location')}:</strong> {searchData.sameLocation ? searchData.pickupLocation : (searchData.returnLocation || searchData.pickupLocation)}</p>
-          <p><strong>{t('reservation_modal.fields.pickup_date')}:</strong> {searchData.pickupDate.toLocaleDateString('fr-FR')} {t('reservation_modal.at_time')} {searchData.pickupTime}</p>
-          <p><strong>{t('reservation_modal.fields.return_date')}:</strong> {searchData.returnDate.toLocaleDateString('fr-FR')} {t('reservation_modal.at_time')} {searchData.returnTime}</p>
+          <p><strong>{t('reservation_modal.fields.pickup_date')}:</strong> {formatDisplayDate(searchData.pickupDate.toString())} {t('reservation_modal.at_time')} {searchData.pickupTime}</p>
+          <p><strong>{t('reservation_modal.fields.return_date')}:</strong> {formatDisplayDate(searchData.returnDate.toString())} {t('reservation_modal.at_time')} {searchData.returnTime}</p>
         </div>
 
-        {/* Informations invité */}
         {!user && (
           <div className="mb-4 space-y-3">
             <h4 className="font-medium text-sm">{t('reservation_modal.guest_info.title')}</h4>

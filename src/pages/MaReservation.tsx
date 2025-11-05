@@ -8,7 +8,7 @@ import { formatDisplayDate } from "@/utils/dateUtils";
 import { emailJSService } from "@/services/emailJSService";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { 
   Calendar, 
@@ -18,7 +18,6 @@ import {
   Phone, 
   Mail, 
   Clock,
-  ArrowLeft,
   Trash2,
   AlertTriangle
 } from "lucide-react";
@@ -28,7 +27,6 @@ import { useTranslation } from "react-i18next";
 type ReservationRow = Database["public"]["Tables"]["reservations"]["Row"];
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 
-// Type pour les réservations avec les données du profil
 type ReservationWithProfile = ReservationRow & {
   client_name?: string;
   client_email?: string;
@@ -52,10 +50,8 @@ const MaReservation = () => {
         setLoading(true);
 
         if (user) {
-          // Utilisateur connecté
           await loadUserReservations();
         } else {
-          // Invité
           await loadGuestReservations();
         }
       } catch (err) {
@@ -71,7 +67,6 @@ const MaReservation = () => {
     };
 
     const loadUserReservations = async () => {
-      // Étape 1: Charger les réservations de l'utilisateur
       const { data: reservationsData, error: reservationsError } = await supabase
         .from("reservations")
         .select("*")
@@ -85,7 +80,6 @@ const MaReservation = () => {
         return;
       }
 
-      // Étape 2: Charger le profil de l'utilisateur
       const { data: profileData, error: profileError } = await supabase
         .from("profiles")
         .select("full_name, email, telephone")
@@ -96,7 +90,6 @@ const MaReservation = () => {
         console.error("Erreur chargement profil:", profileError);
       }
 
-      // Étape 3: Combiner les données
       const reservationsWithProfile: ReservationWithProfile[] = reservationsData.map(reservation => ({
         ...reservation,
         client_name: profileData?.full_name || user.email || t('ma_reservation.messages.not_specified'),
@@ -108,7 +101,6 @@ const MaReservation = () => {
     };
 
     const loadGuestReservations = async () => {
-      // Invité : récupérer les IDs des réservations depuis le localStorage
       const guestReservations = localStorage.getItem("guest_reservations");
       if (guestReservations) {
         const reservationIds = JSON.parse(guestReservations);
@@ -121,13 +113,10 @@ const MaReservation = () => {
             .order("created_at", { ascending: false });
     
           if (reservationsError) {
-            console.error("Erreur chargement réservations invité:", reservationsError);
-            // Si erreur RLS, essayer une autre approche
             await loadGuestReservationsFallback(reservationIds);
             return;
           }
     
-          // Pour les invités, utiliser les données guest_*
           const reservationsWithGuestData: ReservationWithProfile[] = (reservationsData || []).map(reservation => ({
             ...reservation,
             client_name: reservation.guest_name || t('ma_reservation.messages.guest'),
@@ -144,10 +133,8 @@ const MaReservation = () => {
       }
     };
     
-    // Fallback si la politique RLS bloque
     const loadGuestReservationsFallback = async (reservationIds: string[]) => {
       try {
-        // Charger une par une pour contourner d'éventuels problèmes RLS
         const reservations: ReservationWithProfile[] = [];
         
         for (const id of reservationIds) {
@@ -186,7 +173,6 @@ const MaReservation = () => {
     try {
       setCancellingId(res.id);
 
-      // Pour les invités, retirer l'ID du localStorage
       if (!user) {
         const guestReservations = localStorage.getItem("guest_reservations");
         if (guestReservations) {
@@ -203,9 +189,6 @@ const MaReservation = () => {
 
       if (error) throw error;
 
-      console.log('✅ Réservation annulée en base');
-
-      // Préparer les données pour l'email d'annulation
       const reservationData = {
         reservationId: res.id,
         clientName: res.client_name || t('ma_reservation.messages.guest'),
@@ -222,13 +205,10 @@ const MaReservation = () => {
         totalPrice: res.total_price
       };
 
-      console.log('📧 Données pour email annulation:', reservationData);
-
-      // Envoyer les emails d'annulation
       const emailResult = await emailJSService.sendCancellationEmails(reservationData);
       
       if (!emailResult.success) {
-        console.warn('⚠️ Emails d\'annulation non envoyés:', emailResult.error);
+        console.warn('Emails d\'annulation non envoyés:', emailResult.error);
       }
 
       toast({ 
@@ -238,7 +218,7 @@ const MaReservation = () => {
       
       setReservations(prev => prev.filter(r => r.id !== res.id));
     } catch (err) {
-      console.error("❌ Erreur annulation:", err);
+      console.error("Erreur annulation:", err);
       toast({ 
         title: t("error"), 
         description: t('ma_reservation.messages.cannot_cancel_reservation'), 
@@ -250,15 +230,12 @@ const MaReservation = () => {
   };
 
   const getTranslatedLocation = (locationKey: string) => {
-    // Vérifie si c'est un aéroport
     if (locationKey.startsWith('airport_')) {
       return t(`airports.${locationKey.replace('airport_', '')}`);
     }
-    // Vérifie si c'est une station
     if (locationKey.startsWith('station_')) {
       return t(`stations.${locationKey.replace('station_', '')}`);
     }
-    // Fallback pour les anciennes données
     return locationKey;
   };
 
@@ -299,7 +276,6 @@ const MaReservation = () => {
     );
   };
 
-  // Structure commune pour tous les états
   const renderContent = () => {
     if (loading) {
       return (
@@ -340,7 +316,6 @@ const MaReservation = () => {
 
     return (
       <div className="flex-1">
-        {/* En-tête */}
         <div className="flex items-center gap-4 mb-6">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
@@ -352,12 +327,10 @@ const MaReservation = () => {
           </div>
         </div>
 
-        {/* Liste des réservations */}
         <div className="grid gap-4 sm:gap-6">
           {reservations.map(res => (
             <Card key={res.id} className="overflow-hidden">
               <CardContent className="p-0">
-                {/* Image et en-tête */}
                 <div className="flex flex-col sm:flex-row">
                   <div className="sm:w-48 flex-shrink-0">
                     <img 
@@ -368,7 +341,6 @@ const MaReservation = () => {
                   </div>
                   
                   <div className="flex-1 p-4 sm:p-6">
-                    {/* En-tête avec véhicule et statut */}
                     <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-2">
@@ -387,9 +359,7 @@ const MaReservation = () => {
                       </div>
                     </div>
 
-                    {/* Informations de réservation */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-                      {/* Dates et heures */}
                       <div className="space-y-3">
                         <div className="flex items-center gap-2">
                           <Calendar className="h-4 w-4 text-gray-400 flex-shrink-0" />
@@ -400,7 +370,7 @@ const MaReservation = () => {
                             <div className="text-gray-600">{res.pickup_time}</div>
                           </div>
                         </div>
-                        
+
                         <div className="flex items-center gap-2">
                           <Clock className="h-4 w-4 text-gray-400 flex-shrink-0" />
                           <div>
@@ -412,7 +382,6 @@ const MaReservation = () => {
                         </div>
                       </div>
 
-                      {/* Lieux */}
                       <div className="space-y-3">
                         <div className="flex items-start gap-2">
                           <MapPin className="h-4 w-4 text-gray-400 flex-shrink-0 mt-0.5" />
@@ -434,7 +403,6 @@ const MaReservation = () => {
                       </div>
                     </div>
 
-                    {/* Informations client */}
                     <div className="mt-4 pt-4 border-t border-gray-200">
                       <div className="flex items-center gap-2 mb-2">
                         <User className="h-4 w-4 text-gray-400" />
@@ -454,7 +422,6 @@ const MaReservation = () => {
                       </div>
                     </div>
 
-                    {/* Bouton d'annulation */}
                     {res.status === 'pending' || res.status === 'accepted' ? (
                       <div className="mt-4 pt-4 border-t border-gray-200">
                         <Button

@@ -82,83 +82,90 @@
         "results": "résultat(s)",
         
         "search": {
-        "placeholder": "Rechercher par nom, email, modèle..."
+            "placeholder": "Rechercher par nom, email, modèle..."
         },
         
         "filters": {
-        "title": "Filtres",
-        "reset": "Réinitialiser",
-        "date": "Date spécifique",
-        "date_help": "Date de départ, retour ou création",
-        "vehicle_model": "Modèle de véhicule",
-        "vehicle_placeholder": "Ex: Tesla, SUV, BMW...",
-        "status": "Statut",
-        "all_status": "Tous les statuts"
+            "title": "Filtres",
+            "reset": "Réinitialiser",
+            "date": "Date spécifique",
+            "date_help": "Date de départ, retour ou création",
+            "vehicle_model": "Modèle de véhicule",
+            "vehicle_placeholder": "Ex: Tesla, SUV, BMW...",
+            "status": "Statut",
+            "all_status": "Tous les statuts"
         },
         
         "status": {
-        "pending": "En attente",
-        "accepted": "Acceptées",
-        "active": "Actives",
-        "completed": "Terminées",
-        "refused": "Refusées"
+            "pending": "En attente",
+            "accepted": "Acceptées",
+            "active": "Actives",
+            "completed": "Terminées",
+            "refused": "Refusées"
         },
         
         "actions": {
-        "back": "Retour",
-        "back_users": "Retour aux utilisateurs",
-        "see_all": "Voir toutes les réservations",
-        "accept": "Accepter",
-        "reject": "Refuser"
+            "back": "Retour",
+            "back_users": "Retour aux utilisateurs",
+            "see_all": "Voir toutes les réservations",
+            "accept": "Accepter",
+            "reject": "Refuser"
         },
         
         "reservation": {
-        "details": "Détails de la réservation",
-        "id": "ID",
-        "vehicle": "Véhicule",
-        "category": "Catégorie",
-        "pickup": "Départ",
-        "return": "Retour",
-        "location": "Lieu",
-        "phone": "Téléphone",
-        "email": "Email",
-        "total_price": "Prix total",
-        "guest": "Invité",
-        "unidentified": "Client non identifié",
-        "not_provided": "Non renseigné",
-        "status": "Statut",
-        "accepted_on": "acceptée le",
-        "rejected_on": "refusée le"
+            "details": "Détails de la réservation",
+            "id": "ID",
+            "vehicle": "Véhicule",
+            "category": "Catégorie",
+            "pickup": "Départ",
+            "return": "Retour",
+            "location": "Lieu",
+            "phone": "Téléphone",
+            "email": "Email",
+            "total_price": "Prix total",
+            "guest": "Invité",
+            "unidentified": "Client non identifié",
+            "not_provided": "Non renseigné",
+            "status": "Statut",
+            "accepted_on": "acceptée le",
+            "rejected_on": "refusée le"
         },
         
         "messages": {
-        "loading": "Chargement des réservations...",
-        "no_reservations": "Aucune réservation",
-        "no_results": "Aucun résultat trouvé",
-        "no_client_reservations": "Aucune réservation pour ce client",
-        "try_search": "Essayez de modifier vos critères de recherche",
-        "client_no_reservations": "Ce client n'a effectué aucune réservation pour le moment.",
-        "new_reservations": "Les nouvelles réservations apparaîtront ici.",
-        "no_category_reservations": "Aucune réservation dans cette catégorie."
+            "loading": "Chargement des réservations...",
+            "no_reservations": "Aucune réservation",
+            "no_results": "Aucun résultat trouvé",
+            "no_client_reservations": "Aucune réservation pour ce client",
+            "try_search": "Essayez de modifier vos critères de recherche",
+            "client_no_reservations": "Ce client n'a effectué aucune réservation pour le moment.",
+            "new_reservations": "Les nouvelles réservations apparaîtront ici.",
+            "no_category_reservations": "Aucune réservation dans cette catégorie."
         },
         
         "reject_modal": {
-        "title": "Refuser la réservation",
-        "reason": "Raison du refus *",
-        "placeholder": "Veuillez saisir la raison du refus (cette raison sera communiquée au client)...",
-        "cancel": "Annuler",
-        "confirm": "Confirmer le refus",
-        "missing_reason": "Raison manquante",
-        "missing_reason_desc": "Veuillez saisir la raison du refus."
+            "title": "Refuser la réservation",
+            "reason": "Raison du refus *",
+            "placeholder": "Veuillez saisir la raison du refus (cette raison sera communiquée au client)...",
+            "cancel": "Annuler",
+            "confirm": "Confirmer le refus",
+            "missing_reason": "Raison manquante",
+            "missing_reason_desc": "Veuillez saisir la raison du refus."
         },
         
         "toast": {
-        "reservation_accepted": "Réservation acceptée",
-        "client_notified": "Le client a été notifié par email.",
-        "reservation_rejected": "Réservation refusée",
-        "client_notified_reason": "Le client a été notifié avec la raison du refus.",
-        "error": "Erreur",
-        "update_error": "Impossible de mettre à jour la réservation."
+            "reservation_accepted": "Réservation acceptée",
+            "client_notified": "Le client a été notifié par email.",
+            "reservation_rejected": "Réservation refusée",
+            "client_notified_reason": "Le client a été notifié avec la raison du refus.",
+            "error": "Erreur",
+            "update_error": "Impossible de mettre à jour la réservation."
+        },
+
+        "categories": {
+            "category_electric": "Électrique",
+            "category_suv": "SUV",
+            "category_urban_suv": "SUV Urbain",
+            "category_sedan": "Berline"
         }
     },
 
@@ -314,6 +321,29 @@
             "day": "jour",
             "no_image": "No image",
             "loading": "Chargement..."
+        },
+
+        "categories": {
+            "category_electric": "Electric",
+            "category_suv": "SUV",
+            "category_urban_suv": "Urban SUV", 
+            "category_sedan": "Sedan"
+        },
+
+        "fuel_types": {
+            "fuel_gasoline": "Essence",
+            "fuel_electric": "Électrique",
+            "fuel_diesel": "Diesel",
+            "fuel_hybrid": "Hybride"
+        },
+
+        "periods": {
+            "period_1_3_days": "1-3 jours",
+            "period_4_10_days": "4-10 jours",
+            "period_11_20_days": "11-20 jours",
+            "period_21_29_days": "21-29 jours",
+            "period_1_month": "1 mois (30j)",
+            "period_week_end":"Week-end (Vendredi 14h - Dimanche 20h)"
         }
     },
 
@@ -424,15 +454,22 @@
         },
         
         "fuel_types": {
-            "gasoline": "Essence",
-            "diesel": "Diesel",
-            "electric": "Électrique",
-            "hybrid": "Hybride"
+            "fuel_gasoline": "Essence",
+            "fuel_electric": "Électrique",
+            "fuel_diesel": "Diesel",
+            "fuel_hybrid": "Hybride"
         },
         
         "transmission_types": {
-            "manual": "Manuelle",
-            "automatic": "Automatique"
+            "transmission_manual": "Manuelle",
+            "transmission_automatic": "Automatique"
+        },
+
+        "categories": {
+            "category_electric": "Electric",
+            "category_suv": "SUV",
+            "category_urban_suv": "Urban SUV", 
+            "category_sedan": "Sedan"
         },
         
         "actions": {
@@ -656,6 +693,7 @@
             "category_urban_suv": "SUV Urbain",
             "category_sedan": "Berline"
         },
+
         "fuel_types": {
             "fuel_gasoline": "Essence",
             "fuel_electric": "Électrique", 
@@ -836,6 +874,13 @@
             "request_sent": "Demande envoyée !",
             "request_sent_description": "Votre demande a été transmise à notre équipe. Vous recevrez une confirmation par email après traitement.",
             "cannot_make_reservation": "Impossible d'effectuer la réservation."
+        },
+
+        "categories": {
+            "category_electric": "Électrique",
+            "category_suv": "SUV",
+            "category_urban_suv": "SUV Urbain",
+            "category_sedan": "Berline"
         }
     },
 

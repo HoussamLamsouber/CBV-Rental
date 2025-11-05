@@ -159,6 +159,13 @@
             "client_notified_reason": "Client has been notified with the reason.",
             "error": "Error",
             "update_error": "Unable to update reservation."
+        },
+
+        "categories": {
+            "category_electric": "Electric",
+            "category_suv": "SUV",
+            "category_urban_suv": "Urban SUV", 
+            "category_sedan": "Sedan"
         }
     },
 
@@ -314,6 +321,29 @@
             "day": "day",
             "no_image": "No image",
             "loading": "Loading..."
+        },
+        
+        "categories": {
+            "category_electric": "Electric",
+            "category_suv": "SUV",
+            "category_urban_suv": "Urban SUV", 
+            "category_sedan": "Sedan"
+        },
+
+        "fuel_types": {
+            "fuel_gasoline": "Gasoline",
+            "fuel_electric": "Electric",
+            "fuel_diesel": "Diesel",
+            "fuel_hybrid": "Hybrid"
+        },
+
+        "periods": {
+            "period_1_3_days": "1-3 days",
+            "period_4_10_days": "4-10 days", 
+            "period_11_20_days": "11-20 days",
+            "period_21_29_days": "21-29 days",
+            "period_1_month": "1 month (30d)",
+            "period_week_end": "Weekend (Friday 2pm - Sunday 8pm)"
         }
     },
 
@@ -424,15 +454,22 @@
         },
         
         "fuel_types": {
-            "gasoline": "Gasoline",
-            "diesel": "Diesel",
-            "electric": "Electric",
-            "hybrid": "Hybrid"
+            "fuel_gasoline": "Gasoline",
+            "fuel_electric": "Electric", 
+            "fuel_diesel": "Diesel",
+            "fuel_hybrid": "Hybrid"
         },
         
         "transmission_types": {
-            "manual": "Manual",
-            "automatic": "Automatic"
+            "transmission_manual": "Manual",
+            "transmission_automatic": "Automatic"
+        },
+
+        "categories": {
+            "category_electric": "Electric",
+            "category_suv": "SUV",
+            "category_urban_suv": "Urban SUV", 
+            "category_sedan": "Sedan"
         },
         
         "actions": {
@@ -837,6 +874,13 @@
             "request_sent": "Request sent!",
             "request_sent_description": "Your request has been sent to our team. You will receive a confirmation email after processing.",
             "cannot_make_reservation": "Unable to make reservation."
+        },
+        
+        "categories": {
+            "category_electric": "Electric",
+            "category_suv": "SUV",
+            "category_urban_suv": "Urban SUV", 
+            "category_sedan": "Sedan"
         }
     },
 

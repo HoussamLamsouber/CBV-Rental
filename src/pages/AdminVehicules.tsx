@@ -1,4 +1,4 @@
-// src/pages/AdminVehicles.tsx (version internationalisée)
+// src/pages/AdminVehicles.tsx (version internationalisée avec nouvelles valeurs)
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Footer } from "@/components/Footer";
@@ -93,9 +93,9 @@ export default function AdminVehicles() {
     price: "",
     quantity: "",
     image_url: "",
-    fuel: "Essence",
+    fuel: "fuel_gasoline",
     seats: "",
-    transmission: "Manuelle"
+    transmission: "transmission_manual"
   });
 
   useEffect(() => {
@@ -106,7 +106,6 @@ export default function AdminVehicles() {
     try {
       setIsLoading(true);
       
-      // Charger les véhicules
       const { data: carsData, error: carsError } = await supabase
         .from("cars")
         .select("*")
@@ -114,7 +113,6 @@ export default function AdminVehicles() {
       
       if (carsError) throw carsError;
 
-      // Charger toutes les réservations pour compter les réservations par véhicule
       const { data: allResData, error: allResError } = await supabase
         .from("reservations")
         .select("*");
@@ -122,7 +120,6 @@ export default function AdminVehicles() {
       if (allResError) throw allResError;
       setAllReservations((allResData as Reservation[]) || []);
 
-      // Compter les réservations par véhicule
       const vehiclesWithReservationCount = (carsData as Vehicle[]).map(vehicle => {
         const reservationCount = allResData?.filter(res => res.car_id === vehicle.id).length || 0;
         return {
@@ -133,7 +130,6 @@ export default function AdminVehicles() {
 
       setVehicles(vehiclesWithReservationCount || []);
 
-      // Charger les réservations ACCEPTÉES seulement
       const { data: resData, error: resError } = await supabase
         .from("reservations")
         .select("*")
@@ -142,7 +138,6 @@ export default function AdminVehicles() {
       if (resError) throw resError;
       setReservations((resData as Reservation[]) || []);
 
-      // Calculer les statistiques
       calculateStats(vehiclesWithReservationCount || [], allResData as Reservation[] || []);
 
     } catch (error) {
@@ -161,12 +156,9 @@ export default function AdminVehicles() {
     const totalVehicles = vehicles.length;
     const availableVehicles = vehicles.filter(v => v.available).length;
     
-    // CALCUL DU REVENU TOTAL DU MOIS
-    // 1. Définir la période du mois en cours
     const currentMonthStart = startOfMonth(new Date());
     const currentMonthEnd = endOfMonth(new Date());
     
-    // 2. Filtrer les réservations acceptées qui ont été créées ce mois-ci
     const monthlyReservations = allReservations.filter(reservation => {
       const reservationDate = new Date(reservation.created_at);
       return (
@@ -175,14 +167,10 @@ export default function AdminVehicles() {
       );
     });
 
-    // 3. Calculer le revenu total
-    // Le calcul utilise soit total_amount (si disponible) soit car_price * durée estimée
     const totalRevenue = monthlyReservations.reduce((sum, reservation) => {
       if (reservation.total_amount) {
-        // Si total_amount existe, l'utiliser directement
         return sum + reservation.total_amount;
       } else {
-        // Sinon, estimer basé sur le prix journalier et la durée
         const pickupDate = new Date(reservation.pickup_date);
         const returnDate = new Date(reservation.return_date);
         const durationDays = Math.ceil((returnDate.getTime() - pickupDate.getTime()) / (1000 * 60 * 60 * 24));
@@ -191,7 +179,6 @@ export default function AdminVehicles() {
       }
     }, 0);
 
-    // Calcul des locations actives (réservations acceptées en cours)
     const activeRentals = allReservations.filter(r => {
       const today = new Date();
       const pickup = new Date(r.pickup_date);
@@ -199,12 +186,10 @@ export default function AdminVehicles() {
       return r.status === 'accepted' && today >= pickup && today <= returnDate;
     }).length;
 
-    // Taux de performance basé sur le ratio réservations/véhicules
     const performanceRate = totalVehicles > 0 
       ? Math.round((monthlyReservations.length / totalVehicles) * 100) 
       : 0;
 
-    // Total des réservations actives (en cours)
     const totalActiveReservations = activeRentals;
 
     setStats({
@@ -218,7 +203,6 @@ export default function AdminVehicles() {
     });
   };
 
-  // Réservations récentes (7 derniers jours)
   const recentReservations = allReservations
     .filter(res => {
       const resDate = new Date(res.created_at);
@@ -292,9 +276,9 @@ export default function AdminVehicles() {
         price: "",
         quantity: "",
         image_url: "",
-        fuel: "Essence",
+        fuel: "fuel_gasoline",
         seats: "",
-        transmission: "Manuelle"
+        transmission: "transmission_manual"
       });
 
       setIsCreateModalOpen(false);
@@ -344,6 +328,38 @@ export default function AdminVehicles() {
       </div>
     </div>
   );
+
+  // Ajoutez cette fonction dans votre composant
+  const translateLocation = (location: string) => {
+    // Si c'est un aéroport (commence par "airport_")
+    if (location.startsWith('airport_')) {
+      const airportKey = location.replace('airport_', '');
+      const translation = t(`airports.${airportKey}`);
+      // Si la traduction existe, la retourner
+      if (translation !== `airports.${airportKey}`) {
+        return translation;
+      }
+    }
+    
+    // Si c'est une gare (commence par "station_") ou autre logique si nécessaire
+    if (location.startsWith('station_')) {
+      const stationKey = location.replace('station_', '');
+      const translation = t(`stations.${stationKey}`);
+      if (translation !== `stations.${stationKey}`) {
+        return translation;
+      }
+    }
+    
+    // Essayer directement sans préfixe (au cas où)
+    const airportTrans = t(`airports.${location}`);
+    if (airportTrans !== `airports.${location}`) return airportTrans;
+    
+    const stationTrans = t(`stations.${location}`);
+    if (stationTrans !== `stations.${location}`) return stationTrans;
+    
+    // Sinon retourner la valeur originale
+    return location;
+  };
 
   return (
     <>
@@ -412,20 +428,14 @@ export default function AdminVehicles() {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {vehicles.map((vehicle) => (
-                  <Link 
-                    key={vehicle.id} 
-                    to={`/admin/vehicle/${vehicle.id}`}
-                    className="group"
-                  >
+                  <Link key={vehicle.id} to={`/admin/vehicle/${vehicle.id}`} className="group">
                     <div className="flex items-center gap-4 p-4 hover:bg-gray-50 rounded-lg transition-all duration-200 border border-gray-200 group-hover:border-blue-300 group-hover:shadow-md">
-                      {/* Image du véhicule */}
                       <img
                         src={vehicle.image_url}
                         alt={vehicle.name}
                         className="w-16 h-12 object-cover rounded-lg flex-shrink-0"
                       />
                       
-                      {/* Informations du véhicule */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between mb-1">
                           <p className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors truncate">
@@ -435,7 +445,7 @@ export default function AdminVehicles() {
                         </div>
                         <div className="flex items-center gap-2 mb-2">
                           <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                            {vehicle.category}
+                            {t(`admin_vehicles.categories.${vehicle.category}`)}
                           </span>
                           {vehicle.available ? (
                             <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
@@ -448,9 +458,9 @@ export default function AdminVehicles() {
                           )}
                         </div>
                         <div className="flex items-center gap-4 text-sm text-gray-600">
-                          <span>{vehicle.transmission}</span>
+                          <span>{t(`admin_vehicles.transmission_types.${vehicle.transmission}`)}</span>
                           <span>•</span>
-                          <span>{vehicle.fuel}</span>
+                          <span>{t(`admin_vehicles.fuel_types.${vehicle.fuel}`)}</span>
                           <span>•</span>
                           <span>{vehicle.seats} {t('admin_vehicles.messages.seats')}</span>
                         </div>
@@ -471,7 +481,6 @@ export default function AdminVehicles() {
                   </div>
                 )}
 
-                {/* Carte pour ajouter un nouveau véhicule */}
                 <div 
                   onClick={() => setIsCreateModalOpen(true)}
                   className="flex items-center justify-center p-6 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors cursor-pointer group col-span-1 md:col-span-2"
@@ -528,7 +537,9 @@ export default function AdminVehicles() {
                       </div>
                       <div className="flex items-center gap-2">
                         <MapPin className="h-3 w-3" />
-                        <span className="truncate">{reservation.pickup_location}</span>
+                        <span className="truncate">
+                          {translateLocation(reservation.pickup_location)}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -569,14 +580,18 @@ export default function AdminVehicles() {
 
                 <div>
                   <Label htmlFor="category" className="text-sm font-medium">{t('admin_vehicles.modals.create_vehicle.category')} *</Label>
-                  <Input
+                  <select
                     id="category"
                     value={newVehicle.category}
                     onChange={(e) => setNewVehicle({...newVehicle, category: e.target.value})}
-                    placeholder={t('admin_vehicles.modals.create_vehicle.category_placeholder')}
-                    className="mt-1"
+                    className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     required
-                  />
+                  >
+                    <option value="category_electric">{t('admin_vehicles.categories.category_electric')}</option>
+                    <option value="category_suv">{t('admin_vehicles.categories.category_suv')}</option>
+                    <option value="category_urban_suv">{t('admin_vehicles.categories.category_urban_suv')}</option>
+                    <option value="category_sedan">{t('admin_vehicles.categories.category_sedan')}</option>
+                  </select>
                 </div>
 
                 <div>
@@ -624,10 +639,10 @@ export default function AdminVehicles() {
                     onChange={(e) => setNewVehicle({...newVehicle, fuel: e.target.value})}
                     className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   >
-                    <option value="Essence">{t('admin_vehicles.fuel_types.gasoline')}</option>
-                    <option value="Diesel">{t('admin_vehicles.fuel_types.diesel')}</option>
-                    <option value="Electrique">{t('admin_vehicles.fuel_types.electric')}</option>
-                    <option value="Hybride">{t('admin_vehicles.fuel_types.hybrid')}</option>
+                    <option value="fuel_gasoline">{t('admin_vehicles.fuel_types.fuel_gasoline')}</option>
+                    <option value="fuel_electric">{t('admin_vehicles.fuel_types.fuel_electric')}</option>
+                    <option value="fuel_diesel">{t('admin_vehicles.fuel_types.fuel_diesel')}</option>
+                    <option value="fuel_hybrid">{t('admin_vehicles.fuel_types.fuel_hybrid')}</option>
                   </select>
                 </div>
 
@@ -639,8 +654,8 @@ export default function AdminVehicles() {
                     onChange={(e) => setNewVehicle({...newVehicle, transmission: e.target.value})}
                     className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   >
-                    <option value="Manuelle">{t('admin_vehicles.transmission_types.manual')}</option>
-                    <option value="Automatique">{t('admin_vehicles.transmission_types.automatic')}</option>
+                    <option value="transmission_manual">{t('admin_vehicles.transmission_types.transmission_manual')}</option>
+                    <option value="transmission_automatic">{t('admin_vehicles.transmission_types.transmission_automatic')}</option>
                   </select>
                 </div>
 

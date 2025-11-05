@@ -233,6 +233,7 @@
             "all_reservations": "Toutes les réservations",
             "client": "Client",
             "period": "Période",
+            "status":"Statut",
             "locations": "Lieux",
             "registered_user": "Utilisateur enregistré",
             "guest": "Invité",
@@ -324,10 +325,10 @@
         },
 
         "categories": {
-            "category_electric": "Electric",
+            "category_electric": "Électrique",
             "category_suv": "SUV",
-            "category_urban_suv": "Urban SUV", 
-            "category_sedan": "Sedan"
+            "category_urban_suv": "SUV Urbain",
+            "category_sedan": "Berline"
         },
 
         "fuel_types": {
@@ -466,10 +467,10 @@
         },
 
         "categories": {
-            "category_electric": "Electric",
+            "category_electric": "Électrique",
             "category_suv": "SUV",
-            "category_urban_suv": "Urban SUV", 
-            "category_sedan": "Sedan"
+            "category_urban_suv": "SUV Urbain",
+            "category_sedan": "Berline"
         },
         
         "actions": {
@@ -483,7 +484,6 @@
             "model_name": "Nom du modèle",
             "model_name_placeholder": "Ex: Renault Clio",
             "category": "Catégorie",
-            "category_placeholder": "Ex: Citadine",
             "price_per_day": "Prix par jour (MAD)",
             "initial_stock": "Stock initial",
             "image_url": "URL de l'image",

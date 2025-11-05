@@ -468,6 +468,55 @@ export default function ReservationsAdmin() {
     );
   }
 
+  // Fonction utilitaire pour traduire les lieux
+  const translateLocation = (location: string) => {
+    if (!location) return location;
+    
+    // Retirer les préfixes communs
+    const cleanLocation = location
+      .replace('airport_', '')
+      .replace('station_', '');
+    
+    // Essayer la traduction des aéroports
+    const airportKey = `airports.${cleanLocation}`;
+    const airportTrans = t(airportKey);
+    if (airportTrans !== airportKey) {
+      return airportTrans;
+    }
+    
+    // Essayer la traduction des gares
+    const stationKey = `stations.${cleanLocation}`;
+    const stationTrans = t(stationKey);
+    if (stationTrans !== stationKey) {
+      return stationTrans;
+    }
+    
+    // Fallback : retourner la valeur originale
+    return location;
+  };
+
+  // Fonction utilitaire pour traduire les catégories
+  const translateCategory = (category: string) => {
+    if (!category) return category;
+    
+    // Essayer avec admin_vehicles.categories
+    const categoryKey = `admin_vehicles.categories.${category}`;
+    const categoryTrans = t(categoryKey);
+    if (categoryTrans !== categoryKey) {
+      return categoryTrans;
+    }
+    
+    // Essayer avec categories directement
+    const directCategoryKey = `categories.${category}`;
+    const directCategoryTrans = t(directCategoryKey);
+    if (directCategoryTrans !== directCategoryKey) {
+      return directCategoryTrans;
+    }
+    
+    // Fallback
+    return category;
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 p-4 sm:p-6">
       <div className="max-w-7xl mx-auto">
@@ -708,7 +757,7 @@ export default function ReservationsAdmin() {
                             <h3 className="text-base sm:text-lg font-semibold text-gray-900 truncate">
                               {reservation.car_name}
                             </h3>
-                            <p className="text-gray-600 text-sm mb-2">{reservation.car_category}</p>
+                            <p className="text-gray-600 text-sm mb-2">{t(`admin_vehicles.categories.${reservation.car_category}`)}</p>
                             
                             {/* Informations client compact */}
                             <div className="flex items-center gap-2 text-sm text-gray-600">
@@ -759,7 +808,7 @@ export default function ReservationsAdmin() {
                           <Calendar className="h-3 w-3" />
                           {translate('admin_reservations.reservation.pickup', 'Départ')}
                         </div>
-                        <p className="text-sm text-gray-600">{reservation.pickup_location}</p>
+                        <p className="text-sm text-gray-600">{translateLocation(reservation.pickup_location)}</p>
                         <p className="text-xs text-gray-500">
                           {formatDate(reservation.pickup_date)}
                         </p>
@@ -770,7 +819,7 @@ export default function ReservationsAdmin() {
                           <Calendar className="h-3 w-3" />
                           {translate('admin_reservations.reservation.return', 'Retour')}
                         </div>
-                        <p className="text-sm text-gray-600">{reservation.return_location}</p>
+                        <p className="text-sm text-gray-600">{translateLocation(reservation.return_location)}</p>
                         <p className="text-xs text-gray-500">
                           {formatDate(reservation.return_date)}
                         </p>

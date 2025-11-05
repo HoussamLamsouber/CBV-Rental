@@ -636,6 +636,36 @@ export default function AdminVehicleDetail() {
   // Le reste du rendu JSX
   const stats = getVehicleStats();
 
+  // Fonction utilitaire pour traduire les lieux
+  const translateLocation = (location: string) => {
+    if (!location) return location;
+    
+    // Retirer les préfixes "airport_" et "station_" si présents
+    const cleanLocation = location
+      .replace('airport_', '')
+      .replace('station_', '');
+    
+    console.log(`🔍 Translation debug - Original: ${location}, Clean: ${cleanLocation}`);
+    
+    // Essayer la traduction des aéroports
+    const airportTrans = t(`airports.${cleanLocation}`);
+    if (airportTrans !== `airports.${cleanLocation}`) {
+      console.log(`✅ Found airport translation: ${airportTrans}`);
+      return airportTrans;
+    }
+    
+    // Essayer la traduction des gares
+    const stationTrans = t(`stations.${cleanLocation}`);
+    if (stationTrans !== `stations.${cleanLocation}`) {
+      console.log(`✅ Found station translation: ${stationTrans}`);
+      return stationTrans;
+    }
+    
+    console.log(`❌ No translation found for: ${location}`);
+    // Fallback : retourner la valeur originale
+    return location;
+  };
+
   return (
     <>
       <main className="container mx-auto p-6">
@@ -651,7 +681,7 @@ export default function AdminVehicleDetail() {
 
           <div className="flex-1">
             <h1 className="text-2xl font-bold">{vehicle.name}</h1>
-            <p className="text-muted-foreground mb-2">{vehicle.category}</p>
+            <p className="text-muted-foreground mb-2">{t(`admin_vehicles.categories.${vehicle.category}`)}</p>
             <p className="mb-2">{t('admin_vehicle_detail.vehicle_info.price_per_day')} <strong>{vehicle.price} / {t('admin_vehicle_detail.messages.day')}</strong></p>
 
             {/* Stock affiché simplement sans input */}
@@ -913,7 +943,7 @@ export default function AdminVehicleDetail() {
                   <Card key={offer.id} className="relative group hover:shadow-lg transition-shadow duration-200">
                     <CardHeader className="pb-3">
                       <CardTitle className="text-lg flex items-center justify-between">
-                        {offer.period}
+                        {t(`admin_vehicle_detail.periods.${offer.period}`)}
                         <Button
                           variant="ghost"
                           size="sm"
@@ -929,7 +959,7 @@ export default function AdminVehicleDetail() {
                         {offer.price} MAD
                       </p>
                       <p className="text-sm text-muted-foreground mt-2">
-                        {t('admin_vehicle_detail.offers_management.special_price_for')} {offer.period.toLowerCase()}
+                        {t('admin_vehicle_detail.offers_management.special_price_for')} {t(`admin_vehicle_detail.periods.${offer.period}`).toLowerCase()}
                       </p>
                     </CardContent>
                   </Card>
@@ -987,7 +1017,7 @@ export default function AdminVehicleDetail() {
                           </span>
                         </td>
                         <td className="p-4 text-sm">
-                          {reservation.pickup_location} → {reservation.return_location}
+                          {translateLocation(reservation.pickup_location)} → {translateLocation(reservation.return_location)}
                         </td>
                       </tr>
                     );

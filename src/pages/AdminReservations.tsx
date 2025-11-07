@@ -301,12 +301,6 @@ export default function ReservationsAdmin() {
   // 🔹 Rafraîchissement périodique des statuts
   useEffect(() => {
     fetchReservations();
-    
-    const interval = setInterval(() => {
-      fetchReservations();
-    }, 60000);
-
-    return () => clearInterval(interval);
   }, []);
 
   // 🔹 Fonction pour compter les réservations par statut

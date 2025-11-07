@@ -19,6 +19,52 @@ const EMAILJS_CONFIG_CANCEL = {
   }
 };
 
+// Service de traduction pour les emails
+const emailTranslations = {
+  fr: {
+    notSpecified: 'Non spécifié',
+    notProvided: 'Non renseigné',
+    currency: 'Dhs',
+    cancellationDate: 'Date d\'annulation'
+  },
+  en: {
+    notSpecified: 'Not specified',
+    notProvided: 'Not provided', 
+    currency: 'MAD',
+    cancellationDate: 'Cancellation date'
+  }
+};
+
+// Fonction utilitaire pour obtenir la langue
+const getEmailLanguage = (clientEmail?: string) => {
+  // Vous pourriez déterminer la langue basée sur l'email, le domaine, etc.
+  // Pour l'instant, on utilise le français par défaut
+  return 'fr';
+};
+
+// Fonction utilitaire pour formater les dates selon la langue
+const formatDateForEmail = (dateString: string, language: string = 'fr') => {
+  if (!dateString) return emailTranslations[language].notSpecified;
+  
+  const date = new Date(dateString);
+  const options: Intl.DateTimeFormatOptions = {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  };
+  
+  return date.toLocaleDateString(language === 'fr' ? 'fr-FR' : 'en-US', options);
+};
+
+// Fonction utilitaire pour traduire les lieux
+const translateLocationForEmail = (location: string, language: string = 'fr') => {
+  if (!location) return emailTranslations[language].notSpecified;
+  
+  // Cette fonction devrait utiliser vos traductions existantes
+  // Pour l'instant, on retourne la valeur originale
+  return location;
+};
+
 // Initialisation
 emailjs.init(EMAILJS_CONFIG.PUBLIC_KEY);
 
@@ -26,6 +72,9 @@ export const emailJSService = {
   // Email à l'admin pour nouvelle réservation
   async sendNewReservationAdminEmail(reservationData: any) {
     try {
+      const language = getEmailLanguage(reservationData.clientEmail);
+      const translations = emailTranslations[language];
+
       const adminResult = await emailjs.send(
         EMAILJS_CONFIG.SERVICE_ID,
         EMAILJS_CONFIG.TEMPLATES.NEW_RESERVATION_ADMIN,
@@ -33,18 +82,22 @@ export const emailJSService = {
           to_email: 'lamsouber.houssam@gmail.com',
           client_name: reservationData.clientName,
           client_email: reservationData.clientEmail,
-          client_phone: reservationData.clientPhone || 'Non spécifié',
+          client_phone: reservationData.clientPhone || translations.notSpecified,
           car_name: reservationData.carName,
           car_category: reservationData.carCategory,
-          pickup_date: reservationData.pickupDate,
+          pickup_date: formatDateForEmail(reservationData.pickupDate, language),
           pickup_time: reservationData.pickupTime,
-          return_date: reservationData.returnDate,
+          return_date: formatDateForEmail(reservationData.returnDate, language),
           return_time: reservationData.returnTime,
-          pickup_location: reservationData.pickupLocation,
-          return_location: reservationData.returnLocation,
-          total_price: `${reservationData.totalPrice} Dhs`,
+          pickup_location: translateLocationForEmail(reservationData.pickupLocation, language),
+          return_location: translateLocationForEmail(reservationData.returnLocation, language),
+          total_price: `${reservationData.totalPrice} ${translations.currency}`,
           reservation_id: reservationData.reservationId,
-          admin_url: `${window.location.origin}/admin/reservations`
+          admin_url: `${window.location.origin}/admin/reservations`,
+          // Variables de langue pour le template
+          language: language,
+          is_french: language === 'fr',
+          is_english: language === 'en'
         }
       );
 
@@ -60,26 +113,33 @@ export const emailJSService = {
     try {
       console.log("🚀 ENVOI EMAIL ACCEPTATION");
       
+      const language = getEmailLanguage(reservationData.clientEmail);
+      const translations = emailTranslations[language];
+
       const templateParams = {
         to_email: reservationData.clientEmail,
         to_name: reservationData.clientName,
         client_name: reservationData.clientName,
         client_email: reservationData.clientEmail,
-        client_phone: reservationData.clientPhone || 'Non spécifié',
+        client_phone: reservationData.clientPhone || translations.notProvided,
         car_name: reservationData.carName,
         car_category: reservationData.carCategory,
-        pickup_date: reservationData.pickupDate,
+        pickup_date: formatDateForEmail(reservationData.pickupDate, language),
         pickup_time: reservationData.pickupTime,
-        return_date: reservationData.returnDate,
+        return_date: formatDateForEmail(reservationData.returnDate, language),
         return_time: reservationData.returnTime,
-        pickup_location: reservationData.pickupLocation,
-        return_location: reservationData.returnLocation,
-        total_price: `${reservationData.totalPrice} Dhs`,
+        pickup_location: translateLocationForEmail(reservationData.pickupLocation, language),
+        return_location: translateLocationForEmail(reservationData.returnLocation, language),
+        total_price: `${reservationData.totalPrice} ${translations.currency}`,
         reservation_id: reservationData.reservationId,
         // Variables pour le template conditionnel
         reservation_status: 'accepted',
         is_accepted: true,
-        is_rejected: false
+        is_rejected: false,
+        // Variables de langue
+        language: language,
+        is_french: language === 'fr',
+        is_english: language === 'en'
       };
 
       console.log("📤 Paramètres email acceptation:", templateParams);
@@ -103,27 +163,37 @@ export const emailJSService = {
     try {
       console.log("🚀 ENVOI EMAIL REFUS");
       
+      const language = getEmailLanguage(reservationData.clientEmail);
+      const translations = emailTranslations[language];
+
       const templateParams = {
         to_email: reservationData.clientEmail,
         to_name: reservationData.clientName,
         client_name: reservationData.clientName,
         client_email: reservationData.clientEmail,
-        client_phone: reservationData.clientPhone || 'Non spécifié',
+        client_phone: reservationData.clientPhone || translations.notProvided,
         car_name: reservationData.carName,
         car_category: reservationData.carCategory,
-        pickup_date: reservationData.pickupDate,
+        pickup_date: formatDateForEmail(reservationData.pickupDate, language),
         pickup_time: reservationData.pickupTime,
-        return_date: reservationData.returnDate,
+        return_date: formatDateForEmail(reservationData.returnDate, language),
         return_time: reservationData.returnTime,
-        pickup_location: reservationData.pickupLocation,
-        return_location: reservationData.returnLocation,
-        total_price: `${reservationData.totalPrice} Dhs`,
+        pickup_location: translateLocationForEmail(reservationData.pickupLocation, language),
+        return_location: translateLocationForEmail(reservationData.returnLocation, language),
+        total_price: `${reservationData.totalPrice} ${translations.currency}`,
         reservation_id: reservationData.reservationId,
         // Variables pour le template conditionnel
         reservation_status: 'rejected',
         is_accepted: false,
         is_rejected: true,
-        rejection_reason: reservationData.rejectionReason || "Non spécifiée. Veuillez nous contacter pour plus d'informations.",
+        rejection_reason: reservationData.rejectionReason || 
+          (language === 'fr' 
+            ? "Non spécifiée. Veuillez nous contacter pour plus d'informations."
+            : "Not specified. Please contact us for more information."),
+        // Variables de langue
+        language: language,
+        is_french: language === 'fr',
+        is_english: language === 'en'
       };
 
       console.log("📤 Paramètres email refus:", templateParams);
@@ -145,6 +215,9 @@ export const emailJSService = {
   // Fonctions d'annulation existantes
   async sendCancellationEmails(reservationData: any) {
     try {
+      const language = getEmailLanguage(reservationData.clientEmail);
+      const translations = emailTranslations[language];
+
       emailjs.init(EMAILJS_CONFIG_CANCEL.PUBLIC_KEY);
 
       const adminResult = await emailjs.send(
@@ -154,14 +227,18 @@ export const emailJSService = {
           to_email: 'lamsouber.houssam@gmail.com',
           client_name: reservationData.clientName,
           client_email: reservationData.clientEmail,
-          client_phone: reservationData.clientPhone || 'Non renseigné',
+          client_phone: reservationData.clientPhone || translations.notProvided,
           car_name: reservationData.carName,
           car_category: reservationData.carCategory,
-          pickup_date: reservationData.pickupDate,
-          return_date: reservationData.returnDate,
-          total_price: `${reservationData.totalPrice} Dhs`,
+          pickup_date: formatDateForEmail(reservationData.pickupDate, language),
+          return_date: formatDateForEmail(reservationData.returnDate, language),
+          total_price: `${reservationData.totalPrice} ${translations.currency}`,
           reservation_id: reservationData.reservationId,
-          cancellation_date: new Date().toLocaleDateString('fr-FR')
+          cancellation_date: formatDateForEmail(new Date().toISOString(), language),
+          // Variables de langue
+          language: language,
+          is_french: language === 'fr',
+          is_english: language === 'en'
         }
       );
 
@@ -175,11 +252,15 @@ export const emailJSService = {
           client_email: reservationData.clientEmail,
           car_name: reservationData.carName,
           car_category: reservationData.carCategory,
-          pickup_date: reservationData.pickupDate,
-          return_date: reservationData.returnDate,
-          total_price: `${reservationData.totalPrice} Dhs`,
+          pickup_date: formatDateForEmail(reservationData.pickupDate, language),
+          return_date: formatDateForEmail(reservationData.returnDate, language),
+          total_price: `${reservationData.totalPrice} ${translations.currency}`,
           reservation_id: reservationData.reservationId,
-          cancellation_date: new Date().toLocaleDateString('fr-FR')
+          cancellation_date: formatDateForEmail(new Date().toISOString(), language),
+          // Variables de langue
+          language: language,
+          is_french: language === 'fr',
+          is_english: language === 'en'
         }
       );
 

@@ -52,6 +52,35 @@ export const ReservationModal = ({
   const { toast } = useToast();
   const { t } = useTranslation();
 
+  // Fonction pour traduire la catégorie de voiture - SIMPLIFIÉE comme dans Offres
+  const getTranslatedCategory = (category: string | null) => {
+    if (!category) return t('reservation_modal.messages.not_specified');
+    
+    // Utilisation directe comme dans la page Offres
+    const translation = t(`reservation_modal.categories.${category}`);
+    return translation.startsWith('reservation_modal.categories.') ? category : translation;
+  };
+
+  // Fonction pour traduire les lieux (aéroports et gares)
+  const getTranslatedLocation = (locationValue: string) => {
+    // Essayer d'abord les aéroports
+    const airportKey = locationValue.replace('airport_', '');
+    const airportTranslation = t(`airports.${airportKey}`);
+    if (airportTranslation && !airportTranslation.startsWith('airports.')) {
+      return airportTranslation;
+    }
+    
+    // Essayer ensuite les gares
+    const stationKey = locationValue.replace('station_', '');
+    const stationTranslation = t(`stations.${stationKey}`);
+    if (stationTranslation && !stationTranslation.startsWith('stations.')) {
+      return stationTranslation;
+    }
+    
+    // Retourner la valeur originale si aucune traduction trouvée
+    return locationValue;
+  };
+
   useEffect(() => {
     if (isOpen) {
       setGuestInfo({ full_name: "", email: "", telephone: "" });
@@ -174,7 +203,7 @@ export const ReservationModal = ({
       const reservationData: any = {
         car_id: car.id,
         car_name: car.name,
-        car_category: car.category || t('reservation_modal.messages.not_specified'),
+        car_category: getTranslatedCategory(car.category),
         car_price: car.price,
         car_image: car.image_url || null,
         pickup_location: searchData.pickupLocation,
@@ -242,13 +271,15 @@ export const ReservationModal = ({
         clientEmail,
         clientPhone,
         carName: car.name,
-        carCategory: car.category,
+        carCategory: getTranslatedCategory(car.category),
         pickupDate: formatDisplayDate(searchData.pickupDate.toString()),
         pickupTime: searchData.pickupTime,
         returnDate: formatDisplayDate(searchData.returnDate.toString()),
         returnTime: searchData.returnTime,
-        pickupLocation: searchData.pickupLocation,
-        returnLocation: searchData.sameLocation ? searchData.pickupLocation : (searchData.returnLocation || searchData.pickupLocation),
+        pickupLocation: getTranslatedLocation(searchData.pickupLocation),
+        returnLocation: searchData.sameLocation 
+          ? getTranslatedLocation(searchData.pickupLocation) 
+          : getTranslatedLocation(searchData.returnLocation || searchData.pickupLocation),
         totalPrice,
       });
 
@@ -292,12 +323,13 @@ export const ReservationModal = ({
           className="w-full h-48 object-cover rounded mb-4"
         />
 
-        <p className="mb-2 text-sm text-gray-600">{car.category}</p>
+        {/* CORRECTION : Utilisation de getTranslatedCategory pour afficher la catégorie traduite */}
+        <p className="mb-2 text-sm text-gray-600">{getTranslatedCategory(car.category)}</p>
         <p className="mb-4 font-semibold">{car.price} {t('reservation_modal.currency_per_day')}</p>
 
         <div className="mb-4 space-y-2 text-sm">
-          <p><strong>{t('reservation_modal.fields.pickup_location')}:</strong> {searchData.pickupLocation}</p>
-          <p><strong>{t('reservation_modal.fields.return_location')}:</strong> {searchData.sameLocation ? searchData.pickupLocation : (searchData.returnLocation || searchData.pickupLocation)}</p>
+          <p><strong>{t('reservation_modal.fields.pickup_location')}:</strong> {getTranslatedLocation(searchData.pickupLocation)}</p>
+          <p><strong>{t('reservation_modal.fields.return_location')}:</strong> {getTranslatedLocation(searchData.sameLocation ? searchData.pickupLocation : (searchData.returnLocation || searchData.pickupLocation))}</p>
           <p><strong>{t('reservation_modal.fields.pickup_date')}:</strong> {formatDisplayDate(searchData.pickupDate.toString())} {t('reservation_modal.at_time')} {searchData.pickupTime}</p>
           <p><strong>{t('reservation_modal.fields.return_date')}:</strong> {formatDisplayDate(searchData.returnDate.toString())} {t('reservation_modal.at_time')} {searchData.returnTime}</p>
         </div>

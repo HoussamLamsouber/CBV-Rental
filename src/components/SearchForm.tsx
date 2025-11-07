@@ -76,7 +76,7 @@ const AutoCompleteInput = ({
         <Command>
           <CommandInput placeholder={placeholder} />
           <CommandEmpty className="py-6 text-center text-sm text-muted-foreground">
-            {placeholder === "" ? "" : placeholder} {/* ou traduire si besoin */}
+            {placeholder === "" ? "" : placeholder}
           </CommandEmpty>
           <CommandGroup className="max-h-60 overflow-y-auto">
             {items.map((item) => (
@@ -332,10 +332,16 @@ export const SearchForm = ({ onSearch }: SearchFormProps) => {
 
   const allLocations = [...airports, ...stations];
 
+  // Fonction pour obtenir le label traduit d'une location
+  const getLocationLabel = (value: string) => {
+    const location = allLocations.find(item => item.value === value);
+    return location ? location.label : value;
+  };
+
   const handleSearch = () => {
     onSearch({
       pickupLocation,
-      returnLocation,
+      returnLocation: sameLocation ? pickupLocation : returnLocation,
       sameLocation,
       pickupDate,
       returnDate,
@@ -385,7 +391,7 @@ export const SearchForm = ({ onSearch }: SearchFormProps) => {
                 ? "bg-green-50 border-green-200 text-green-600"
                 : "bg-gray-50 border-gray-200 text-gray-600 hover:bg-blue-50 hover:border-blue-200 hover:text-blue-600"
             )}
-            title={sameLocation ? t("searchForm.returnPlaceholder") : t("searchForm.swap")}
+            title={sameLocation ? t("searchForm.swap") : t("searchForm.swap")}
           >
             <ArrowRightLeft className="h-4 w-4" />
           </Button>
@@ -399,7 +405,7 @@ export const SearchForm = ({ onSearch }: SearchFormProps) => {
           {sameLocation ? (
             <div className="relative">
               <Input
-                value={pickupLocation}
+                value={getLocationLabel(pickupLocation)}
                 readOnly
                 className="bg-green-50 border-green-200 cursor-not-allowed h-12"
               />
@@ -481,5 +487,4 @@ export const SearchForm = ({ onSearch }: SearchFormProps) => {
       </Button>
     </div>
   );
-
 };

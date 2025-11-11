@@ -50,16 +50,7 @@ export const ReservationModal = ({
   });
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
-  const { t } = useTranslation();
-
-  // Fonction pour traduire la catégorie de voiture - SIMPLIFIÉE comme dans Offres
-  const getTranslatedCategory = (category: string | null) => {
-    if (!category) return t('reservation_modal.messages.not_specified');
-    
-    // Utilisation directe comme dans la page Offres
-    const translation = t(`reservation_modal.categories.${category}`);
-    return translation.startsWith('reservation_modal.categories.') ? category : translation;
-  };
+  const { t, i18n } = useTranslation();
 
   // Fonction pour traduire les lieux (aéroports et gares)
   const getTranslatedLocation = (locationValue: string) => {
@@ -203,7 +194,7 @@ export const ReservationModal = ({
       const reservationData: any = {
         car_id: car.id,
         car_name: car.name,
-        car_category: getTranslatedCategory(car.category),
+        car_category: car.category,
         car_price: car.price,
         car_image: car.image_url || null,
         pickup_location: searchData.pickupLocation,
@@ -265,13 +256,16 @@ export const ReservationModal = ({
         localStorage.setItem("guest_reservations", JSON.stringify(reservationsArray));
       }
 
+      // AJOUT: Récupérer la langue actuelle
+      const currentLanguage = i18n.language;
+
       await emailJSService.sendNewReservationAdminEmail({
         reservationId: newReservationId,
         clientName,
         clientEmail,
         clientPhone,
         carName: car.name,
-        carCategory: getTranslatedCategory(car.category),
+        carCategory: t(`offers_page.categories.${car.category}`),
         pickupDate: formatDisplayDate(searchData.pickupDate.toString()),
         pickupTime: searchData.pickupTime,
         returnDate: formatDisplayDate(searchData.returnDate.toString()),
@@ -281,6 +275,7 @@ export const ReservationModal = ({
           ? getTranslatedLocation(searchData.pickupLocation) 
           : getTranslatedLocation(searchData.returnLocation || searchData.pickupLocation),
         totalPrice,
+        language: currentLanguage // ← ENVOYER LA LANGUE
       });
 
       toast({
@@ -324,7 +319,7 @@ export const ReservationModal = ({
         />
 
         {/* CORRECTION : Utilisation de getTranslatedCategory pour afficher la catégorie traduite */}
-        <p className="mb-2 text-sm text-gray-600">{getTranslatedCategory(car.category)}</p>
+        <p className="mb-2 text-sm text-gray-600">{t(`offers_page.categories.${car.category}`)}</p>
         <p className="mb-4 font-semibold">{car.price} {t('reservation_modal.currency_per_day')}</p>
 
         <div className="mb-4 space-y-2 text-sm">

@@ -10,6 +10,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { ZoomIn, X } from "lucide-react";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { 
   Calendar, 
   MapPin, 
@@ -40,7 +42,7 @@ const MaReservation = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   useEffect(() => {
     let mounted = true;
@@ -189,26 +191,34 @@ const MaReservation = () => {
 
       if (error) throw error;
 
-      const reservationData = {
+      const currentLanguage = i18n.language;
+
+      console.log('📧 Tentative envoi emails annulation pour:', res.client_email);
+
+      // 🔥 UTILISER sendCancellationEmails POUR L'ANNULATION
+      const emailResult = await emailJSService.sendCancellationEmails({
         reservationId: res.id,
         clientName: res.client_name || t('ma_reservation.messages.guest'),
         clientEmail: res.client_email || t('ma_reservation.messages.not_specified'),
         clientPhone: res.client_phone,
         carName: res.car_name,
-        carCategory: res.car_category,
+        carCategory: getTranslatedCategory(res.car_category),
         pickupDate: formatDisplayDate(res.pickup_date),
         pickupTime: res.pickup_time,
         returnDate: formatDisplayDate(res.return_date),
         returnTime: res.return_time,
-        pickupLocation: res.pickup_location,
-        returnLocation: res.return_location,
-        totalPrice: res.total_price
-      };
+        pickupLocation: getTranslatedLocation(res.pickup_location),
+        returnLocation: getTranslatedLocation(res.return_location),
+        totalPrice: res.total_price,
+        language: currentLanguage
+      });
 
-      const emailResult = await emailJSService.sendCancellationEmails(reservationData);
-      
+      console.log('📧 Résultat emails annulation:', emailResult);
+
       if (!emailResult.success) {
         console.warn('Emails d\'annulation non envoyés:', emailResult.error);
+      } else {
+        console.log('✅ Emails d\'annulation envoyés avec succès');
       }
 
       toast({ 
@@ -241,14 +251,28 @@ const MaReservation = () => {
     return now > returnDateTime;
   };
 
-  const getTranslatedLocation = (locationKey: string) => {
-    if (locationKey.startsWith('airport_')) {
-      return t(`airports.${locationKey.replace('airport_', '')}`);
+  const getTranslatedLocation = (locationValue: string) => {
+    const airportKey = locationValue.replace('airport_', '');
+    const airportTranslation = t(`airports.${airportKey}`);
+    if (airportTranslation && !airportTranslation.startsWith('airports.')) {
+      return airportTranslation;
     }
-    if (locationKey.startsWith('station_')) {
-      return t(`stations.${locationKey.replace('station_', '')}`);
+    
+    const stationKey = locationValue.replace('station_', '');
+    const stationTranslation = t(`stations.${stationKey}`);
+    if (stationTranslation && !stationTranslation.startsWith('stations.')) {
+      return stationTranslation;
     }
-    return locationKey;
+    
+    return locationValue;
+  };
+
+  const getTranslatedCategory = (category: string) => {
+    const categoryTranslation = t(`offers_page.categories.${category}`);
+    if (categoryTranslation && !categoryTranslation.startsWith('offers_page.categories.')) {
+      return categoryTranslation;
+    }
+    return category;
   };
 
   const getStatusBadge = (status: string) => {
@@ -344,13 +368,32 @@ const MaReservation = () => {
             <Card key={res.id} className="overflow-hidden">
               <CardContent className="p-0">
                 <div className="flex flex-col sm:flex-row">
-                  <div className="sm:w-48 flex-shrink-0">
-                    <img 
-                      src={res.car_image || "/placeholder-car.jpg"} 
-                      alt={res.car_name} 
-                      className="w-full h-40 sm:h-full object-cover" 
-                    />
+                  <div className="sm:w-48 flex-shrink-0 relative overflow-hidden rounded">
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <button className="relative group w-full h-full">
+                          <img
+                            src={res.car_image || "/placeholder-car.jpg"}
+                            alt={res.car_name}
+                            className="w-full h-40 sm:h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                          />
+                          <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
+                            <ZoomIn className="text-white w-6 h-6" />
+                          </div>
+                        </button>
+                      </DialogTrigger>
+
+                      <DialogContent className="max-w-4xl p-0 bg-transparent border-none shadow-none">
+                        <img
+                          src={res.car_image || "/placeholder-car.jpg"}
+                          alt={res.car_name}
+                          className="w-full h-auto rounded-lg"
+                        />
+                      </DialogContent>
+                    </Dialog>
                   </div>
+
+
                   
                   <div className="flex-1 p-4 sm:p-6">
                     <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4">
@@ -360,7 +403,7 @@ const MaReservation = () => {
                           <h2 className="font-semibold text-lg text-gray-900">{res.car_name}</h2>
                         </div>
                         <div className="flex flex-wrap items-center gap-2">
-                          <Badge variant="outline">{t(`ma_reservation.categories.${res.car_category}`)}</Badge>
+                          <Badge variant="outline">{t(`offers_page.categories.${res.car_category}`)}</Badge>
                           {getStatusBadge(res.status)}
                         </div>
                       </div>
@@ -403,15 +446,13 @@ const MaReservation = () => {
                           </div>
                         </div>
                         
-                        {res.return_location !== res.pickup_location && (
-                          <div className="flex items-start gap-2">
-                            <MapPin className="h-4 w-4 text-gray-400 flex-shrink-0 mt-0.5" />
-                            <div>
-                              <div className="font-medium">{t('ma_reservation.return')}</div>
-                              <div className="text-gray-600">{getTranslatedLocation(res.return_location)}</div>
-                            </div>
+                        <div className="flex items-start gap-2">
+                          <MapPin className="h-4 w-4 text-gray-400 flex-shrink-0 mt-0.5" />
+                          <div>
+                            <div className="font-medium">{t('ma_reservation.return')}</div>
+                            <div className="text-gray-600">{getTranslatedLocation(res.return_location)}</div>
                           </div>
-                        )}
+                        </div>
                       </div>
                     </div>
 

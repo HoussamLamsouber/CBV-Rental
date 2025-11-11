@@ -210,21 +210,23 @@ export default function ReservationsAdmin() {
 
       if (error) throw error;
 
+      // 🔥 CORRECTION : Traduire les valeurs avant envoi
       const emailData = {
         reservationId: reservation.id,
         clientName: reservation.guest_name || reservation.profiles?.full_name || translate('admin_reservations.reservation.unidentified', 'Client non identifié'),
         clientEmail: reservation.guest_email || reservation.profiles?.email,
         clientPhone: reservation.guest_phone || reservation.profiles?.telephone || translate('admin_reservations.reservation.not_provided', 'Non renseigné'),
         carName: reservation.car_name,
-        carCategory: reservation.car_category,
+        carCategory: getTranslatedCategory(reservation.car_category), // ← TRADUIRE LA CATÉGORIE
         pickupDate: new Date(reservation.pickup_date).toLocaleDateString(i18n.language === 'fr' ? 'fr-FR' : 'en-US'),
         pickupTime: reservation.pickup_time,
         returnDate: new Date(reservation.return_date).toLocaleDateString(i18n.language === 'fr' ? 'fr-FR' : 'en-US'),
         returnTime: reservation.return_time,
-        pickupLocation: reservation.pickup_location,
-        returnLocation: reservation.return_location,
+        pickupLocation: getTranslatedLocation(reservation.pickup_location), // ← TRADUIRE LE LIEU
+        returnLocation: getTranslatedLocation(reservation.return_location), // ← TRADUIRE LE LIEU
         totalPrice: reservation.total_price,
-        rejectionReason: rejectModal.reason
+        rejectionReason: rejectModal.reason,
+        language: i18n.language
       };
 
       await emailJSService.sendReservationRejectedEmail(emailData);
@@ -256,20 +258,22 @@ export default function ReservationsAdmin() {
 
       if (error) throw error;
 
+      // 🔥 CORRECTION : Traduire les valeurs avant envoi
       const emailData = {
         reservationId: reservation.id,
         clientName: reservation.guest_name || reservation.profiles?.full_name || translate('admin_reservations.reservation.unidentified', 'Client non identifié'),
         clientEmail: reservation.guest_email || reservation.profiles?.email,
         clientPhone: reservation.guest_phone || reservation.profiles?.telephone || translate('admin_reservations.reservation.not_provided', 'Non renseigné'),
         carName: reservation.car_name,
-        carCategory: reservation.car_category,
+        carCategory: getTranslatedCategory(reservation.car_category), // ← TRADUIRE LA CATÉGORIE
         pickupDate: new Date(reservation.pickup_date).toLocaleDateString(i18n.language === 'fr' ? 'fr-FR' : 'en-US'),
         pickupTime: reservation.pickup_time || "14:00",
         returnDate: new Date(reservation.return_date).toLocaleDateString(i18n.language === 'fr' ? 'fr-FR' : 'en-US'),
         returnTime: reservation.return_time || "14:00",
-        pickupLocation: reservation.pickup_location,
-        returnLocation: reservation.return_location,
+        pickupLocation: getTranslatedLocation(reservation.pickup_location), // ← TRADUIRE LE LIEU
+        returnLocation: getTranslatedLocation(reservation.return_location), // ← TRADUIRE LE LIEU
         totalPrice: reservation.total_price,
+        language: i18n.language
       };
 
       if (!emailData.clientEmail) {
@@ -296,6 +300,44 @@ export default function ReservationsAdmin() {
         variant: "destructive",
       });
     }
+  };
+
+  // Fonction pour traduire les lieux (identique à ReservationModal)
+  const getTranslatedLocation = (locationValue: string) => {
+    // Essayer d'abord les aéroports
+    const airportKey = locationValue.replace('airport_', '');
+    const airportTranslation = t(`airports.${airportKey}`);
+    if (airportTranslation && !airportTranslation.startsWith('airports.')) {
+      return airportTranslation;
+    }
+    
+    // Essayer ensuite les gares
+    const stationKey = locationValue.replace('station_', '');
+    const stationTranslation = t(`stations.${stationKey}`);
+    if (stationTranslation && !stationTranslation.startsWith('stations.')) {
+      return stationTranslation;
+    }
+    
+    // Retourner la valeur originale si aucune traduction trouvée
+    return locationValue;
+  };
+
+  // Fonction pour traduire les catégories
+  const getTranslatedCategory = (category: string) => {
+    // Essayer d'abord avec offers_page.categories
+    const categoryTranslation = t(`offers_page.categories.${category}`);
+    if (categoryTranslation && !categoryTranslation.startsWith('offers_page.categories.')) {
+      return categoryTranslation;
+    }
+    
+    // Essayer avec admin_vehicles.categories
+    const adminCategoryTranslation = t(`admin_vehicles.categories.${category}`);
+    if (adminCategoryTranslation && !adminCategoryTranslation.startsWith('admin_vehicles.categories.')) {
+      return adminCategoryTranslation;
+    }
+    
+    // Retourner la valeur originale si aucune traduction trouvée
+    return category;
   };
 
   // 🔹 Rafraîchissement périodique des statuts
@@ -857,34 +899,35 @@ export default function ReservationsAdmin() {
                   </div>
 
                   {/* Actions */}
-                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 pt-4">
-                    <div className="text-xs text-gray-500 truncate">
-                      {translate('admin_reservations.reservation.id', 'ID')}: {reservation.id.slice(0, 8)}...
-                    </div>
-                    
+                  <div className="flex flex-col sm:flex-row sm:justify-end sm:items-end gap-3 pt-4 w-full">
                     {reservation.status === "pending" && (
-                      <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                      <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto justify-end">
                         <button
                           onClick={() => handleAcceptReservation(reservation)}
-                          className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors font-medium text-sm flex-1 sm:flex-none text-center"
+                          className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors font-medium text-sm text-center"
                         >
                           {translate('admin_reservations.actions.accept', 'Accepter')}
                         </button>
                         <button
                           onClick={() => openRejectModal(reservation)}
-                          className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors font-medium text-sm flex-1 sm:flex-none text-center"
+                          className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors font-medium text-sm text-center"
                         >
                           {translate('admin_reservations.actions.reject', 'Refuser')}
                         </button>
                       </div>
                     )}
-                    
+
                     {reservation.status !== "pending" && (
-                      <div className="text-xs text-gray-500 italic text-center sm:text-right">
-                        {translate('admin_reservations.reservation.status', 'Statut')} {reservation.status === "accepted" ? translate('admin_reservations.reservation.accepted_on', 'acceptée le') : translate('admin_reservations.reservation.rejected_on', 'refusée le')} {formatDateTime(reservation.updated_at || reservation.created_at)}
+                      <div className="text-xs text-gray-500 italic text-right w-full sm:w-auto">
+                        {translate('admin_reservations.reservation.status', 'Statut')}{' '}
+                        {reservation.status === "accepted"
+                          ? translate('admin_reservations.reservation.accepted_on', 'acceptée le')
+                          : translate('admin_reservations.reservation.rejected_on', 'refusée le')}{' '}
+                        {formatDateTime(reservation.updated_at || reservation.created_at)}
                       </div>
                     )}
                   </div>
+
                 </div>
               </div>
             ))}

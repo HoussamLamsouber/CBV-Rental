@@ -74,7 +74,7 @@ export const Header = () => {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button
-                  className={`flex items-center gap-1 ${
+                  className={`flex items-center gap-1 p-2 rounded-md ${
                     location.pathname.startsWith("/admin")
                       ? "text-white font-semibold"
                       : "text-blue-200 hover:text-white transition"
@@ -85,6 +85,9 @@ export const Header = () => {
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start">
+                <DropdownMenuItem asChild>
+                  <Link to="/admin/dashboard">{t("admindashboard")}</Link>
+                </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <Link to="/admin/vehicles">{t("manage_vehicles")}</Link>
                 </DropdownMenuItem>
@@ -110,7 +113,7 @@ export const Header = () => {
               {isAuthenticated ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <button className="flex items-center gap-2 text-sm text-white hover:text-blue-200 transition font-medium">
+                    <button className="flex items-center gap-2 p-2 rounded-md text-sm text-white hover:text-blue-200 transition font-medium">
                       <Avatar className="h-8 w-8 border text-gray-700 border-gray-700">
                         <AvatarImage
                           src={
@@ -173,7 +176,7 @@ export const Header = () => {
           <Button
             variant="ghost"
             size="sm"
-            className="md:hidden text-white"
+            className="md:hidden text-white hover:bg-transparent hover:text-white"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
           >
             {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -195,6 +198,9 @@ export const Header = () => {
                 <span className="font-semibold text-sm text-blue-200 mt-2">
                   {t("admin")}
                 </span>
+                <Link to="/admin/dashboard" onClick={() => setIsMenuOpen(false)}>
+                  {t("admindashboard")}
+                </Link>
                 <Link to="/admin/vehicles" onClick={() => setIsMenuOpen(false)}>
                   {t("manage_vehicles")}
                 </Link>
@@ -242,15 +248,15 @@ export const Header = () => {
             )}
 
             {/* Bouton langue mobile */}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={toggleLanguage}
-            className="flex items-center gap-2 text-blue-800 border-white hover:bg-white hover:text-blue-900 transition"
-          >
-            <Globe size={16} />
-            {i18n.language === "fr" ? "English" : "Français"}
-          </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={toggleLanguage}
+              className="flex items-center gap-2 text-blue-800 border-white hover:bg-white hover:text-blue-900 transition"
+            >
+              <Globe size={16} />
+              {i18n.language === "fr" ? "English" : "Français"}
+            </Button>
           </div>
         </div>
       )}

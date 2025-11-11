@@ -12,7 +12,8 @@ import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import About from "./pages/About";
 
-import AdminVehicles from "./pages/AdminVehicules";
+import AdminDashboard from "./pages/AdminDashboard";
+import AdminVehicles from "./pages/AdminVehicles";
 import AdminCarDetails from "./pages/AdminCarsDetails";
 import AdminAuth from './pages/AdminAuth';
 import { ProtectedRoute } from './components/ProtectedRoute';
@@ -48,6 +49,14 @@ function App() {
 
               {/* Admin */}
               <Route path="/admin" element={<AdminAuth />} />
+              <Route 
+                path="/admin/dashboard" 
+                element={
+                  <ProtectedRoute adminOnly={true}>
+                    <AdminDashboard />
+                  </ProtectedRoute>
+                } 
+              />
               <Route 
                 path="/admin/vehicles" 
                 element={

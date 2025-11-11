@@ -4,6 +4,7 @@
     "my_reservations": "My bookings",
     "about": "About",
     "admin": "Administration",
+    "admindashboard": "Dashboard",
     "manage_vehicles": "Manage vehicles",
     "manage_reservations": "Manage bookings",
     "manage_users": "Manage users",
@@ -423,9 +424,9 @@
         }
     },
 
-    "admin_vehicles": {
+    "admin_dashboard": {
         "title": "Dashboard",
-        "subtitle": "Monitor your vehicle fleet performance",
+        "subtitle": "Overview of your rental activity",
         
         "stats": {
             "total_vehicles": "Total Vehicles",
@@ -435,6 +436,56 @@
             "total_revenue": "Total Revenue",
             "this_month": "This month",
             "active_reservations": "Active Reservations",
+            "currently_ongoing": "Currently ongoing"
+        },
+        
+        "charts": {
+            "revenue": {
+                "title": "Monthly Revenue",
+                "subtitle": "Revenue evolution over 6 months"
+            },
+            "categories": {
+                "title": "Distribution by Category",
+                "subtitle": "Vehicle distribution by type"
+            },
+            "trends": {
+                "title": "Reservation Trends",
+                "subtitle": "Evolution of reservation numbers"
+            }
+        },
+        
+        "recent_reservations": {
+            "title": "Recent Reservations",
+            "subtitle": "Last 7 days"
+        },
+        
+        "actions": {
+            "see_all": "See all"
+        },
+        
+        "messages": {
+            "cannot_load_data": "Unable to load dashboard data",
+            "no_recent_reservations": "No recent reservations"
+        }
+    },
+
+    "admin_vehicles": {
+        "title": "Vehicles Management",
+        "subtitle": "Monitor your vehicle fleet performance",
+        
+        "stats": {
+            "total_vehicles": "Total Vehicles",
+            "available_vehicles": "Available Vehicles",
+            "in_fleet": "In fleet",
+            "ready_to_rent": "Ready to rent",
+            "performance": "Performance",
+            "reservation_ratio": "Reservation ratio",
+            "total_revenue": "Total Revenue",
+            "all_time": "All time",
+            "active_reservations": "Active Reservations",
+            "total_reservations": "Total Reservations",
+            "historical": "Historical total",
+            "this_month": "This month",
             "currently_ongoing": "Currently ongoing"
         },
         
@@ -456,7 +507,7 @@
         
         "fuel_types": {
             "fuel_gasoline": "Gasoline",
-            "fuel_electric": "Electric", 
+            "fuel_electric": "Electric",
             "fuel_diesel": "Diesel",
             "fuel_hybrid": "Hybrid"
         },
@@ -469,7 +520,7 @@
         "categories": {
             "category_electric": "Electric",
             "category_suv": "SUV",
-            "category_urban_suv": "Urban SUV", 
+            "category_urban_suv": "Urban SUV",
             "category_sedan": "Sedan"
         },
         
@@ -480,24 +531,25 @@
         
         "modals": {
             "create_vehicle": {
-            "title": "New Vehicle Model",
-            "model_name": "Model name",
-            "model_name_placeholder": "Ex: Renault Clio",
-            "category": "Category",
-            "price_per_day": "Price per day (MAD)",
-            "initial_stock": "Initial stock",
-            "image_url": "Image URL",
-            "fuel": "Fuel",
-            "transmission": "Transmission",
-            "seats": "Number of seats",
-            "cancel": "Cancel",
-            "creating": "Creating...",
-            "create_model": "Create model"
+                "title": "New Vehicle Model",
+                "model_name": "Model name",
+                "model_name_placeholder": "Ex: Renault Clio",
+                "category": "Category",
+                "price_per_day": "Price per day (MAD)",
+                "initial_stock": "Initial stock",
+                "image_url": "Image URL",
+                "fuel": "Fuel",
+                "transmission": "Transmission",
+                "seats": "Number of seats",
+                "cancel": "Cancel",
+                "creating": "Creating...",
+                "create_model": "Create model"
             }
         },
         
         "messages": {
             "cannot_load_data": "Unable to load data",
+            "loading": "Loading vehicles...",
             "missing_fields": "Missing fields",
             "fill_required_fields": "Please fill in all required fields.",
             "duplicate_model": "Duplicate model",
@@ -509,7 +561,8 @@
             "add_first_vehicle": "Start by adding your first vehicle",
             "new_model": "New model",
             "no_recent_reservations": "No recent reservations",
-            "seats": "seats"
+            "seats": "seats",
+            "reservations": "reservations"
         }
     },
 

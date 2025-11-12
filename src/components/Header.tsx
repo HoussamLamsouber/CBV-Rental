@@ -141,13 +141,13 @@ export const Header = () => {
                     <DropdownMenuItem asChild>
                       <Link to="/mon-compte">{t("profile")}</Link>
                     </DropdownMenuItem>
-                    <DropdownMenuItem disabled>
-                      {t("change_password")}
+                    <DropdownMenuItem asChild>
+                      <Link to="/changer-mot-de-passe">{t("change_password")}</Link>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
                       onClick={handleSignOut}
-                      className="text-red-400 focus:text-red-600"
+                      className="text-red-400 hover:bg-red-600 hover:text-white focus:bg-red-600 focus:text-white transition-colors"
                     >
                       <LogOut className="h-4 w-4 mr-2" /> {t("logout")}
                     </DropdownMenuItem>
@@ -224,9 +224,12 @@ export const Header = () => {
                 >
                   {t("my_account")}
                 </Link>
-                <span className="text-blue-200 text-sm">
+                <Link 
+                  to="/changer-mot-de-passe"
+                  onClick={() => setIsMenuOpen(false)}
+                >
                   {t("change_password")}
-                </span>
+                </Link>
                 <Button
                   variant="outline"
                   size="sm"

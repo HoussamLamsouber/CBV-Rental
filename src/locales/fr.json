@@ -30,6 +30,16 @@
     "sunday": "Dimanche",
     "all_rights_reserved": "Tous droits réservés.",
 
+    "changepassword": "Changer le mot de passe",
+    "current_password": "Mot de passe actuel",
+    "new_password": "Nouveau mot de passe",
+    "confirm_password": "Confirmer le mot de passe",
+    "password_mismatch": "Les mots de passe ne correspondent pas.",
+    "password_updated_success": "Votre mot de passe a été mis à jour avec succès.",
+    "password_update_error": "Une erreur est survenue lors de la mise à jour du mot de passe.",
+    "update_password": "Mettre à jour le mot de passe",
+    "saving": "Enregistrement",
+
     "about_page": {
         "title": "Préparez votre arrivée avec sérénité",
         "subtitle": "Un service de location pensé pour vous : le bon véhicule, au bon moment. Profitez d'une expérience simple, rapide et sans stress, avant, pendant et après votre réservation.",

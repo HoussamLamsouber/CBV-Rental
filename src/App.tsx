@@ -21,6 +21,7 @@ import { Header } from './components/Header';
 import { AuthProvider } from './contexts/AuthContext';
 import AdminUsers from "./pages/AdminUsers";
 import AdminReservations from "./pages/AdminReservations";
+import ChangePassword from "./pages/ChangePassword";
 import "@/i18n.ts";
 
 const queryClient = new QueryClient();
@@ -46,6 +47,7 @@ function App() {
               <Route path="/mon-compte" element={<MonCompte />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/about" element={<About />} />
+              <Route path="/changer-mot-de-passe" element={<ProtectedRoute> <ChangePassword /> </ProtectedRoute>} />
 
               {/* Admin */}
               <Route path="/admin" element={<AdminAuth />} />

@@ -30,6 +30,16 @@
     "sunday": "Sunday",
     "all_rights_reserved": "All rights reserved.",
 
+    "changepassword": "Change Password",
+    "current_password": "Current Password",
+    "new_password": "New Password",
+    "confirm_password": "Confirm Password",
+    "password_mismatch": "Passwords do not match.",
+    "password_updated_success": "Your password has been successfully updated.",
+    "password_update_error": "An error occurred while updating your password.",
+    "update_password": "Update Password",
+    "saving": "Saving",
+
     "about_page": {
         "title": "Prepare your arrival with peace of mind",
         "subtitle": "A rental service designed for you: the right vehicle, at the right time. Enjoy a simple, fast and stress-free experience — before, during and after your booking.",

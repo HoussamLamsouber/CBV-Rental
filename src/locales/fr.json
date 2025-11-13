@@ -120,7 +120,8 @@
             "accepted": "Acceptées",
             "active": "Actives",
             "completed": "Terminées",
-            "refused": "Refusées"
+            "refused": "Refusées",
+            "expired": "Expirées"
         },
         
         "actions": {
@@ -158,7 +159,10 @@
             "try_search": "Essayez de modifier vos critères de recherche",
             "client_no_reservations": "Ce client n'a effectué aucune réservation pour le moment.",
             "new_reservations": "Les nouvelles réservations apparaîtront ici.",
-            "no_category_reservations": "Aucune réservation dans cette catégorie."
+            "no_category_reservations": "Aucune réservation dans cette catégorie.",
+            "expired_reservation": "Réservation expirée",
+            "expired_description": "Cette réservation n'a pas été traitée à temps et est maintenant expirée.",
+            "expired_on": "Expirée le"
         },
         
         "reject_modal": {
@@ -185,6 +189,11 @@
             "category_suv": "SUV",
             "category_urban_suv": "SUV Urbain",
             "category_sedan": "Berline"
+        },
+
+        "view_mode": {
+            "cards_tooltip": "Vue cartes",
+            "table_tooltip": "Vue tableau"
         }
     },
 

@@ -1,9 +1,8 @@
-// src/pages/AdminDashboard.tsx
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Footer } from "@/components/Footer";
 import { format, subDays, startOfMonth, endOfMonth, isWithinInterval } from "date-fns";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { 
@@ -31,7 +30,8 @@ import {
   Cell,
   LineChart,
   Line
-} from 'recharts';
+} from "recharts";
+import { motion } from "framer-motion";
 
 interface Reservation {
   id: string;
@@ -85,8 +85,8 @@ export default function AdminDashboard() {
   });
   const { toast } = useToast();
   const { t } = useTranslation();
+  const navigate = useNavigate();
 
-  // Données pour les graphiques
   const [categoryData, setCategoryData] = useState<ChartData[]>([]);
   const [revenueData, setRevenueData] = useState<ChartData[]>([]);
   const [reservationTrendData, setReservationTrendData] = useState<ChartData[]>([]);
@@ -98,12 +98,12 @@ export default function AdminDashboard() {
   const fetchData = async () => {
     try {
       setIsLoading(true);
-      
+
       const { data: carsData, error: carsError } = await supabase
         .from("cars")
         .select("*")
         .is("is_deleted", false);
-      
+
       if (carsError) throw carsError;
       setVehicles(carsData || []);
 
@@ -124,12 +124,11 @@ export default function AdminDashboard() {
 
       calculateStats(carsData || [], allResData as Reservation[] || []);
       prepareChartData(carsData || [], allResData as Reservation[] || []);
-
     } catch (error) {
       console.error("Erreur chargement données:", error);
       toast({
         title: t("error"),
-        description: t('admin_dashboard.messages.cannot_load_data'),
+        description: t("admin_dashboard.messages.cannot_load_data"),
         variant: "destructive",
       });
     } finally {
@@ -140,14 +139,14 @@ export default function AdminDashboard() {
   const calculateStats = (vehicles: any[], allReservations: Reservation[]) => {
     const totalVehicles = vehicles.length;
     const availableVehicles = vehicles.filter(v => v.available).length;
-    
+
     const currentMonthStart = startOfMonth(new Date());
     const currentMonthEnd = endOfMonth(new Date());
-    
+
     const monthlyReservations = allReservations.filter(reservation => {
       const reservationDate = new Date(reservation.created_at);
       return (
-        reservation.status === 'accepted' &&
+        reservation.status === "accepted" &&
         isWithinInterval(reservationDate, { start: currentMonthStart, end: currentMonthEnd })
       );
     });
@@ -158,7 +157,9 @@ export default function AdminDashboard() {
       } else {
         const pickupDate = new Date(reservation.pickup_date);
         const returnDate = new Date(reservation.return_date);
-        const durationDays = Math.ceil((returnDate.getTime() - pickupDate.getTime()) / (1000 * 60 * 60 * 24));
+        const durationDays = Math.ceil(
+          (returnDate.getTime() - pickupDate.getTime()) / (1000 * 60 * 60 * 24)
+        );
         const estimatedRevenue = reservation.car_price * Math.max(1, durationDays);
         return sum + estimatedRevenue;
       }
@@ -168,12 +169,11 @@ export default function AdminDashboard() {
       const today = new Date();
       const pickup = new Date(r.pickup_date);
       const returnDate = new Date(r.return_date);
-      return r.status === 'accepted' && today >= pickup && today <= returnDate;
+      return r.status === "accepted" && today >= pickup && today <= returnDate;
     }).length;
 
-    const performanceRate = totalVehicles > 0 
-      ? Math.round((monthlyReservations.length / totalVehicles) * 100) 
-      : 0;
+    const performanceRate =
+      totalVehicles > 0 ? Math.round((monthlyReservations.length / totalVehicles) * 100) : 0;
 
     const totalActiveReservations = activeRentals;
 
@@ -184,12 +184,11 @@ export default function AdminDashboard() {
       activeRentals,
       monthlyGrowth: 12.5,
       totalReservations: totalActiveReservations,
-      performanceRate
+      performanceRate,
     });
   };
 
   const prepareChartData = (vehicles: any[], allReservations: Reservation[]) => {
-    // Données pour le graphique des catégories
     const categoryStats: { [key: string]: number } = {};
     vehicles.forEach(vehicle => {
       const category = vehicle.category;
@@ -198,330 +197,276 @@ export default function AdminDashboard() {
 
     const categoryChartData = Object.keys(categoryStats).map(category => ({
       name: t(`admin_vehicles.categories.${category}`),
-      value: categoryStats[category]
+      value: categoryStats[category],
     }));
     setCategoryData(categoryChartData);
 
-    // Données pour le graphique des revenus par mois (6 derniers mois)
     const monthlyRevenue: { [key: string]: number } = {};
     const last6Months = Array.from({ length: 6 }, (_, i) => {
       const date = new Date();
       date.setMonth(date.getMonth() - i);
-      return date.toISOString().slice(0, 7); // Format YYYY-MM
+      return date.toISOString().slice(0, 7);
     }).reverse();
 
     last6Months.forEach(month => {
       monthlyRevenue[month] = 0;
     });
 
-    allReservations.filter(res => res.status === 'accepted').forEach(reservation => {
-      const reservationMonth = reservation.created_at.slice(0, 7);
-      if (monthlyRevenue.hasOwnProperty(reservationMonth)) {
-        const revenue = reservation.total_amount || 
-          (() => {
-            const pickupDate = new Date(reservation.pickup_date);
-            const returnDate = new Date(reservation.return_date);
-            const durationDays = Math.ceil((returnDate.getTime() - pickupDate.getTime()) / (1000 * 60 * 60 * 24));
-            return reservation.car_price * Math.max(1, durationDays);
-          })();
-        monthlyRevenue[reservationMonth] += revenue;
-      }
-    });
+    allReservations
+      .filter(res => res.status === "accepted")
+      .forEach(reservation => {
+        const reservationMonth = reservation.created_at.slice(0, 7);
+        if (monthlyRevenue.hasOwnProperty(reservationMonth)) {
+          const revenue =
+            reservation.total_amount ||
+            (() => {
+              const pickupDate = new Date(reservation.pickup_date);
+              const returnDate = new Date(reservation.return_date);
+              const durationDays = Math.ceil(
+                (returnDate.getTime() - pickupDate.getTime()) / (1000 * 60 * 60 * 24)
+              );
+              return reservation.car_price * Math.max(1, durationDays);
+            })();
+          monthlyRevenue[reservationMonth] += revenue;
+        }
+      });
 
     const revenueChartData = last6Months.map(month => ({
-      name: format(new Date(month + '-01'), 'MMM yyyy'),
-      value: Math.round(monthlyRevenue[month] / 100) * 100 // Arrondir aux centaines
+      name: format(new Date(month + "-01"), "MMM yyyy"),
+      value: Math.round(monthlyRevenue[month] / 100) * 100,
     }));
     setRevenueData(revenueChartData);
 
-    // Données pour la tendance des réservations
     const reservationTrend = last6Months.map(month => ({
-      name: format(new Date(month + '-01'), 'MMM yyyy'),
-      value: allReservations.filter(res => 
-        res.created_at.slice(0, 7) === month && res.status === 'accepted'
-      ).length
+      name: format(new Date(month + "-01"), "MMM yyyy"),
+      value: allReservations.filter(
+        res => res.created_at.slice(0, 7) === month && res.status === "accepted"
+      ).length,
     }));
     setReservationTrendData(reservationTrend);
   };
 
-  const recentReservations = allReservations
-    .filter(res => {
-      const resDate = new Date(res.created_at);
-      const sevenDaysAgo = subDays(new Date(), 7);
-      return resDate >= sevenDaysAgo;
-    })
-    .slice(0, 5);
-
-  const StatCard = ({ title, value, subtitle, icon: Icon, trend, color = "blue" }: any) => (
-    <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm font-medium text-gray-600">{title}</p>
-          <p className="text-2xl font-bold text-gray-900 mt-1">{value}</p>
-          <div className="flex items-center gap-2 mt-1">
-            {trend && (
-              <span className={`text-xs font-medium ${
-                trend > 0 ? 'text-green-600' : 'text-red-600'
-              }`}>
-                {trend > 0 ? '+' : ''}{trend}%
-              </span>
-            )}
-            <span className="text-xs text-gray-500">{subtitle}</span>
-          </div>
-        </div>
-        <div className={`p-3 rounded-xl ${
-          color === 'blue' ? 'bg-blue-50' :
-          color === 'green' ? 'bg-green-50' :
-          color === 'purple' ? 'bg-purple-50' :
-          'bg-orange-50'
-        }`}>
-          <Icon className={`h-6 w-6 ${
-            color === 'blue' ? 'text-blue-600' :
-            color === 'green' ? 'text-green-600' :
-            color === 'purple' ? 'text-purple-600' :
-            'text-orange-600'
-          }`} />
-        </div>
-      </div>
-    </div>
-  );
-
-  const translateLocation = (location: string) => {
-    if (location.startsWith('airport_')) {
-      const airportKey = location.replace('airport_', '');
-      const translation = t(`airports.${airportKey}`);
-      if (translation !== `airports.${airportKey}`) {
-        return translation;
-      }
-    }
-    
-    if (location.startsWith('station_')) {
-      const stationKey = location.replace('station_', '');
-      const translation = t(`stations.${stationKey}`);
-      if (translation !== `stations.${stationKey}`) {
-        return translation;
-      }
-    }
-    
-    const airportTrans = t(`airports.${location}`);
-    if (airportTrans !== `airports.${location}`) return airportTrans;
-    
-    const stationTrans = t(`stations.${location}`);
-    if (stationTrans !== `stations.${location}`) return stationTrans;
-    
-    return location;
-  };
-
-  // Couleurs pour les graphiques
-  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D'];
+  const COLORS = ["#2563EB", "#22C55E", "#F59E0B", "#8B5CF6", "#EC4899", "#06B6D4"];
 
   return (
     <>
-      <div className="min-h-screen bg-gray-50 p-6">
+      <div className="min-h-screen bg-gradient-to-b from-blue-50 to-gray-50 p-6">
         <div className="max-w-7xl mx-auto">
-          {/* Header */}
-          <div className="mb-8">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">{t('admin_dashboard.title')}</h1>
-              <p className="text-gray-600">{t('admin_dashboard.subtitle')}</p>
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="mb-8"
+          >
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+              {t("admin_dashboard.title")}
+            </h1>
+            <p className="text-gray-600">{t("admin_dashboard.subtitle")}</p>
+          </motion.div>
+
+          {isLoading ? (
+            <div className="flex justify-center items-center h-[60vh]">
+              <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-blue-600"></div>
             </div>
-          </div>
+          ) : (
+            <>
+              {/* Statistiques */}
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6 }}
+                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8"
+              >
+                <StatCard
+                  title={t("admin_dashboard.stats.total_vehicles")}
+                  value={stats.totalVehicles}
+                  subtitle={t("admin_dashboard.stats.in_fleet")}
+                  icon={Car}
+                  color="blue"
+                />
+                <StatCard
+                  title={t("admin_dashboard.stats.performance")}
+                  value={`${stats.performanceRate}%`}
+                  subtitle={t("admin_dashboard.stats.reservation_ratio")}
+                  icon={Zap}
+                  trend={stats.monthlyGrowth}
+                  color="green"
+                />
+                <StatCard
+                  title={t("admin_dashboard.stats.total_revenue")}
+                  value={`${stats.totalRevenue.toLocaleString()} MAD`}
+                  subtitle={t("admin_dashboard.stats.this_month")}
+                  icon={DollarSign}
+                  color="purple"
+                />
+                <StatCard
+                  title={t("admin_dashboard.stats.active_reservations")}
+                  value={stats.totalReservations}
+                  subtitle={t("admin_dashboard.stats.currently_ongoing")}
+                  icon={Users}
+                  color="orange"
+                />
+              </motion.div>
 
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <StatCard
-              title={t('admin_dashboard.stats.total_vehicles')}
-              value={stats.totalVehicles}
-              subtitle={t('admin_dashboard.stats.in_fleet')}
-              icon={Car}
-              color="blue"
-            />
-            <StatCard
-              title={t('admin_dashboard.stats.performance')}
-              value={`${stats.performanceRate}%`}
-              subtitle={t('admin_dashboard.stats.reservation_ratio')}
-              icon={Zap}
-              trend={stats.monthlyGrowth}
-              color="green"
-            />
-            <StatCard
-              title={t('admin_dashboard.stats.total_revenue')}
-              value={`${stats.totalRevenue.toLocaleString()} MAD`}
-              subtitle={t('admin_dashboard.stats.this_month')}
-              icon={DollarSign}
-              color="purple"
-            />
-            <StatCard
-              title={t('admin_dashboard.stats.active_reservations')}
-              value={stats.totalReservations}
-              subtitle={t('admin_dashboard.stats.currently_ongoing')}
-              icon={Users}
-              color="orange"
-            />
-          </div>
+              {/* Graphiques */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.8 }}
+                className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8"
+              >
+                <ChartCard
+                  title={t("admin_dashboard.charts.revenue.title")}
+                  subtitle={t("admin_dashboard.charts.revenue.subtitle")}
+                  icon={TrendingUp}
+                  color="green"
+                >
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={revenueData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="name" />
+                      <YAxis />
+                      <Tooltip formatter={(v) => [`${v} MAD`, "Revenu"]} />
+                      <Bar dataKey="value" fill="#2563EB" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </ChartCard>
 
-          {/* Graphiques */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-            {/* Graphique des revenus */}
-            <div className="bg-white rounded-xl shadow-sm border p-6">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-green-50 rounded-lg">
-                    <TrendingUp className="h-5 w-5 text-green-600" />
-                  </div>
+                <ChartCard
+                  title={t("admin_dashboard.charts.categories.title")}
+                  subtitle={t("admin_dashboard.charts.categories.subtitle")}
+                  icon={Car}
+                  color="blue"
+                >
+                  <ResponsiveContainer width="100%" height={300}>
+                    <PieChart>
+                      <Pie
+                        data={categoryData}
+                        labelLine={false}
+                        label={({ name, percent }) =>
+                          `${name} ${(percent * 100).toFixed(0)}%`
+                        }
+                        outerRadius={100}
+                        dataKey="value"
+                      >
+                        {categoryData.map((_, index) => (
+                          <Cell key={index} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip formatter={(v) => [`${v} véhicules`, "Quantité"]} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </ChartCard>
+              </motion.div>
+
+              {/* Réservations récentes */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.9 }}
+                className="bg-white rounded-2xl shadow-md p-6 border"
+              >
+                <div className="flex justify-between items-center mb-6">
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900">{t('admin_dashboard.charts.revenue.title')}</h3>
-                    <p className="text-sm text-gray-600">{t('admin_dashboard.charts.revenue.subtitle')}</p>
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      {t("admin_dashboard.recent_reservations.title")}
+                    </h3>
+                    <p className="text-sm text-gray-600">
+                      {t("admin_dashboard.recent_reservations.subtitle")}
+                    </p>
                   </div>
+                  <Link to="/admin/reservations">
+                    <Button variant="ghost" size="sm" className="text-blue-600">
+                      {t("admin_dashboard.actions.see_all")}{" "}
+                      <ChevronRight className="h-4 w-4 ml-1" />
+                    </Button>
+                  </Link>
                 </div>
-              </div>
-              <div className="h-80">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={revenueData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" />
-                    <YAxis />
-                    <Tooltip 
-                      formatter={(value) => [`${value} MAD`, 'Revenu']}
-                      labelFormatter={(label) => `Mois: ${label}`}
-                    />
-                    <Bar dataKey="value" fill="#8884d8" name="Revenu" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-
-            {/* Graphique des catégories */}
-            <div className="bg-white rounded-xl shadow-sm border p-6">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-blue-50 rounded-lg">
-                    <Car className="h-5 w-5 text-blue-600" />
+                {/* Placeholder si aucune donnée */}
+                {allReservations.length === 0 ? (
+                  <div className="text-center text-gray-500 py-12">
+                    <Clock className="h-10 w-10 mx-auto mb-2 text-gray-400" />
+                    <p>{t("admin_dashboard.messages.no_recent_reservations")}</p>
                   </div>
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900">{t('admin_dashboard.charts.categories.title')}</h3>
-                    <p className="text-sm text-gray-600">{t('admin_dashboard.charts.categories.subtitle')}</p>
-                  </div>
-                </div>
-              </div>
-              <div className="h-80">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={categoryData}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="value"
+                ) : (
+                  allReservations.slice(0, 5).map((r) => (
+                    <div
+                      key={r.id}
+                      className="p-4 border rounded-lg mb-2 hover:bg-gray-50 transition-colors"
                     >
-                      {categoryData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip formatter={(value) => [`${value} véhicules`, 'Quantité']} />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-
-            {/* Graphique des tendances de réservations */}
-            <div className="bg-white rounded-xl shadow-sm border p-6 lg:col-span-2">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-orange-50 rounded-lg">
-                    <Calendar className="h-5 w-5 text-orange-600" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900">{t('admin_dashboard.charts.trends.title')}</h3>
-                    <p className="text-sm text-gray-600">{t('admin_dashboard.charts.trends.subtitle')}</p>
-                  </div>
-                </div>
-              </div>
-              <div className="h-80">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={reservationTrendData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" />
-                    <YAxis />
-                    <Tooltip 
-                      formatter={(value) => [`${value} réservations`, 'Quantité']}
-                      labelFormatter={(label) => `Mois: ${label}`}
-                    />
-                    <Line 
-                      type="monotone" 
-                      dataKey="value" 
-                      stroke="#ff7300" 
-                      strokeWidth={2}
-                      name="Réservations"
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-          </div>
-
-          {/* Réservations Récentes */}
-          <div className="bg-white rounded-xl shadow-sm border p-6">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-green-50 rounded-lg">
-                  <Calendar className="h-5 w-5 text-green-600" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900">{t('admin_dashboard.recent_reservations.title')}</h3>
-                  <p className="text-sm text-gray-600">{t('admin_dashboard.recent_reservations.subtitle')}</p>
-                </div>
-              </div>
-              <Link to="/admin/reservations">
-                <Button variant="ghost" size="sm" className="text-blue-600">
-                  {t('admin_dashboard.actions.see_all')} <ChevronRight className="h-4 w-4 ml-1" />
-                </Button>
-              </Link>
-            </div>
-            <div className="space-y-4">
-              {recentReservations.map((reservation) => (
-                <div key={reservation.id} className="p-3 border rounded-lg hover:bg-gray-50 transition-colors">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="font-medium text-gray-900 text-sm">{reservation.car_name}</span>
-                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs ${
-                      reservation.status === 'accepted' 
-                        ? 'bg-green-100 text-green-800'
-                        : reservation.status === 'pending'
-                        ? 'bg-yellow-100 text-yellow-800'
-                        : 'bg-red-100 text-red-800'
-                    }`}>
-                      {reservation.status === 'accepted' ? t('admin_reservations.status.accepted') : 
-                       reservation.status === 'pending' ? t('admin_reservations.status.pending') : t('admin_reservations.status.refused')}
-                    </span>
-                  </div>
-                  <div className="text-sm text-gray-600 space-y-1">
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-3 w-3" />
-                      {format(new Date(reservation.pickup_date), "dd/MM/yyyy")} - {format(new Date(reservation.return_date), "dd/MM/yyyy")}
+                      <div className="flex justify-between items-center">
+                        <span className="font-semibold text-gray-800">{r.car_name}</span>
+                        <span
+                          className={`px-2 py-1 text-xs rounded-full ${
+                            r.status === "accepted"
+                              ? "bg-green-100 text-green-800"
+                              : r.status === "pending"
+                              ? "bg-yellow-100 text-yellow-800"
+                              : "bg-red-100 text-red-800"
+                          }`}
+                        >
+                          {r.status}
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-600 mt-1">
+                        {format(new Date(r.pickup_date), "dd/MM/yyyy")} -{" "}
+                        {format(new Date(r.return_date), "dd/MM/yyyy")}
+                      </p>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <MapPin className="h-3 w-3" />
-                      <span className="truncate">
-                        {translateLocation(reservation.pickup_location)}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-              {recentReservations.length === 0 && (
-                <div className="text-center py-8 text-gray-500">
-                  <Clock className="h-8 w-8 mx-auto mb-2 text-gray-400" />
-                  <p className="text-sm">{t('admin_dashboard.messages.no_recent_reservations')}</p>
-                </div>
-              )}
-            </div>
-          </div>
+                  ))
+                )}
+              </motion.div>
+            </>
+          )}
         </div>
       </div>
       <Footer />
     </>
+  );
+}
+
+function StatCard({ title, value, subtitle, icon: Icon, color }: any) {
+  const colorClasses: any = {
+    blue: "text-blue-600 bg-blue-50",
+    green: "text-green-600 bg-green-50",
+    purple: "text-purple-600 bg-purple-50",
+    orange: "text-orange-600 bg-orange-50",
+  };
+
+  return (
+    <div className="bg-white rounded-2xl p-6 shadow-sm hover:shadow-md border transition-all">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-sm text-gray-600">{title}</p>
+          <p className="text-2xl font-bold text-gray-900 mt-1">{value}</p>
+          <p className="text-xs text-gray-500 mt-1">{subtitle}</p>
+        </div>
+        <div className={`p-3 rounded-xl ${colorClasses[color]}`}>
+          <Icon className={`h-6 w-6 ${colorClasses[color].split(" ")[0]}`} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ChartCard({ title, subtitle, icon: Icon, color, children }: any) {
+  const colorMap: any = {
+    blue: "text-blue-600 bg-blue-50",
+    green: "text-green-600 bg-green-50",
+    orange: "text-orange-600 bg-orange-50",
+  };
+  return (
+    <div className="bg-white rounded-2xl p-6 shadow-sm hover:shadow-md border transition-all">
+      <div className="flex items-center gap-3 mb-4">
+        <div className={`p-2 rounded-lg ${colorMap[color]}`}>
+          <Icon className={`h-5 w-5 ${colorMap[color].split(" ")[0]}`} />
+        </div>
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
+          <p className="text-sm text-gray-600">{subtitle}</p>
+        </div>
+      </div>
+      {children}
+    </div>
   );
 }

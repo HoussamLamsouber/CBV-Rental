@@ -120,7 +120,8 @@
             "accepted": "Accepted",
             "active": "Active",
             "completed": "Completed",
-            "refused": "Refused"
+            "refused": "Refused",
+            "expired": "Expired"
         },
         
         "actions": {
@@ -158,7 +159,10 @@
             "try_search": "Try modifying your search criteria",
             "client_no_reservations": "This client has not made any reservations yet.",
             "new_reservations": "New reservations will appear here.",
-            "no_category_reservations": "No reservations in this category."
+            "no_category_reservations": "No reservations in this category.",
+            "expired_reservation": "Expired reservation",
+            "expired_description": "This reservation was not processed in time and is now expired.",
+            "expired_on": "Expired on"
         },
         
         "reject_modal": {
@@ -185,6 +189,11 @@
             "category_suv": "SUV",
             "category_urban_suv": "Urban SUV", 
             "category_sedan": "Sedan"
+        },
+
+        "view_mode": {
+            "cards_tooltip": "Cards view",
+            "table_tooltip": "Table view"
         }
     },
 

@@ -303,6 +303,18 @@ const Auth = () => {
                       </button>
                     </div>
                   </div>
+
+                  <div className="flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => navigate("/forgot-password")}
+                      className="text-xs text-primary hover:underline focus:outline-none"
+                    >
+                      {t("forgot_password")}
+                    </button>
+                  </div>
+
+
                   <Button 
                     type="submit" 
                     className="w-full h-10 sm:h-11" 

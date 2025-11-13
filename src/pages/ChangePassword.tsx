@@ -103,7 +103,7 @@ export default function ChangePassword() {
                     onClick={() => setShowCurrent(!showCurrent)}
                     className="absolute right-3 top-2.5 text-gray-500 hover:text-blue-600 transition"
                   >
-                    {showCurrent ? <EyeOff size={18} /> : <Eye size={18} />}
+                    {showCurrent ? <Eye size={18} /> : <EyeOff size={18} />}
                   </button>
                 </div>
               </div>
@@ -126,7 +126,7 @@ export default function ChangePassword() {
                     onClick={() => setShowNew(!showNew)}
                     className="absolute right-3 top-2.5 text-gray-500 hover:text-blue-600 transition"
                   >
-                    {showNew ? <EyeOff size={18} /> : <Eye size={18} />}
+                    {showNew ? <Eye size={18} /> : <EyeOff size={18} />}
                   </button>
                 </div>
               </div>
@@ -149,7 +149,7 @@ export default function ChangePassword() {
                     onClick={() => setShowConfirm(!showConfirm)}
                     className="absolute right-3 top-2.5 text-gray-500 hover:text-blue-600 transition"
                   >
-                    {showConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
+                    {showConfirm ? <Eye size={18} /> : <EyeOff size={18} />}
                   </button>
                 </div>
               </div>

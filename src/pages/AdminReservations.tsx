@@ -17,7 +17,7 @@ export default function ReservationsAdmin() {
     vehicleModel: "",
     status: ""
   });
-  const [viewMode, setViewMode] = useState("cards"); // "cards" ou "table"
+  const [viewMode, setViewMode] = useState("cards");
   
   const [rejectModal, setRejectModal] = useState({
     isOpen: false,
@@ -29,10 +29,8 @@ export default function ReservationsAdmin() {
   const navigate = useNavigate();
   const userId = searchParams.get('user');
   
-  // 🔹 Gestion sécurisée des traductions
   const { t, i18n } = useTranslation();
   
-  // Fonction helper pour les traductions avec fallback
   const translate = (key: string, fallback: string) => {
     try {
       const translation = t(key);
@@ -42,7 +40,6 @@ export default function ReservationsAdmin() {
     }
   };
 
-  // 🔹 Charger les réservations avec les infos du profil associé
   async function fetchReservations() {
     setLoading(true);
     
@@ -53,7 +50,7 @@ export default function ReservationsAdmin() {
         .order("created_at", { ascending: false });
 
       if (reservationsError) {
-        console.error("❌ Erreur réservations:", reservationsError);
+        console.error("Erreur réservations:", reservationsError);
         throw reservationsError;
       }
 
@@ -79,7 +76,7 @@ export default function ReservationsAdmin() {
                 profileInfo = profileData;
               }
             } catch (error) {
-              console.warn(`❌ Impossible de charger le profil pour ${reservation.user_id}:`, error);
+              console.warn(`Impossible de charger le profil pour ${reservation.user_id}`);
             }
           }
 
@@ -114,18 +111,16 @@ export default function ReservationsAdmin() {
       setReservations(reservationsWithProfiles);
 
     } catch (error: any) {
-      console.error("💥 Erreur chargement réservations:", error);
+      console.error("Erreur chargement réservations:", error);
     } finally {
       setLoading(false);
     }
   }
 
-  // 🔥 Calcul du statut métier avec gestion des expirés
   function calculateBusinessStatus(reservation: any) {
     const now = new Date();
     const pickupDateTime = new Date(`${reservation.pickup_date}T${reservation.pickup_time}`);
     
-    // 🔥 NOUVEAU : Gestion des réservations expirées
     if (reservation.status === 'pending' && now > pickupDateTime) {
       return 'expired';
     }
@@ -148,7 +143,6 @@ export default function ReservationsAdmin() {
     return reservation.status;
   }
 
-  // 🔹 Si un userId est passé en paramètre, charger les infos du profil
   const [userProfile, setUserProfile] = useState(null);
   useEffect(() => {
     if (userId) {
@@ -173,7 +167,52 @@ export default function ReservationsAdmin() {
     }
   }
 
-  // 🔹 Fonction pour ouvrir la modal de refus
+  const checkVehicleAvailability = async (
+    carName: string,
+    pickupDate: Date,
+    returnDate: Date,
+    excludeReservationId?: string
+  ): Promise<boolean> => {
+    try {
+      const { data: cars, error: carError } = await supabase
+        .from("cars")
+        .select("quantity")
+        .eq("name", carName);
+
+      if (carError || !cars || cars.length === 0) {
+        return false;
+      }
+
+      const totalQuantity = cars[0].quantity || 1;
+
+      const { data: activeReservations, error: reservationsError } = await supabase
+        .from("reservations")
+        .select("id, pickup_date, return_date")
+        .eq("car_name", carName)
+        .eq("status", "accepted");
+
+      if (reservationsError) {
+        return false;
+      }
+
+      const overlappingReservations = activeReservations?.filter(res => {
+        const resPickup = new Date(res.pickup_date);
+        const resReturn = new Date(res.return_date);
+        return (pickupDate <= resReturn && returnDate >= resPickup);
+      }) || [];
+
+      const finalCount = excludeReservationId 
+        ? overlappingReservations.filter(r => r.id !== excludeReservationId).length
+        : overlappingReservations.length;
+
+      return finalCount < totalQuantity;
+
+    } catch (error) {
+      console.error("Erreur vérification disponibilité:", error);
+      return false;
+    }
+  };
+
   const openRejectModal = (reservation: any) => {
     setRejectModal({
       isOpen: true,
@@ -182,7 +221,6 @@ export default function ReservationsAdmin() {
     });
   };
 
-  // 🔹 Fonction pour fermer la modal de refus
   const closeRejectModal = () => {
     setRejectModal({
       isOpen: false,
@@ -191,7 +229,6 @@ export default function ReservationsAdmin() {
     });
   };
 
-  // 🔹 Fonction pour refuser une réservation avec raison
   const handleRejectWithReason = async () => {
     if (!rejectModal.reservation) return;
     
@@ -203,7 +240,7 @@ export default function ReservationsAdmin() {
       });
       return;
     }
-
+  
     try {
       const reservation = rejectModal.reservation;
       
@@ -214,102 +251,246 @@ export default function ReservationsAdmin() {
           rejection_reason: rejectModal.reason
         })
         .eq("id", reservation.id);
-
-      if (error) throw error;
-
-      // 🔥 CORRECTION : Traduire les valeurs avant envoi
-      const emailData = {
-        reservationId: reservation.id,
-        clientName: reservation.guest_name || reservation.profiles?.full_name || translate('admin_reservations.reservation.unidentified', 'Client non identifié'),
-        clientEmail: reservation.guest_email || reservation.profiles?.email,
-        clientPhone: reservation.guest_phone || reservation.profiles?.telephone || translate('admin_reservations.reservation.not_provided', 'Non renseigné'),
-        carName: reservation.car_name,
-        carCategory: getTranslatedCategory(reservation.car_category),
-        pickupDate: new Date(reservation.pickup_date).toLocaleDateString(i18n.language === 'fr' ? 'fr-FR' : 'en-US'),
-        pickupTime: reservation.pickup_time,
-        returnDate: new Date(reservation.return_date).toLocaleDateString(i18n.language === 'fr' ? 'fr-FR' : 'en-US'),
-        returnTime: reservation.return_time,
-        pickupLocation: getTranslatedLocation(reservation.pickup_location),
-        returnLocation: getTranslatedLocation(reservation.return_location),
-        totalPrice: reservation.total_price,
-        rejectionReason: rejectModal.reason,
-        language: i18n.language
-      };
-
-      await emailJSService.sendReservationRejectedEmail(emailData);
-
-      toast({
-        title: translate('admin_reservations.toast.reservation_rejected', 'Réservation refusée'),
-        description: translate('admin_reservations.toast.client_notified_reason', 'Le client a été notifié avec la raison du refus.'),
-      });
-
+  
+      if (error) {
+        throw new Error(`Impossible de refuser: ${error.message}`);
+      }
+  
+      // 🔥 ENVOYER L'EMAIL DE REFUS MANUEL
+      try {
+        const clientEmail = await getReservationEmail(reservation);
+        
+        if (clientEmail) {
+          const emailData = {
+            reservationId: reservation.id,
+            clientName: reservation.guest_name || reservation.profiles?.full_name || translate('admin_reservations.reservation.unidentified', 'Client non identifié'),
+            clientEmail: clientEmail,
+            clientPhone: reservation.guest_phone || reservation.profiles?.telephone || translate('admin_reservations.reservation.not_provided', 'Non renseigné'),
+            carName: reservation.car_name,
+            carCategory: getTranslatedCategory(reservation.car_category),
+            pickupDate: new Date(reservation.pickup_date).toLocaleDateString(i18n.language === 'fr' ? 'fr-FR' : 'en-US'),
+            pickupTime: reservation.pickup_time || "14:00",
+            returnDate: new Date(reservation.return_date).toLocaleDateString(i18n.language === 'fr' ? 'fr-FR' : 'en-US'),
+            returnTime: reservation.return_time || "14:00",
+            pickupLocation: getTranslatedLocation(reservation.pickup_location),
+            returnLocation: getTranslatedLocation(reservation.return_location),
+            totalPrice: reservation.total_price,
+            rejectionReason: rejectModal.reason, // 🔥 Utiliser la raison personnalisée
+            language: i18n.language
+          };
+  
+          await emailJSService.sendReservationRejectedEmail(emailData);
+        }
+      } catch (emailError) {
+        console.error("Erreur envoi email refus manuel:", emailError);
+        // Ne pas bloquer le processus si l'email échoue
+      }
+  
+      // Fermer la modal et rafraîchir
       closeRejectModal();
-      fetchReservations();
+      await fetchReservations();
+      
+      toast({
+        title: translate('admin_reservations.toast.reservation_rejected', '❌ Réservation refusée'),
+      });
+  
     } catch (error: any) {
-      console.error("Erreur refus réservation:", error);
+      console.error("Erreur refus:", error);
       toast({
         title: translate('admin_reservations.toast.error', 'Erreur'),
-        description: error.message || translate('admin_reservations.toast.update_error', 'Impossible de mettre à jour la réservation.'),
+        description: error.message || translate('admin_reservations.toast.update_error', 'Impossible de refuser la réservation.'),
         variant: "destructive",
       });
     }
   };
 
-  // 🔹 Fonction pour accepter une réservation
+  const AUTO_REFUSE_MESSAGE = t(
+    'admin_reservations.auto_reject_message', 
+    'Votre réservation a été refusée car le véhicule n’est plus disponible pour cette période.'
+  );
+
   const handleAcceptReservation = async (reservation: any) => {
     try {
-      const { error } = await supabase
+      const isAvailable = await checkVehicleAvailability(
+        reservation.car_name,
+        new Date(reservation.pickup_date),
+        new Date(reservation.return_date),
+        reservation.id
+      );
+  
+      const { error: acceptError } = await supabase
         .from("reservations")
-        .update({ status: "accepted" })
+        .update({ 
+          status: "accepted"
+        })
         .eq("id", reservation.id);
-
-      if (error) throw error;
-
-      // 🔥 CORRECTION : Traduire les valeurs avant envoi
-      const emailData = {
-        reservationId: reservation.id,
-        clientName: reservation.guest_name || reservation.profiles?.full_name || translate('admin_reservations.reservation.unidentified', 'Client non identifié'),
-        clientEmail: reservation.guest_email || reservation.profiles?.email,
-        clientPhone: reservation.guest_phone || reservation.profiles?.telephone || translate('admin_reservations.reservation.not_provided', 'Non renseigné'),
-        carName: reservation.car_name,
-        carCategory: getTranslatedCategory(reservation.car_category),
-        pickupDate: new Date(reservation.pickup_date).toLocaleDateString(i18n.language === 'fr' ? 'fr-FR' : 'en-US'),
-        pickupTime: reservation.pickup_time || "14:00",
-        returnDate: new Date(reservation.return_date).toLocaleDateString(i18n.language === 'fr' ? 'fr-FR' : 'en-US'),
-        returnTime: reservation.return_time || "14:00",
-        pickupLocation: getTranslatedLocation(reservation.pickup_location),
-        returnLocation: getTranslatedLocation(reservation.return_location),
-        totalPrice: reservation.total_price,
-        language: i18n.language
-      };
-
-      if (!emailData.clientEmail) {
-        throw new Error("Email du client non trouvé");
+  
+      if (acceptError) {
+        throw acceptError;
       }
-
-      const emailResult = await emailJSService.sendReservationAcceptedEmail(emailData);
+  
+      try {
+        const acceptanceEmailData = {
+          reservationId: reservation.id,
+          clientName: reservation.guest_name || reservation.profiles?.full_name || translate('admin_reservations.reservation.unidentified', 'Client non identifié'),
+          clientEmail: reservation.guest_email || reservation.profiles?.email,
+          clientPhone: reservation.guest_phone || reservation.profiles?.telephone || translate('admin_reservations.reservation.not_provided', 'Non renseigné'),
+          carName: reservation.car_name,
+          carCategory: getTranslatedCategory(reservation.car_category),
+          pickupDate: new Date(reservation.pickup_date).toLocaleDateString(i18n.language === 'fr' ? 'fr-FR' : 'en-US'),
+          pickupTime: reservation.pickup_time || "14:00",
+          returnDate: new Date(reservation.return_date).toLocaleDateString(i18n.language === 'fr' ? 'fr-FR' : 'en-US'),
+          returnTime: reservation.return_time || "14:00",
+          pickupLocation: getTranslatedLocation(reservation.pickup_location),
+          returnLocation: getTranslatedLocation(reservation.return_location),
+          totalPrice: reservation.total_price,
+          language: i18n.language
+        };
+  
+        if (acceptanceEmailData.clientEmail) {
+          await emailJSService.sendReservationAcceptedEmail(acceptanceEmailData);
+        }
+      } catch (emailError) {
+        console.error("Erreur envoi email acceptation:", emailError);
+      }
+  
+      const { data: allPendingReservations, error: pendingError } = await supabase
+        .from("reservations")
+        .select(`
+          id, 
+          car_name, 
+          pickup_date, 
+          return_date, 
+          guest_name, 
+          guest_email, 
+          guest_phone, 
+          car_category, 
+          pickup_time, 
+          return_time, 
+          pickup_location, 
+          return_location, 
+          total_price,
+          user_id
+        `)
+        .eq("car_name", reservation.car_name)
+        .eq("status", "pending")
+        .neq("id", reservation.id);
+  
+      let refusedCount = 0;
+      let emailSentCount = 0;
       
-      if (!emailResult.success) {
-        throw new Error("Échec de l'envoi de l'email");
+      if (allPendingReservations && allPendingReservations.length > 0) {
+        const reservationsToRefuse = allPendingReservations.filter(req => {
+          const reqPickup = new Date(req.pickup_date);
+          const reqReturn = new Date(req.return_date);
+          const resPickup = new Date(reservation.pickup_date);
+          const resReturn = new Date(reservation.return_date);
+          
+          return (reqPickup <= resReturn && reqReturn >= resPickup);
+        });
+  
+        for (const req of reservationsToRefuse) {
+          try {
+            const { error: rejectError } = await supabase
+              .from("reservations")
+              .update({
+                status: "refused",
+                rejection_reason: AUTO_REFUSE_MESSAGE
+              })
+              .eq("id", req.id);
+            
+            if (!rejectError) {
+              refusedCount++;
+              
+              const clientEmail = await getReservationEmail(req);
+              
+              if (clientEmail) {
+                try {
+                  const emailData = {
+                    reservationId: req.id,
+                    clientName: req.guest_name || translate('admin_reservations.reservation.unidentified', 'Client non identifié'),
+                    clientEmail: clientEmail,
+                    clientPhone: req.guest_phone || translate('admin_reservations.reservation.not_provided', 'Non renseigné'),
+                    carName: req.car_name,
+                    carCategory: getTranslatedCategory(req.car_category),
+                    pickupDate: new Date(req.pickup_date).toLocaleDateString(i18n.language === 'fr' ? 'fr-FR' : 'en-US'),
+                    pickupTime: req.pickup_time || "14:00",
+                    returnDate: new Date(req.return_date).toLocaleDateString(i18n.language === 'fr' ? 'fr-FR' : 'en-US'),
+                    returnTime: req.return_time || "14:00",
+                    pickupLocation: getTranslatedLocation(req.pickup_location),
+                    returnLocation: getTranslatedLocation(req.return_location),
+                    totalPrice: req.total_price,
+                    rejectionReason: AUTO_REFUSE_MESSAGE,
+                    language: i18n.language
+                  };
+  
+                  const emailResult = await emailJSService.sendReservationRejectedEmail(emailData);
+                  
+                  if (emailResult.success) {
+                    emailSentCount++;
+                  }
+                } catch (emailError) {
+                  console.error(`Erreur email refus ${req.id}:`, emailError);
+                }
+              }
+            }
+          } catch (error) {
+            console.error(`Erreur refus ${req.id}:`, error);
+          }
+        }
+      }
+  
+      await fetchReservations();
+      
+      // 🔥 NOUVEAU : Toasts simplifiés et plus courts
+      let title, description;
+      
+      if (refusedCount > 0) {
+        title = t('admin_reservations.toast.accept_with_auto_reject', '✅ Acceptée + {{count}} refus auto', { count: refusedCount });
+      } else {
+        title = t('admin_reservations.toast.accept_success', '✅ Réservation acceptée');
+        description = '';
       }
 
       toast({
-        title: translate('admin_reservations.toast.reservation_accepted', 'Réservation acceptée'),
-        description: translate('admin_reservations.toast.client_notified', 'Le client a été notifié par email.'),
+        title,
+        description,
       });
 
-      fetchReservations();
     } catch (error: any) {
-      console.error("❌ Erreur acceptation réservation:", error);
+      console.error("Erreur acceptation réservation:", error);
       toast({
-        title: translate('admin_reservations.toast.error', 'Erreur'),
-        description: error.message || translate('admin_reservations.toast.update_error', 'Impossible de mettre à jour la réservation.'),
+        title: t('admin_reservations.toast.error', 'Erreur'),
+        description: t('admin_reservations.toast.update_error', 'Impossible de traiter la réservation.'),
         variant: "destructive",
       });
     }
   };
 
-  // Fonction pour traduire les lieux
+  const getReservationEmail = async (reservation: any): Promise<string | null> => {
+    if (reservation.guest_email) {
+      return reservation.guest_email;
+    }
+    
+    if (reservation.user_id) {
+      try {
+        const { data: profile, error } = await supabase
+          .from("profiles")
+          .select("email")
+          .eq("id", reservation.user_id)
+          .single();
+        
+        if (!error && profile?.email) {
+          return profile.email;
+        }
+      } catch (error) {
+        console.error("Erreur recherche profil:", error);
+      }
+    }
+    
+    return null;
+  };
+
   const getTranslatedLocation = (locationValue: string) => {
     const airportKey = locationValue.replace('airport_', '');
     const airportTranslation = t(`airports.${airportKey}`);
@@ -326,27 +507,31 @@ export default function ReservationsAdmin() {
     return locationValue;
   };
 
-  // Fonction pour traduire les catégories
   const getTranslatedCategory = (category: string) => {
+    // Essayer d'abord les catégories spécifiques admin
+    const adminCategoryTranslation = t(`admin_reservations.categories.${category}`);
+    if (adminCategoryTranslation && !adminCategoryTranslation.startsWith('admin_reservations.categories.')) {
+      return adminCategoryTranslation;
+    }
+    
+    // Fallback aux catégories générales
     const categoryTranslation = t(`offers_page.categories.${category}`);
     if (categoryTranslation && !categoryTranslation.startsWith('offers_page.categories.')) {
       return categoryTranslation;
     }
     
-    const adminCategoryTranslation = t(`admin_vehicles.categories.${category}`);
-    if (adminCategoryTranslation && !adminCategoryTranslation.startsWith('admin_vehicles.categories.')) {
-      return adminCategoryTranslation;
+    const adminVehiclesCategoryTranslation = t(`admin_vehicles.categories.${category}`);
+    if (adminVehiclesCategoryTranslation && !adminVehiclesCategoryTranslation.startsWith('admin_vehicles.categories.')) {
+      return adminVehiclesCategoryTranslation;
     }
     
     return category;
   };
 
-  // 🔹 Rafraîchissement périodique des statuts
   useEffect(() => {
     fetchReservations();
   }, []);
 
-  // 🔹 Fonction pour compter les réservations par statut
   const getReservationsCountByStatus = (status: string) => {
     let filteredReservations = reservations;
     
@@ -358,33 +543,34 @@ export default function ReservationsAdmin() {
       return filteredReservations.filter(r => r.business_status === status).length;
     }
     
-    // 🔥 CORRECTION : Pour "pending", on exclut les expirés
     if (status === 'pending') {
       return filteredReservations.filter(r => r.status === 'pending' && r.business_status !== 'expired').length;
+    }
+    
+    // Ajouter le cas pour les réservations annulées
+    if (status === 'cancelled') {
+      return filteredReservations.filter(r => r.status === 'cancelled').length;
     }
     
     return filteredReservations.filter(r => r.status === status).length;
   };
 
-  // 🔹 Fonction de recherche et filtrage
   const filteredReservations = reservations.filter((reservation) => {
     let displayStatus;
     
-    // 🔥 CORRECTION : Logique de filtrage par onglet
     if (activeTab === 'expired') {
-      // Onglet Expiré : uniquement les réservations avec business_status = 'expired'
       displayStatus = reservation.business_status;
       if (displayStatus !== 'expired') return false;
     } else if (['active', 'completed'].includes(activeTab)) {
-      // Onglets Actives et Terminées : basé sur business_status
       displayStatus = reservation.business_status;
       if (displayStatus !== activeTab) return false;
+    } else if (activeTab === 'cancelled') {
+      displayStatus = reservation.status;
+      if (displayStatus !== 'cancelled') return false;
     } else {
-      // Onglets En attente, Acceptées, Refusées : basé sur le statut original
       displayStatus = reservation.status;
       if (displayStatus !== activeTab) return false;
       
-      // 🔥 CORRECTION IMPORTANTE : Exclure les expirés de l'onglet "En attente"
       if (activeTab === 'pending' && reservation.business_status === 'expired') {
         return false;
       }
@@ -436,7 +622,6 @@ export default function ReservationsAdmin() {
     return true;
   });
 
-  // 🔹 Réinitialiser les filtres
   const clearFilters = () => {
     setFilters({
       date: "",
@@ -449,13 +634,12 @@ export default function ReservationsAdmin() {
     }
   };
 
-  // 🔹 Onglets avec compteurs adaptés (incluant l'onglet expiré avec icônes différentes)
   const tabs = [
     { 
       key: "pending", 
       label: translate('admin_reservations.status.pending', 'En attente'), 
       count: getReservationsCountByStatus("pending"),
-      icon: "⏳" // Sablier pour en attente
+      icon: "⏳"
     },
     { 
       key: "accepted", 
@@ -487,9 +671,14 @@ export default function ReservationsAdmin() {
       count: getReservationsCountByStatus("refused"),
       icon: "❌"
     },
+    { 
+      key: "cancelled", 
+      label: translate('admin_reservations.status.cancelled', 'Annulées'), 
+      count: getReservationsCountByStatus("cancelled"),
+      icon: "🚫"
+    },
   ];
 
-  // 🔹 Formater la date selon la langue
   const formatDate = (dateString: string) => {
     if (!dateString) return translate('admin_reservations.reservation.not_provided', 'Non spécifié');
     return new Date(dateString).toLocaleDateString(i18n.language === 'fr' ? 'fr-FR' : 'en-US', {
@@ -499,7 +688,6 @@ export default function ReservationsAdmin() {
     });
   };
 
-  // 🔹 Formater le prix
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat(i18n.language === 'fr' ? 'fr-FR' : 'en-US', {
       style: 'currency',
@@ -507,7 +695,6 @@ export default function ReservationsAdmin() {
     }).format(price);
   };
 
-  // 🔹 Formater la date et heure de création
   const formatDateTime = (dateString: string) => {
     if (!dateString) return translate('admin_reservations.reservation.not_provided', 'Non spécifié');
     return new Date(dateString).toLocaleDateString(i18n.language === 'fr' ? 'fr-FR' : 'en-US', {
@@ -519,7 +706,6 @@ export default function ReservationsAdmin() {
     });
   };
 
-  // Fonction utilitaire pour traduire les lieux
   const translateLocation = (location: string) => {
     if (!location) return location;
     
@@ -542,10 +728,17 @@ export default function ReservationsAdmin() {
     return location;
   };
 
-  // Fonction utilitaire pour traduire les catégories
   const translateCategory = (category: string) => {
     if (!category) return category;
     
+    // Essayer d'abord les catégories spécifiques admin
+    const adminCategoryKey = `admin_reservations.categories.${category}`;
+    const adminCategoryTrans = t(adminCategoryKey);
+    if (adminCategoryTrans !== adminCategoryKey) {
+      return adminCategoryTrans;
+    }
+    
+    // Fallback aux autres namespaces
     const categoryKey = `admin_vehicles.categories.${category}`;
     const categoryTrans = t(categoryKey);
     if (categoryTrans !== categoryKey) {
@@ -563,7 +756,6 @@ export default function ReservationsAdmin() {
 
   const hasActiveFilters = searchTerm || filters.date || filters.vehicleModel || (filters.status && filters.status !== "all") || userId;
 
-  // Composant pour la vue tableau
   const TableView = ({ reservations }) => (
     <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
       <div className="overflow-x-auto">
@@ -571,32 +763,31 @@ export default function ReservationsAdmin() {
           <thead className="bg-gray-50 border-b">
             <tr>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Client / Véhicule
+                {translate('admin_reservations.reservation.vehicle', 'Véhicule')} / {translate('admin_reservations.reservation.details', 'Client')}
               </th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Période
+                {translate('admin_reservations.reservation.pickup', 'Période')}
               </th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Lieux
+                {translate('admin_reservations.reservation.location', 'Lieux')}
               </th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Contact
+                {translate('admin_reservations.reservation.contact', 'Contact')}
               </th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Prix
+                {translate('admin_reservations.reservation.total_price', 'Prix')}
               </th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Statut
+                {translate('admin_reservations.reservation.status', 'Statut')}
               </th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Actions
+                {translate('admin_reservations.actions.title', 'Actions')}
               </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
             {reservations.map((reservation) => (
               <tr key={reservation.id} className="hover:bg-gray-50">
-                {/* Client et Véhicule */}
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-3">
                     {reservation.car_image ? (
@@ -626,7 +817,6 @@ export default function ReservationsAdmin() {
                   </div>
                 </td>
 
-                {/* Période */}
                 <td className="px-4 py-3">
                   <div className="text-sm text-gray-900">
                     {formatDate(reservation.pickup_date)}
@@ -639,7 +829,6 @@ export default function ReservationsAdmin() {
                   </div>
                 </td>
 
-                {/* Lieux */}
                 <td className="px-4 py-3">
                   <div className="text-sm text-gray-900">
                     {translateLocation(reservation.pickup_location)}
@@ -649,7 +838,6 @@ export default function ReservationsAdmin() {
                   </div>
                 </td>
 
-                {/* Contact */}
                 <td className="px-4 py-3">
                   <div className="text-sm text-gray-900 truncate">
                     {reservation.guest_email || reservation.profiles?.email}
@@ -659,46 +847,47 @@ export default function ReservationsAdmin() {
                   </div>
                 </td>
 
-                {/* Prix */}
                 <td className="px-4 py-3">
                   <div className="text-sm font-semibold text-gray-900">
                     {formatPrice(reservation.total_price)}
                   </div>
                 </td>
 
-                {/* Statut */}
                 <td className="px-4 py-3">
-                  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                    reservation.business_status === "pending" 
-                      ? "bg-yellow-100 text-yellow-800"
-                      : reservation.business_status === "accepted"
-                      ? "bg-blue-100 text-blue-800"
-                      : reservation.business_status === "active"
-                      ? "bg-green-100 text-green-800"
-                      : reservation.business_status === "completed"
-                      ? "bg-gray-100 text-gray-800"
-                      : reservation.business_status === "expired"
-                      ? "bg-orange-100 text-orange-800"
-                      : "bg-red-100 text-red-800"
-                  }`}>
-                    {reservation.business_status === "pending" && "⏳"}
-                    {reservation.business_status === "accepted" && "✅"}
-                    {reservation.business_status === "active" && "🚗"}
-                    {reservation.business_status === "completed" && "🏁"}
-                    {reservation.business_status === "expired" && "💀"}
-                    {reservation.business_status === "refused" && "❌"}
-                    <span className="ml-1 hidden sm:inline">
-                      {reservation.business_status === "pending" && translate('admin_reservations.status.pending', 'En attente')}
-                      {reservation.business_status === "accepted" && translate('admin_reservations.status.accepted', 'Acceptée')}
-                      {reservation.business_status === "active" && translate('admin_reservations.status.active', 'Active')}
-                      {reservation.business_status === "completed" && translate('admin_reservations.status.completed', 'Terminée')}
-                      {reservation.business_status === "expired" && translate('admin_reservations.status.expired', 'Expirée')}
-                      {reservation.business_status === "refused" && translate('admin_reservations.status.refused', 'Refusée')}
-                    </span>
+                <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                  reservation.business_status === "pending" 
+                    ? "bg-yellow-100 text-yellow-800"
+                    : reservation.business_status === "accepted"
+                    ? "bg-blue-100 text-blue-800"
+                    : reservation.business_status === "active"
+                    ? "bg-green-100 text-green-800"
+                    : reservation.business_status === "completed"
+                    ? "bg-gray-100 text-gray-800"
+                    : reservation.business_status === "expired"
+                    ? "bg-orange-100 text-orange-800"
+                    : reservation.status === "cancelled"
+                    ? "bg-purple-100 text-purple-800"
+                    : "bg-red-100 text-red-800"
+                }`}>
+                  {reservation.business_status === "pending" && "⏳"}
+                  {reservation.business_status === "accepted" && "✅"}
+                  {reservation.business_status === "active" && "🚗"}
+                  {reservation.business_status === "completed" && "🏁"}
+                  {reservation.business_status === "expired" && "💀"}
+                  {reservation.status === "cancelled" && "🚫"}
+                  {reservation.business_status === "refused" && "❌"}
+                  <span className="ml-1 hidden sm:inline">
+                    {reservation.business_status === "pending" && translate('admin_reservations.status.pending', 'En attente')}
+                    {reservation.business_status === "accepted" && translate('admin_reservations.status.accepted', 'Acceptée')}
+                    {reservation.business_status === "active" && translate('admin_reservations.status.active', 'Active')}
+                    {reservation.business_status === "completed" && translate('admin_reservations.status.completed', 'Terminée')}
+                    {reservation.business_status === "expired" && translate('admin_reservations.status.expired', 'Expirée')}
+                    {reservation.status === "cancelled" && translate('admin_reservations.status.cancelled', 'Annulée')}
+                    {reservation.business_status === "refused" && translate('admin_reservations.status.refused', 'Refusée')}
                   </span>
+                </span>
                 </td>
 
-                {/* Actions */}
                 <td className="px-4 py-3">
                   {reservation.status === "pending" && reservation.business_status !== "expired" && (
                     <div className="flex gap-2">
@@ -749,7 +938,6 @@ export default function ReservationsAdmin() {
   return (
     <div className="min-h-screen bg-gray-50 p-4 sm:p-6">
       <div className="max-w-7xl mx-auto">
-        {/* En-tête avec bouton retour */}
         <div className="mb-6">
           <div className="flex items-center gap-4 mb-4">
             {userId && (
@@ -793,11 +981,9 @@ export default function ReservationsAdmin() {
           </div>
         </div>
 
-        {/* 🔹 Barre de recherche et filtres */}
         {!userId && (
           <div className="bg-white rounded-lg shadow-sm border p-4 sm:p-6 mb-6">
             <div className="flex flex-col lg:flex-row gap-3">
-              {/* Barre de recherche principale */}
               <div className="flex-1 relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                 <input
@@ -809,7 +995,6 @@ export default function ReservationsAdmin() {
                 />
               </div>
 
-              {/* Bouton filtres */}
               <button
                 onClick={() => setShowFilters(!showFilters)}
                 className={`flex items-center gap-2 px-3 py-2 sm:px-4 sm:py-3 border rounded-lg transition-colors text-sm ${
@@ -827,7 +1012,6 @@ export default function ReservationsAdmin() {
                 )}
               </button>
 
-              {/* Bouton réinitialiser */}
               {hasActiveFilters && (
                 <button
                   onClick={clearFilters}
@@ -840,12 +1024,9 @@ export default function ReservationsAdmin() {
               )}
             </div>
 
-            {/* Panneau des filtres avancés */}
             {showFilters && (
               <div className="mt-4 pt-4 border-t">
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 w-full">
-                  
-                  {/* Filtre par date */}
                   <div className="w-full">
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       {translate('admin_reservations.filters.date', 'Date spécifique')}
@@ -861,7 +1042,6 @@ export default function ReservationsAdmin() {
                     <p className="text-xs text-gray-500 mt-1">{translate('admin_reservations.filters.date_help', 'Date de départ, retour ou création')}</p>
                   </div>
 
-                  {/* Filtre par modèle de véhicule */}
                   <div className="w-full">
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       {translate('admin_reservations.filters.vehicle_model', 'Modèle de véhicule')}
@@ -875,7 +1055,6 @@ export default function ReservationsAdmin() {
                     />
                   </div>
 
-                  {/* Filtre par statut */}
                   <div className="w-full">
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       {translate('admin_reservations.filters.status', 'Statut')}
@@ -889,6 +1068,7 @@ export default function ReservationsAdmin() {
                       <option value="pending">{translate('admin_reservations.status.pending', 'En attente')}</option>
                       <option value="accepted">{translate('admin_reservations.status.accepted', 'Acceptée')}</option>
                       <option value="refused">{translate('admin_reservations.status.refused', 'Refusée')}</option>
+                      <option value="cancelled">{translate('admin_reservations.status.cancelled', 'Annulée')}</option>
                       <option value="active">{translate('admin_reservations.status.active', 'Active')}</option>
                       <option value="completed">{translate('admin_reservations.status.completed', 'Terminée')}</option>
                       <option value="expired">{translate('admin_reservations.status.expired', 'Expirée')}</option>
@@ -900,9 +1080,7 @@ export default function ReservationsAdmin() {
           </div>
         )}
 
-        {/* 🔹 Section avec onglets et switch de mode d'affichage */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-          {/* 🔹 Onglets avec compteurs adaptés (élargis pour remplir l'espace) */}
           <div className="bg-white rounded-lg shadow-sm border overflow-x-auto flex-1">
             <div className="flex min-w-max w-full">
               {tabs.map((tab) => (
@@ -929,7 +1107,6 @@ export default function ReservationsAdmin() {
             </div>
           </div>
 
-          {/* 🔹 Switch de mode d'affichage déplacé à droite */}
           <div className="flex items-center gap-2 bg-white rounded-lg border border-gray-300 p-1 flex-shrink-0">
             <button
               onClick={() => setViewMode("cards")}
@@ -956,8 +1133,6 @@ export default function ReservationsAdmin() {
           </div>
         </div>
 
-
-        {/* 🔹 Affichage des réservations selon le mode */}
         {filteredReservations.length === 0 ? (
           <div className="bg-white rounded-lg shadow-sm border p-8 text-center">
             <div className="text-gray-400 text-4xl sm:text-6xl mb-4">🔍</div>
@@ -988,15 +1163,12 @@ export default function ReservationsAdmin() {
             )}
           </div>
         ) : viewMode === "cards" ? (
-          // Vue cartes existante
           <div className="space-y-4">
             {filteredReservations.map((reservation) => (
               <div key={reservation.id} className="bg-white rounded-lg shadow-sm border overflow-hidden">
                 <div className="p-4 sm:p-6">
-                  {/* En-tête de la réservation */}
                   <div className="flex flex-col gap-4 mb-4">
                     <div className="flex items-start gap-3">
-                      {/* Image du véhicule */}
                       <div className="flex-shrink-0">
                         {reservation.car_image ? (
                           <img
@@ -1011,7 +1183,6 @@ export default function ReservationsAdmin() {
                         )}
                       </div>
                       
-                      {/* Informations véhicule et client */}
                       <div className="flex-1 min-w-0">
                         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
                           <div className="flex-1 min-w-0">
@@ -1020,7 +1191,6 @@ export default function ReservationsAdmin() {
                             </h3>
                             <p className="text-gray-600 text-sm mb-2">{translateCategory(reservation.car_category)}</p>
                             
-                            {/* Informations client compact */}
                             <div className="flex items-center gap-2 text-sm text-gray-600">
                               <User className="h-4 w-4 text-gray-400" />
                               <span className="truncate">
@@ -1032,28 +1202,30 @@ export default function ReservationsAdmin() {
                             </div>
                           </div>
                           
-                          {/* Statut et prix */}
                           <div className="flex items-center justify-between sm:flex-col sm:items-end gap-2">
-                            <div className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                              reservation.business_status === "pending" 
-                                ? "bg-yellow-100 text-yellow-800"
-                                : reservation.business_status === "accepted"
-                                ? "bg-blue-100 text-blue-800"
-                                : reservation.business_status === "active"
-                                ? "bg-green-100 text-green-800"
-                                : reservation.business_status === "completed"
-                                ? "bg-gray-100 text-gray-800"
-                                : reservation.business_status === "expired"
-                                ? "bg-orange-100 text-orange-800"
-                                : "bg-red-100 text-red-800"
-                            }`}>
-                              {reservation.business_status === "pending" && "⏳ " + translate('admin_reservations.status.pending', 'En attente')}
-                              {reservation.business_status === "accepted" && "✅ " + translate('admin_reservations.status.accepted', 'Acceptée')}
-                              {reservation.business_status === "active" && "🚗 " + translate('admin_reservations.status.active', 'Active')}
-                              {reservation.business_status === "completed" && "🏁 " + translate('admin_reservations.status.completed', 'Terminée')}
-                              {reservation.business_status === "expired" && "💀 " + translate('admin_reservations.status.expired', 'Expirée')}
-                              {reservation.business_status === "refused" && "❌ " + translate('admin_reservations.status.refused', 'Refusée')}
-                            </div>
+                          <div className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                            reservation.business_status === "pending" 
+                              ? "bg-yellow-100 text-yellow-800"
+                              : reservation.business_status === "accepted"
+                              ? "bg-blue-100 text-blue-800"
+                              : reservation.business_status === "active"
+                              ? "bg-green-100 text-green-800"
+                              : reservation.business_status === "completed"
+                              ? "bg-gray-100 text-gray-800"
+                              : reservation.business_status === "expired"
+                              ? "bg-orange-100 text-orange-800"
+                              : reservation.status === "cancelled"
+                              ? "bg-purple-100 text-purple-800"
+                              : "bg-red-100 text-red-800"
+                          }`}>
+                            {reservation.business_status === "pending" && "⏳ " + translate('admin_reservations.status.pending', 'En attente')}
+                            {reservation.business_status === "accepted" && "✅ " + translate('admin_reservations.status.accepted', 'Acceptée')}
+                            {reservation.business_status === "active" && "🚗 " + translate('admin_reservations.status.active', 'Active')}
+                            {reservation.business_status === "completed" && "🏁 " + translate('admin_reservations.status.completed', 'Terminée')}
+                            {reservation.business_status === "expired" && "💀 " + translate('admin_reservations.status.expired', 'Expirée')}
+                            {reservation.status === "cancelled" && "🚫 " + translate('admin_reservations.status.cancelled', 'Annulée')}
+                            {reservation.business_status === "refused" && "❌ " + translate('admin_reservations.status.refused', 'Refusée')}
+                          </div>
                             <div className="text-base sm:text-lg font-bold text-gray-900">
                               {formatPrice(reservation.total_price)}
                             </div>
@@ -1063,9 +1235,7 @@ export default function ReservationsAdmin() {
                     </div>
                   </div>
 
-                  {/* Détails de la réservation */}
                   <div className="grid grid-cols-1 gap-3 py-4 border-t border-b">
-                    {/* Lieux et dates */}
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <div className="flex items-center gap-1 text-sm font-medium text-gray-900 mb-1">
@@ -1090,7 +1260,6 @@ export default function ReservationsAdmin() {
                       </div>
                     </div>
 
-                    {/* Contact et date réservation */}
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <div className="flex items-center gap-1 text-sm font-medium text-gray-900 mb-1">
@@ -1113,7 +1282,6 @@ export default function ReservationsAdmin() {
                       </div>
                     </div>
 
-                    {/* Affichage de la raison de refus si elle existe */}
                     {reservation.rejection_reason && (
                       <div className="col-span-2">
                         <div className="flex items-center gap-1 text-sm font-medium text-red-900 mb-1">
@@ -1125,7 +1293,6 @@ export default function ReservationsAdmin() {
                       </div>
                     )}
 
-                    {/* 🔥 NOUVEAU : Message d'expiration */}
                     {reservation.business_status === "expired" && (
                       <div className="col-span-2">
                         <div className="flex items-center gap-1 text-sm font-medium text-orange-900 mb-1">
@@ -1138,7 +1305,6 @@ export default function ReservationsAdmin() {
                     )}
                   </div>
 
-                  {/* Actions */}
                   <div className="flex flex-col sm:flex-row sm:justify-end sm:items-end gap-3 pt-4 w-full">
                     {reservation.status === "pending" && reservation.business_status !== "expired" && (
                       <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto justify-end">
@@ -1173,18 +1339,15 @@ export default function ReservationsAdmin() {
                       </div>
                     )}
                   </div>
-
                 </div>
               </div>
             ))}
           </div>
         ) : (
-          // Vue tableau
           <TableView reservations={filteredReservations} />
         )}
       </div>
 
-      {/* 🔹 Modal de refus avec raison */}
       {rejectModal.isOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg max-w-md w-full p-6">

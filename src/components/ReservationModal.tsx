@@ -275,7 +275,7 @@ export const ReservationModal = ({
           ? getTranslatedLocation(searchData.pickupLocation) 
           : getTranslatedLocation(searchData.returnLocation || searchData.pickupLocation),
         totalPrice,
-        language: currentLanguage // ← ENVOYER LA LANGUE
+        language: currentLanguage
       });
 
       toast({

@@ -43,12 +43,14 @@ export const emailJSService = {
   }) => {
     try {
       console.log('🔔 Tentative envoi email nouvelle réservation');
-
+  
+      const language = data.language || 'fr';
+      
       const templateParams = {
         reservation_id: data.reservationId,
         client_name: data.clientName,
         client_email: data.clientEmail,
-        client_phone: data.clientPhone || 'Non renseigné',
+        client_phone: data.clientPhone || (language === 'fr' ? 'Non renseigné' : 'Not provided'),
         car_name: data.carName,
         car_category: data.carCategory,
         pickup_date: data.pickupDate,
@@ -57,19 +59,22 @@ export const emailJSService = {
         return_time: data.returnTime,
         pickup_location: data.pickupLocation,
         return_location: data.returnLocation,
-        total_price: `${data.totalPrice} Dhs`,
-        current_date: new Date().toLocaleDateString('fr-FR'),
+        total_price: `${data.totalPrice} ${language === 'fr' ? 'Dhs' : 'MAD'}`,
+        current_date: new Date().toLocaleDateString(language === 'fr' ? 'fr-FR' : 'en-US'),
+        // 🔥 AJOUT DES VARIABLES CONDITIONNELLES POUR LE TEMPLATE
+        is_french: language === 'fr',
+        is_english: language === 'en'
       };
-
+  
       console.log('📤 Paramètres nouvelle réservation:', templateParams);
-
+  
       const result = await emailjs.send(
         EMAILJS_CONFIG_RESERVATIONS.SERVICE_ID,
         EMAILJS_CONFIG_RESERVATIONS.TEMPLATES.NEW_RESERVATION_ADMIN,
         templateParams,
         EMAILJS_CONFIG_RESERVATIONS.PUBLIC_KEY
       );
-
+  
       console.log('✅ Email admin nouvelle réservation envoyé');
       return { success: true, result };
     } catch (error) {
@@ -365,8 +370,10 @@ export const emailJSService = {
     language?: string;
   }) => {
     try {
-      console.log('🔔 Tentative envoi email acceptation réservation');
-
+      console.log('🔔 [ACCEPTED] Tentative envoi email acceptation réservation');
+      console.log('📧 [ACCEPTED] Email destination:', data.clientEmail);
+      console.log('🆔 [ACCEPTED] Réservation ID:', data.reservationId);
+  
       const language = data.language || 'fr';
       
       const templateParams = {
@@ -391,23 +398,29 @@ export const emailJSService = {
         reservation_status: 'accepted',
         rejection_reason: ''
       };
-
-      console.log('📤 Paramètres acceptation:', templateParams);
-
+  
+      console.log('📤 [ACCEPTED] Paramètres complets:', templateParams);
+  
       const result = await emailjs.send(
-        EMAILJS_CONFIG_RESERVATIONS.SERVICE_ID, // CORRECTION : utiliser la bonne config
+        EMAILJS_CONFIG_RESERVATIONS.SERVICE_ID,
         EMAILJS_CONFIG_RESERVATIONS.TEMPLATES.RESERVATION_STATUS,
         {
           ...templateParams,
           to_email: data.clientEmail
         },
-        EMAILJS_CONFIG_RESERVATIONS.PUBLIC_KEY // CORRECTION : utiliser la bonne config
+        EMAILJS_CONFIG_RESERVATIONS.PUBLIC_KEY
       );
-
-      console.log('✅ Email acceptation envoyé avec succès');
+  
+      console.log('✅ [ACCEPTED] Email acceptation envoyé avec succès');
+      console.log('📨 [ACCEPTED] Résultat EmailJS:', result);
       return { success: true, result };
-    } catch (error) {
-      console.error('❌ Erreur envoi email acceptation:', error);
+    } catch (error: any) {
+      console.error('❌ [ACCEPTED] Erreur détaillée envoi email acceptation:', {
+        status: error?.status,
+        text: error?.text,
+        message: error?.message,
+        details: error
+      });
       return { success: false, error };
     }
   },
@@ -430,8 +443,10 @@ export const emailJSService = {
     language?: string;
   }) => {
     try {
-      console.log('🔔 Tentative envoi email refus réservation');
-
+      console.log('🔔 [REJECTED] Tentative envoi email refus réservation');
+      console.log('📧 [REJECTED] Email destination:', data.clientEmail);
+      console.log('🆔 [REJECTED] Réservation ID:', data.reservationId);
+  
       const language = data.language || 'fr';
       
       const templateParams = {
@@ -456,23 +471,29 @@ export const emailJSService = {
         reservation_status: 'rejected',
         rejection_reason: data.rejectionReason || (language === 'fr' ? 'Raison non spécifiée' : 'Reason not specified')
       };
-
-      console.log('📤 Paramètres refus:', templateParams);
-
+  
+      console.log('📤 [REJECTED] Paramètres complets:', templateParams);
+  
       const result = await emailjs.send(
-        EMAILJS_CONFIG_RESERVATIONS.SERVICE_ID, // CORRECTION : utiliser la bonne config
+        EMAILJS_CONFIG_RESERVATIONS.SERVICE_ID,
         EMAILJS_CONFIG_RESERVATIONS.TEMPLATES.RESERVATION_STATUS,
         {
           ...templateParams,
           to_email: data.clientEmail
         },
-        EMAILJS_CONFIG_RESERVATIONS.PUBLIC_KEY // CORRECTION : utiliser la bonne config
+        EMAILJS_CONFIG_RESERVATIONS.PUBLIC_KEY
       );
-
-      console.log('✅ Email refus envoyé avec succès');
+  
+      console.log('✅ [REJECTED] Email refus envoyé avec succès');
+      console.log('📨 [REJECTED] Résultat EmailJS:', result);
       return { success: true, result };
-    } catch (error) {
-      console.error('❌ Erreur envoi email refus:', error);
+    } catch (error: any) {
+      console.error('❌ [REJECTED] Erreur détaillée envoi email refus:', {
+        status: error?.status,
+        text: error?.text,
+        message: error?.message,
+        details: error
+      });
       return { success: false, error };
     }
   }

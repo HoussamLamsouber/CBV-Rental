@@ -121,7 +121,8 @@
             "active": "Actives",
             "completed": "Terminées",
             "refused": "Refusées",
-            "expired": "Expirées"
+            "expired": "Expirées",
+            "cancelled": "Annulées"
         },
         
         "actions": {
@@ -176,12 +177,11 @@
         },
         
         "toast": {
-            "reservation_accepted": "Réservation acceptée",
-            "client_notified": "Le client a été notifié par email.",
-            "reservation_rejected": "Réservation refusée",
-            "client_notified_reason": "Le client a été notifié avec la raison du refus.",
+            "reservation_accepted": "✅ Réservation acceptée",
+            "accepted_with_auto_reject": "✅ Acceptée + {{count}} refus auto",
+            "reservation_rejected": "❌ Réservation refusée",
             "error": "Erreur",
-            "update_error": "Impossible de mettre à jour la réservation."
+            "update_error": "Impossible de traiter la réservation."
         },
 
         "categories": {
@@ -194,7 +194,9 @@
         "view_mode": {
             "cards_tooltip": "Vue cartes",
             "table_tooltip": "Vue tableau"
-        }
+        },
+
+        "auto_reject_message": "Votre réservation a été refusée car le véhicule n'est plus disponible pour cette période."
     },
 
     "admin_vehicle_detail": {

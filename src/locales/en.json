@@ -96,7 +96,7 @@
 
     "admin_reservations": {
         "title": "Reservation Management",
-        "total_reservations": "total reservation(s)",
+        "total_reservations": "reservation(s) total",
         "client_reservations": "reservation(s) for this client",
         "results": "result(s)",
         
@@ -112,7 +112,7 @@
             "vehicle_model": "Vehicle model",
             "vehicle_placeholder": "Ex: Tesla, SUV, BMW...",
             "status": "Status",
-            "all_status": "All status"
+            "all_status": "All statuses"
         },
         
         "status": {
@@ -121,19 +121,21 @@
             "active": "Active",
             "completed": "Completed",
             "refused": "Refused",
-            "expired": "Expired"
+            "expired": "Expired",
+            "cancelled": "Cancelled"
         },
         
         "actions": {
             "back": "Back",
             "back_users": "Back to users",
-            "see_all": "See all reservations",
+            "see_all": "View all reservations",
             "accept": "Accept",
-            "reject": "Reject"
+            "reject": "Reject",
+            "title": "Actions"
         },
         
         "reservation": {
-            "details": "Reservation Details",
+            "details": "Reservation details",
             "id": "ID",
             "vehicle": "Vehicle",
             "category": "Category",
@@ -142,13 +144,14 @@
             "location": "Location",
             "phone": "Phone",
             "email": "Email",
-            "total_price": "Total Price",
+            "total_price": "Total price",
             "guest": "Guest",
             "unidentified": "Unidentified client",
             "not_provided": "Not provided",
             "status": "Status",
             "accepted_on": "accepted on",
-            "rejected_on": "rejected on"
+            "rejected_on": "rejected on",
+            "contact": "Contact"
         },
         
         "messages": {
@@ -157,7 +160,7 @@
             "no_results": "No results found",
             "no_client_reservations": "No reservations for this client",
             "try_search": "Try modifying your search criteria",
-            "client_no_reservations": "This client has not made any reservations yet.",
+            "client_no_reservations": "This client hasn't made any reservations yet.",
             "new_reservations": "New reservations will appear here.",
             "no_category_reservations": "No reservations in this category.",
             "expired_reservation": "Expired reservation",
@@ -167,34 +170,35 @@
         
         "reject_modal": {
             "title": "Reject Reservation",
-            "reason": "Reason for rejection *",
+            "reason": "Rejection reason *",
             "placeholder": "Please enter the reason for rejection (this reason will be communicated to the client)...",
             "cancel": "Cancel",
-            "confirm": "Confirm Rejection",
+            "confirm": "Confirm rejection",
             "missing_reason": "Missing reason",
             "missing_reason_desc": "Please enter the reason for rejection."
         },
         
         "toast": {
-            "reservation_accepted": "Reservation accepted",
-            "client_notified": "Client has been notified by email.",
-            "reservation_rejected": "Reservation rejected",
-            "client_notified_reason": "Client has been notified with the reason.",
+            "reservation_accepted": "✅ Reservation accepted",
+            "accepted_with_auto_reject": "✅ Accepted + {{count}} auto-rejected",
+            "reservation_rejected": "❌ Reservation rejected",
             "error": "Error",
-            "update_error": "Unable to update reservation."
+            "update_error": "Unable to process the reservation."
         },
 
         "categories": {
             "category_electric": "Electric",
             "category_suv": "SUV",
-            "category_urban_suv": "Urban SUV", 
+            "category_urban_suv": "Urban SUV",
             "category_sedan": "Sedan"
         },
 
         "view_mode": {
             "cards_tooltip": "Cards view",
             "table_tooltip": "Table view"
-        }
+        },
+        
+        "auto_reject_message": "Your reservation has been rejected because the vehicle is no longer available for this period."
     },
 
     "admin_vehicle_detail": {

@@ -480,7 +480,7 @@ const handleDeleteUser = async (profileId: string, email: string, userRole: stri
                           role: profile.role === 'admin' ? t('admin_users.roles.admin') : t('admin_users.roles.client')
                         })}
                       >
-                        <Trash2 className="h-4 w-4 text-red-600" />
+                        <Trash2 className="h-4 w-4 text-red-600 hover:bg-red-600 hover:text-white" />
                       </Button>
                       
                       {/* Bouton Retirer admin (uniquement pour les admins) */}

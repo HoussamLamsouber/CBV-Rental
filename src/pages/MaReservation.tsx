@@ -73,6 +73,7 @@ const MaReservation = () => {
         .from("reservations")
         .select("*")
         .eq("user_id", user.id)
+        .neq("status", "cancelled")
         .order("created_at", { ascending: false });
 
       if (reservationsError) throw reservationsError;
@@ -112,6 +113,7 @@ const MaReservation = () => {
             .from("reservations")
             .select("*")
             .in("id", reservationIds)
+            .neq("status", "cancelled")
             .order("created_at", { ascending: false });
     
           if (reservationsError) {
@@ -171,31 +173,26 @@ const MaReservation = () => {
     if (!confirm(t('ma_reservation.messages.confirm_cancellation'))) {
       return;
     }
-
+  
     try {
       setCancellingId(res.id);
-
-      if (!user) {
-        const guestReservations = localStorage.getItem("guest_reservations");
-        if (guestReservations) {
-          const reservationIds = JSON.parse(guestReservations);
-          const updatedIds = reservationIds.filter((id: string) => id !== res.id);
-          localStorage.setItem("guest_reservations", JSON.stringify(updatedIds));
-        }
-      }
-
+  
+      // 🔥 REMPLACER LA SUPPRESSION PAR UN SOFT DELETE
       const { error } = await supabase
         .from("reservations")
-        .delete()
+        .update({ 
+          status: "cancelled",
+          updated_at: new Date().toISOString()
+        })
         .eq("id", res.id);
-
+  
       if (error) throw error;
-
+  
       const currentLanguage = i18n.language;
-
+  
       console.log('📧 Tentative envoi emails annulation pour:', res.client_email);
-
-      // 🔥 UTILISER sendCancellationEmails POUR L'ANNULATION
+  
+      // Envoyer les emails d'annulation
       const emailResult = await emailJSService.sendCancellationEmails({
         reservationId: res.id,
         clientName: res.client_name || t('ma_reservation.messages.guest'),
@@ -212,21 +209,24 @@ const MaReservation = () => {
         totalPrice: res.total_price,
         language: currentLanguage
       });
-
+  
       console.log('📧 Résultat emails annulation:', emailResult);
-
+  
       if (!emailResult.success) {
         console.warn('Emails d\'annulation non envoyés:', emailResult.error);
       } else {
         console.log('✅ Emails d\'annulation envoyés avec succès');
       }
-
+  
       toast({ 
         title: t('ma_reservation.messages.reservation_cancelled'), 
         description: t('ma_reservation.messages.reservation_cancelled_for').replace('{carName}', res.car_name)
       });
       
-      setReservations(prev => prev.filter(r => r.id !== res.id));
+      // 🔥 METTRE À JOUR LE STATUT LOCALEMENT AU LIEU DE SUPPRIMER
+      setReservations(prev => prev.map(r => 
+        r.id === res.id ? { ...r, status: 'cancelled' } : r
+      ));
     } catch (err) {
       console.error("Erreur annulation:", err);
       toast({ 
@@ -312,6 +312,9 @@ const MaReservation = () => {
     );
   };
 
+  // 🔥 FILTRER LES RÉSERVATIONS ANNULÉES POUR NE PAS LES AFFICHER
+  const activeReservations = reservations.filter(res => res.status !== 'cancelled');
+
   const renderContent = () => {
     if (loading) {
       return (
@@ -364,7 +367,7 @@ const MaReservation = () => {
         </div>
 
         <div className="grid gap-4 sm:gap-6">
-          {reservations.map(res => (
+          {activeReservations.map(res => (
             <Card key={res.id} className="overflow-hidden">
               <CardContent className="p-0">
                 <div className="flex flex-col sm:flex-row">
@@ -496,6 +499,13 @@ const MaReservation = () => {
                             </>
                           )}
                         </Button>
+                      </div>
+                    ) : res.status === 'cancelled' ? (
+                      <div className="mt-4 pt-4 border-t border-gray-200">
+                        <div className="flex items-center gap-2 text-sm text-red-600">
+                          <AlertTriangle className="h-4 w-4" />
+                          {t('ma_reservation.messages.reservation_cancelled')}
+                        </div>
                       </div>
                     ) : (
                       <div className="mt-4 pt-4 border-t border-gray-200">

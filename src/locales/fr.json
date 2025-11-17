@@ -130,7 +130,8 @@
             "back_users": "Retour aux utilisateurs",
             "see_all": "Voir toutes les réservations",
             "accept": "Accepter",
-            "reject": "Refuser"
+            "reject": "Refuser",
+            "title": "Actions"
         },
         
         "reservation": {
@@ -149,7 +150,8 @@
             "not_provided": "Non renseigné",
             "status": "Statut",
             "accepted_on": "acceptée le",
-            "rejected_on": "refusée le"
+            "rejected_on": "refusée le",
+            "contact": "Contact"
         },
         
         "messages": {
@@ -559,39 +561,52 @@
         },
         
         "modals": {
-        "create_vehicle": {
-            "title": "Nouveau Modèle de Véhicule",
-            "model_name": "Nom du modèle",
-            "model_name_placeholder": "Ex: Renault Clio",
-            "category": "Catégorie",
-            "price_per_day": "Prix par jour (MAD)",
-            "initial_stock": "Stock initial",
-            "image_url": "URL de l'image",
-            "fuel": "Carburant",
-            "transmission": "Transmission",
-            "seats": "Nombre de places",
-            "cancel": "Annuler",
-            "creating": "Création...",
-            "create_model": "Créer le modèle"
-        }
+            "create_vehicle": {
+                "title": "Nouveau Modèle de Véhicule",
+                "model_name": "Nom du modèle",
+                "model_name_placeholder": "Ex: Renault Clio",
+                "category": "Catégorie",
+                "price_per_day": "Prix par jour (MAD)",
+                "initial_stock": "Stock initial",
+                "image_url": "URL de l'image",
+                "fuel": "Carburant",
+                "transmission": "Transmission",
+                "seats": "Nombre de places",
+                "cancel": "Annuler",
+                "creating": "Création...",
+                "create_model": "Créer le modèle",
+                "basic_info": "Informations principales",
+                "technical_specs": "Spécifications techniques",
+                "image_section": "Image du véhicule",
+                "select_category": "Sélectionnez une catégorie",
+                "uploading": "Téléchargement...",
+                "upload_image": "Cliquez pour télécharger une image",
+                "or_enter_url": "Ou entrez une URL d'image",
+                "url_placeholder": "https://example.com/image.jpg",
+                "image_preview_alt": "Aperçu du véhicule",
+                "reset": "Réinitialiser"
+            }
         },
         
         "messages": {
-        "cannot_load_data": "Impossible de charger les données",
-        "loading": "Chargement des véhicules...",
-        "missing_fields": "Champs manquants",
-        "fill_required_fields": "Veuillez remplir tous les champs obligatoires.",
-        "duplicate_model": "Modèle déjà existant",
-        "model_already_exists": "Un modèle avec le nom \"{name}\" existe déjà. Veuillez modifier le nom.",
-        "model_created": "Modèle créé",
-        "model_created_success": "Le modèle {name} a été créé avec succès.",
-        "cannot_create_model": "Impossible de créer le modèle.",
-        "no_vehicles": "Aucun véhicule",
-        "add_first_vehicle": "Commencez par ajouter votre premier véhicule",
-        "new_model": "Nouveau modèle",
-        "no_recent_reservations": "Aucune réservation récente",
-        "seats": "places",
-        "reservations": "réservations"
+            "cannot_load_data": "Impossible de charger les données",
+            "loading": "Chargement des véhicules...",
+            "missing_fields": "Champs manquants",
+            "fill_required_fields": "Veuillez remplir tous les champs obligatoires.",
+            "duplicate_model": "Modèle déjà existant",
+            "model_already_exists": "Un modèle avec le nom \"{name}\" existe déjà. Veuillez modifier le nom.",
+            "model_created": "Modèle créé",
+            "model_created_success": "Le modèle {name} a été créé avec succès.",
+            "cannot_create_model": "Impossible de créer le modèle.",
+            "no_vehicles": "Aucun véhicule",
+            "add_first_vehicle": "Commencez par ajouter votre premier véhicule",
+            "new_model": "Nouveau modèle",
+            "no_recent_reservations": "Aucune réservation récente",
+            "seats": "places",
+            "reservations": "réservations",
+            "image_uploaded": "Image téléchargée",
+            "image_upload_success": "L'image a été téléchargée avec succès",
+            "cannot_upload_image": "Impossible de télécharger l'image"
         }
     },
 

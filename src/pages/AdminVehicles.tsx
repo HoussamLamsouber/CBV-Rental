@@ -7,7 +7,7 @@ import { Dialog } from "@headlessui/react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Car, ArrowRight } from "lucide-react";
+import { Plus, Car, ArrowRight, Upload, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Footer } from "@/components/Footer";
 import { motion } from "framer-motion";
@@ -30,6 +30,7 @@ export default function AdminVehicles() {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [imageUploading, setImageUploading] = useState(false);
   const { toast } = useToast();
   const { t } = useTranslation();
 
@@ -79,6 +80,60 @@ export default function AdminVehicles() {
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleImageUpload = async (file: File) => {
+    try {
+      setImageUploading(true);
+      
+      // Vérifier la taille du fichier (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: "Fichier trop volumineux",
+          description: "L'image ne doit pas dépasser 5MB",
+          variant: "destructive",
+        });
+        return;
+      }
+  
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
+      const filePath = `vehicle-images/${fileName}`;
+  
+      console.log("Uploading file:", filePath);
+  
+      const { error: uploadError } = await supabase.storage
+        .from('cars')
+        .upload(filePath, file);
+  
+      if (uploadError) {
+        console.error("Upload error:", uploadError);
+        throw uploadError;
+      }
+  
+      // Récupérer l'URL publique
+      const { data: { publicUrl } } = supabase.storage
+        .from('cars')
+        .getPublicUrl(filePath);
+  
+      console.log("Public URL:", publicUrl);
+  
+      setNewVehicle(prev => ({ ...prev, image_url: publicUrl }));
+      
+      toast({
+        title: "Image téléchargée",
+        description: "L'image a été téléchargée avec succès",
+      });
+    } catch (error: any) {
+      console.error("Erreur upload image:", error);
+      toast({
+        title: "Erreur",
+        description: error.message || "Impossible de télécharger l'image",
+        variant: "destructive",
+      });
+    } finally {
+      setImageUploading(false);
     }
   };
 
@@ -139,6 +194,7 @@ export default function AdminVehicles() {
         description: t('admin_vehicles.messages.model_created_success', { name: newVehicle.name }),
       });
 
+      // Reset form
       setNewVehicle({
         name: "",
         category: "",
@@ -162,6 +218,19 @@ export default function AdminVehicles() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const resetForm = () => {
+    setNewVehicle({
+      name: "",
+      category: "",
+      price: "",
+      quantity: "",
+      image_url: "",
+      fuel: "fuel_gasoline",
+      seats: "",
+      transmission: "transmission_manual"
+    });
   };
 
   return (
@@ -231,7 +300,7 @@ export default function AdminVehicles() {
             </div>
           )}
 
-          {/* Create Vehicle Modal */}
+          {/* Create Vehicle Modal amélioré */}
           <Dialog open={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} className="relative z-50">
             <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
             <div className="fixed inset-0 flex items-center justify-center p-4">
@@ -240,43 +309,231 @@ export default function AdminVehicles() {
                   <Car className="h-5 w-5" />
                   {t('admin_vehicles.modals.create_vehicle.title')}
                 </Dialog.Title>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                
+                <div className="space-y-6">
+                  {/* Section Informations de base */}
                   <div>
-                    <Label htmlFor="name" className="text-sm font-medium">{t('admin_vehicles.modals.create_vehicle.model_name')} *</Label>
-                    <Input
-                      id="name"
-                      value={newVehicle.name}
-                      onChange={(e) => setNewVehicle({...newVehicle, name: e.target.value})}
-                      placeholder={t('admin_vehicles.modals.create_vehicle.model_name_placeholder')}
-                      className="mt-1"
-                      required
-                    />
+                    <h3 className="text-lg font-medium text-gray-900 mb-4">
+                      {t('admin_vehicles.modals.create_vehicle.basic_info')}
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="name" className="text-sm font-medium">
+                          {t('admin_vehicles.modals.create_vehicle.model_name')} *
+                        </Label>
+                        <Input
+                          id="name"
+                          value={newVehicle.name}
+                          onChange={(e) => setNewVehicle({...newVehicle, name: e.target.value})}
+                          placeholder={t('admin_vehicles.modals.create_vehicle.model_name_placeholder')}
+                          className="mt-1"
+                          required
+                        />
+                      </div>
+                      
+                      <div>
+                        <Label htmlFor="category" className="text-sm font-medium">
+                          {t('admin_vehicles.modals.create_vehicle.category')} *
+                        </Label>
+                        <select
+                          id="category"
+                          value={newVehicle.category}
+                          onChange={(e) => setNewVehicle({...newVehicle, category: e.target.value})}
+                          className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          required
+                        >
+                          <option value="category_electric">{t('admin_vehicles.categories.category_electric')}</option>
+                          <option value="category_suv">{t('admin_vehicles.categories.category_suv')}</option>
+                          <option value="category_urban_suv">{t('admin_vehicles.categories.category_urban_suv')}</option>
+                          <option value="category_sedan">{t('admin_vehicles.categories.category_sedan')}</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <Label htmlFor="price" className="text-sm font-medium">
+                          {t('admin_vehicles.modals.create_vehicle.price_per_day')} (MAD) *
+                        </Label>
+                        <Input
+                          id="price"
+                          type="number"
+                          value={newVehicle.price}
+                          onChange={(e) => setNewVehicle({...newVehicle, price: e.target.value})}
+                          placeholder="0.00"
+                          className="mt-1"
+                          min="0"
+                          step="1"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <Label htmlFor="quantity" className="text-sm font-medium">
+                          {t('admin_vehicles.modals.create_vehicle.initial_stock')} *
+                        </Label>
+                        <Input
+                          id="quantity"
+                          type="number"
+                          value={newVehicle.quantity}
+                          onChange={(e) => setNewVehicle({...newVehicle, quantity: e.target.value})}
+                          placeholder="1"
+                          className="mt-1"
+                          min="1"
+                          required
+                        />
+                      </div>
+                    </div>
                   </div>
+
+                  {/* Section Spécifications techniques */}
                   <div>
-                    <Label htmlFor="category" className="text-sm font-medium">{t('admin_vehicles.modals.create_vehicle.category')} *</Label>
-                    <select
-                      id="category"
-                      value={newVehicle.category}
-                      onChange={(e) => setNewVehicle({...newVehicle, category: e.target.value})}
-                      className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      required
-                    >
-                      <option value="category_electric">{t('admin_vehicles.categories.category_electric')}</option>
-                      <option value="category_suv">{t('admin_vehicles.categories.category_suv')}</option>
-                      <option value="category_urban_suv">{t('admin_vehicles.categories.category_urban_suv')}</option>
-                      <option value="category_sedan">{t('admin_vehicles.categories.category_sedan')}</option>
-                    </select>
+                    <h3 className="text-lg font-medium text-gray-900 mb-4">
+                      {t('admin_vehicles.modals.create_vehicle.technical_specs')}
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="fuel" className="text-sm font-medium">
+                          {t('admin_vehicles.modals.create_vehicle.fuel')}
+                        </Label>
+                        <select
+                          id="fuel"
+                          value={newVehicle.fuel}
+                          onChange={(e) => setNewVehicle({...newVehicle, fuel: e.target.value})}
+                          className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        >
+                          <option value="fuel_gasoline">{t('admin_vehicles.fuel_types.fuel_gasoline')}</option>
+                          <option value="fuel_diesel">{t('admin_vehicles.fuel_types.fuel_diesel')}</option>
+                          <option value="fuel_electric">{t('admin_vehicles.fuel_types.fuel_electric')}</option>
+                          <option value="fuel_hybrid">{t('admin_vehicles.fuel_types.fuel_hybrid')}</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <Label htmlFor="transmission" className="text-sm font-medium">
+                          {t('admin_vehicles.modals.create_vehicle.transmission')}
+                        </Label>
+                        <select
+                          id="transmission"
+                          value={newVehicle.transmission}
+                          onChange={(e) => setNewVehicle({...newVehicle, transmission: e.target.value})}
+                          className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        >
+                          <option value="transmission_manual">{t('admin_vehicles.transmission_types.transmission_manual')}</option>
+                          <option value="transmission_automatic">{t('admin_vehicles.transmission_types.transmission_automatic')}</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <Label htmlFor="seats" className="text-sm font-medium">
+                          {t('admin_vehicles.modals.create_vehicle.seats')}
+                        </Label>
+                        <Input
+                          id="seats"
+                          type="number"
+                          value={newVehicle.seats}
+                          onChange={(e) => setNewVehicle({...newVehicle, seats: e.target.value})}
+                          placeholder="5"
+                          className="mt-1"
+                          min="1"
+                          max="9"
+                        />
+                      </div>
+                    </div>
                   </div>
-                  {/* Les autres champs restent identiques */}
+
+                  {/* Section Image */}
+                  <div>
+                    <h3 className="text-lg font-medium text-gray-900 mb-4">
+                      {t('admin_vehicles.modals.create_vehicle.image_section')}
+                    </h3>
+                    <div className="space-y-4">
+                      {newVehicle.image_url ? (
+                        <div className="relative">
+                          <img
+                            src={newVehicle.image_url}
+                            alt={t('admin_vehicles.modals.create_vehicle.image_preview_alt')}
+                            className="w-full h-48 object-cover rounded-lg"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setNewVehicle(prev => ({ ...prev, image_url: "" }))}
+                            className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full hover:bg-red-600"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                          <input
+                            type="file"
+                            id="image-upload"
+                            accept="image/*"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) handleImageUpload(file);
+                            }}
+                            className="hidden"
+                          />
+                          <label
+                            htmlFor="image-upload"
+                            className="cursor-pointer flex flex-col items-center justify-center"
+                          >
+                            <Upload className="h-8 w-8 text-gray-400 mb-2" />
+                            <p className="text-gray-600">
+                              {imageUploading 
+                                ? t('admin_vehicles.modals.create_vehicle.uploading') 
+                                : t('admin_vehicles.modals.create_vehicle.upload_image')
+                              }
+                            </p>
+                          </label>
+                        </div>
+                      )}
+                      
+                      <div>
+                        <Label htmlFor="image_url" className="text-sm font-medium">
+                          {t('admin_vehicles.modals.create_vehicle.or_enter_url')}
+                        </Label>
+                        <Input
+                          id="image_url"
+                          value={newVehicle.image_url}
+                          onChange={(e) => setNewVehicle({...newVehicle, image_url: e.target.value})}
+                          placeholder={t('admin_vehicles.modals.create_vehicle.url_placeholder')}
+                          className="mt-1"
+                        />
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="flex justify-end gap-3 pt-4 border-t">
-                  <Button variant="secondary" onClick={() => setIsCreateModalOpen(false)}>
+                <div className="flex justify-between items-center pt-6 border-t mt-6">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => {
+                      resetForm();
+                      setIsCreateModalOpen(false);
+                    }}
+                  >
                     {t('admin_vehicles.modals.create_vehicle.cancel')}
                   </Button>
-                  <Button onClick={handleCreateVehicle} disabled={isLoading} className="bg-blue-600 hover:bg-blue-700">
-                    {isLoading ? t('admin_vehicles.modals.create_vehicle.creating') : t('admin_vehicles.modals.create_vehicle.create_model')}
-                  </Button>
+                  
+                  <div className="flex gap-3">
+                    <Button 
+                      variant="secondary" 
+                      onClick={resetForm}
+                      disabled={isLoading}
+                    >
+                      {t('admin_vehicles.modals.create_vehicle.reset')}
+                    </Button>
+                    <Button 
+                      onClick={handleCreateVehicle} 
+                      disabled={isLoading}
+                      className="bg-blue-600 hover:bg-blue-700"
+                    >
+                      {isLoading 
+                        ? t('admin_vehicles.modals.create_vehicle.creating') 
+                        : t('admin_vehicles.modals.create_vehicle.create_model')
+                      }
+                    </Button>
+                  </div>
                 </div>
               </Dialog.Panel>
             </div>

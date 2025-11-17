@@ -574,7 +574,17 @@
                 "seats": "Number of seats",
                 "cancel": "Cancel",
                 "creating": "Creating...",
-                "create_model": "Create model"
+                "create_model": "Create model",
+                "basic_info": "Basic Information",
+                "technical_specs": "Technical Specifications",
+                "image_section": "Vehicle Image",
+                "select_category": "Select a category",
+                "uploading": "Uploading...",
+                "upload_image": "Click to upload an image",
+                "or_enter_url": "Or enter an image URL",
+                "url_placeholder": "https://example.com/image.jpg",
+                "image_preview_alt": "Vehicle preview",
+                "reset": "Reset"
             }
         },
         
@@ -593,7 +603,10 @@
             "new_model": "New model",
             "no_recent_reservations": "No recent reservations",
             "seats": "seats",
-            "reservations": "reservations"
+            "reservations": "reservations",
+            "image_uploaded": "Image uploaded",
+            "image_upload_success": "Image has been successfully uploaded",
+            "cannot_upload_image": "Unable to upload image"
         }
     },
 

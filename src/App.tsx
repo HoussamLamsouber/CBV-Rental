@@ -25,6 +25,7 @@ import ChangePassword from "./pages/ChangePassword";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import "@/i18n.ts";
+import AdminLocations from "./pages/AdminLocations";
 
 const queryClient = new QueryClient();
 
@@ -92,6 +93,14 @@ function App() {
                 element={
                   <ProtectedRoute adminOnly={true}>
                     <AdminUsers />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/admin/locations" 
+                element={
+                  <ProtectedRoute adminOnly={true}>
+                    <AdminLocations />
                   </ProtectedRoute>
                 } 
               />

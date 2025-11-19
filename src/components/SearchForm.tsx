@@ -1,4 +1,5 @@
-import { useState } from "react";
+// src/components/SearchForm.tsx
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,6 +19,7 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
 import { useTranslation } from "react-i18next";
+import { supabase } from "@/integrations/supabase/client";
 
 export interface SearchData {
   pickupLocation: string;
@@ -76,7 +78,7 @@ const AutoCompleteInput = ({
         <Command>
           <CommandInput placeholder={placeholder} />
           <CommandEmpty className="py-6 text-center text-sm text-muted-foreground">
-            {placeholder === "" ? "" : placeholder}
+            Aucune location trouvée
           </CommandEmpty>
           <CommandGroup className="max-h-60 overflow-y-auto">
             {items.map((item) => (
@@ -258,87 +260,86 @@ export const SearchForm = ({ onSearch }: SearchFormProps) => {
   const [returnDate, setReturnDate] = useState<Date>();
   const [pickupTime, setPickupTime] = useState("09:00");
   const [returnTime, setReturnTime] = useState("09:00");
+  const [activeLocations, setActiveLocations] = useState<{ value: string; label: string }[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const airports = [
-    { value: "airport_agadir", label: t("airports.agadir") },
-    { value: "airport_al_hoceima", label: t("airports.al_hoceima") },
-    { value: "airport_beni_mellal", label: t("airports.beni_mellal") },
-    { value: "airport_casablanca", label: t("airports.casablanca") },
-    { value: "airport_dakhla", label: t("airports.dakhla") },
-    { value: "airport_errachidia", label: t("airports.errachidia") },
-    { value: "airport_essaouira", label: t("airports.essaouira") },
-    { value: "airport_fes", label: t("airports.fes") },
-    { value: "airport_guelmim", label: t("airports.guelmim") },
-    { value: "airport_laayoune", label: t("airports.laayoune") },
-    { value: "airport_marrakech", label: t("airports.marrakech") },
-    { value: "airport_nador", label: t("airports.nador") },
-    { value: "airport_ouarzazate", label: t("airports.ouarzazate") },
-    { value: "airport_oujda", label: t("airports.oujda") },
-    { value: "airport_rabat", label: t("airports.rabat") },
-    { value: "airport_tanger", label: t("airports.tanger") },
-    { value: "airport_tetouan", label: t("airports.tetouan") },
-    { value: "airport_zagora", label: t("airports.zagora") },
-    { value: "airport_tan_tan", label: t("airports.tan_tan") },
-    { value: "airport_smara", label: t("airports.smara") },
-    { value: "airport_bouarfa", label: t("airports.bouarfa") },
-    { value: "airport_benslimane", label: t("airports.benslimane") },
-    { value: "airport_ifrane", label: t("airports.ifrane") },
-    { value: "airport_casablanca_tit_mellil", label: t("airports.casablanca_tit_mellil") },
-  ];
+  // Charger les locations actives depuis Supabase
+  useEffect(() => {
+    fetchActiveLocations();
+  }, []);
 
-  const stations = [
-    { value: "station_mohammed_v", label: t("stations.mohammed_v") },
-    { value: "station_agadir", label: t("stations.agadir") },
-    { value: "station_assilah", label: t("stations.assilah") },
-    { value: "station_ben_guerir", label: t("stations.ben_guerir") },
-    { value: "station_berrechid", label: t("stations.berrechid") },
-    { value: "station_kenitra", label: t("stations.kenitra") },
-    { value: "station_khouribga", label: t("stations.khouribga") },
-    { value: "station_marrakech", label: t("stations.marrakech") },
-    { value: "station_meknes", label: t("stations.meknes") },
-    { value: "station_mohammedia", label: t("stations.mohammedia") },
-    { value: "station_nador_ville", label: t("stations.nador_ville") },
-    { value: "station_oujda", label: t("stations.oujda") },
-    { value: "station_rabat_agdal", label: t("stations.rabat_agdal") },
-    { value: "station_rabat_ville", label: t("stations.rabat_ville") },
-    { value: "station_sale_tabriquet", label: t("stations.sale_tabriquet") },
-    { value: "station_sale_ville", label: t("stations.sale_ville") },
-    { value: "station_safi", label: t("stations.safi") },
-    { value: "station_tanger_ville", label: t("stations.tanger_ville") },
-    { value: "station_tanger_med", label: t("stations.tanger_med") },
-    { value: "station_taourirt", label: t("stations.taourirt") },
-    { value: "station_temara", label: t("stations.temara") },
-    { value: "station_casa_voyageurs", label: t("stations.casa_voyageurs") },
-    { value: "station_casa_port", label: t("stations.casa_port") },
-    { value: "station_casa_oasis", label: t("stations.casa_oasis") },
-    { value: "station_casa_mers_sultan", label: t("stations.casa_mers_sultan") },
-    { value: "station_el_jadida", label: t("stations.el_jadida") },
-    { value: "station_settat", label: t("stations.settat") },
-    { value: "station_skhirat", label: t("stations.skhirat") },
-    { value: "station_bouznika", label: t("stations.bouznika") },
-    { value: "station_zenata", label: t("stations.zenata") },
-    { value: "station_ain_sebaa", label: t("stations.ain_sebaa") },
-    { value: "station_bouskoura", label: t("stations.bouskoura") },
-    { value: "station_facultes", label: t("stations.facultes") },
-    { value: "station_ennassim", label: t("stations.ennassim") },
-    { value: "station_sidi_kacem", label: t("stations.sidi_kacem") },
-    { value: "station_sidi_slimane", label: t("stations.sidi_slimane") },
-    { value: "station_sidi_yahya_el_gharb", label: t("stations.sidi_yahya_el_gharb") },
-    { value: "station_ksar_el_kebir", label: t("stations.ksar_el_kebir") },
-    { value: "station_souk_el_arbaa", label: t("stations.souk_el_arbaa") },
-    { value: "station_melloussa", label: t("stations.melloussa") },
-    { value: "station_ksar_sghir", label: t("stations.ksar_sghir") },
-  ];
+  const fetchActiveLocations = async () => {
+    try {
+      setIsLoading(true);
+      const { data, error } = await supabase
+        .from("active_locations" as any)
+        .select("location_value, display_name, location_type, translation_key")
+        .eq("is_active", true)
+        .order("location_type")
+        .order("display_name");
 
-  const allLocations = [...airports, ...stations];
+      if (error) throw error;
 
-  // Fonction pour obtenir le label traduit d'une location
+      // Transformer les données pour le composant d'autocomplétion avec traductions
+      const formattedLocations = data?.map((location: any) => {
+        let translatedLabel = location.display_name;
+        
+        if (location.translation_key) {
+          const translationNamespace = location.location_type === 'airport' ? 'airports' : 'stations';
+          const translation = t(`${translationNamespace}.${location.translation_key}`);
+          if (translation && !translation.startsWith(translationNamespace + '.')) {
+            translatedLabel = translation;
+          }
+        }
+
+        return {
+          value: location.location_value,
+          label: translatedLabel,
+          type: location.location_type
+        };
+      }) || [];
+
+      setActiveLocations(formattedLocations);
+    } catch (error) {
+      console.error("Erreur chargement locations actives:", error);
+      setActiveLocations(getFallbackLocations());
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Fallback en cas d'erreur de chargement
+  const getFallbackLocations = () => {
+    const airports = [
+      { value: "airport_agadir", label: t("airports.agadir") },
+      { value: "airport_casablanca", label: t("airports.casablanca") },
+      { value: "airport_marrakech", label: t("airports.marrakech") },
+      { value: "airport_rabat", label: t("airports.rabat") },
+      { value: "airport_tanger", label: t("airports.tanger") },
+    ];
+
+    const stations = [
+      { value: "station_casa_voyageurs", label: t("stations.casa_voyageurs") },
+      { value: "station_rabat_agdal", label: t("stations.rabat_agdal") },
+      { value: "station_marrakech", label: t("stations.marrakech") },
+    ];
+
+    return [...airports, ...stations];
+  };
+
+  // Fonction pour obtenir le label d'une location
   const getLocationLabel = (value: string) => {
-    const location = allLocations.find(item => item.value === value);
+    const location = activeLocations.find(item => item.value === value);
     return location ? location.label : value;
   };
 
   const handleSearch = () => {
+    if (!pickupLocation || !pickupDate || !returnDate) {
+      // Vous pouvez ajouter une notification d'erreur ici
+      console.error("Veuillez remplir tous les champs obligatoires");
+      return;
+    }
+
     onSearch({
       pickupLocation,
       returnLocation: sameLocation ? pickupLocation : returnLocation,
@@ -372,8 +373,8 @@ export const SearchForm = ({ onSearch }: SearchFormProps) => {
             {t("searchForm.pickupPlaceholder")}
           </Label>
           <AutoCompleteInput
-            items={allLocations}
-            placeholder={t("searchForm.pickupPlaceholder")}
+            items={activeLocations}
+            placeholder={isLoading ? "Chargement..." : t("searchForm.pickupPlaceholder")}
             value={pickupLocation}
             onSelect={setPickupLocation}
             icon={<MapPinIcon className="h-4 w-4 text-blue-600" />}
@@ -417,8 +418,8 @@ export const SearchForm = ({ onSearch }: SearchFormProps) => {
             </div>
           ) : (
             <AutoCompleteInput
-              items={allLocations}
-              placeholder={t("searchForm.returnPlaceholder")}
+              items={activeLocations}
+              placeholder={isLoading ? "Chargement..." : t("searchForm.returnPlaceholder")}
               value={returnLocation}
               onSelect={setReturnLocation}
               icon={<MapPinIcon className="h-4 w-4 text-green-600" />}
@@ -479,11 +480,12 @@ export const SearchForm = ({ onSearch }: SearchFormProps) => {
       {/* Bouton de recherche */}
       <Button
         onClick={handleSearch}
-        className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 transition-all duration-300 font-semibold h-12 text-sm sm:text-base"
+        disabled={isLoading || !pickupLocation || !pickupDate || !returnDate}
+        className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 transition-all duration-300 font-semibold h-12 text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
         size="lg"
       >
         <Search className="h-5 w-5 mr-2" />
-        {t("searchForm.searchButton")}
+        {isLoading ? "Chargement..." : t("searchForm.searchButton")}
       </Button>
     </div>
   );

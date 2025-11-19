@@ -412,18 +412,20 @@
         
         "modals": {
             "add_admin": {
-            "title": "Promouvoir un client en administrateur",
-            "info": "Sélectionnez un client pour lui donner les droits administrateur.",
-            "select_client": "Sélectionner un client",
-            "choose_client": "Choisir un client...",
-            "no_clients_available": "Aucun client disponible",
-            "clients_available": "client(s) disponible(s) pour promotion",
-            "new_full_name": "Nouveau nom complet (optionnel)",
-            "keep_current_name": "Laisser vide pour conserver le nom actuel",
-            "new_phone": "Nouveau téléphone (optionnel)",
-            "keep_current_phone": "Laisser vide pour conserver le téléphone actuel",
-            "cancel": "Annuler",
-            "promote_to_admin": "Promouvoir en admin"
+                "title": "Promouvoir un client en administrateur",
+                "info": "Sélectionnez un client pour lui donner les droits administrateur.",
+                "select_client": "Sélectionner un client",
+                "choose_client": "Choisir un client...",
+                "no_clients_available": "Aucun client disponible",
+                "clients_available": "client(s) disponible(s) pour promotion",
+                "new_full_name": "Nouveau nom complet (optionnel)",
+                "keep_current_name": "Laisser vide pour conserver le nom actuel",
+                "new_phone": "Nouveau téléphone (optionnel)",
+                "keep_current_phone": "Laisser vide pour conserver le téléphone actuel",
+                "cancel": "Annuler",
+                "promote_to_admin": "Promouvoir en admin",
+                "search_client": "Rechercher un client par email ou nom...",
+                "no_clients_found": "Aucun client trouvé"
             }
         },
         

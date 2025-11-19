@@ -423,7 +423,9 @@
             "new_phone": "New phone (optional)",
             "keep_current_phone": "Leave empty to keep current phone",
             "cancel": "Cancel",
-            "promote_to_admin": "Promote to admin"
+            "promote_to_admin": "Promote to admin",
+            "search_client": "Search client by email or name...",
+            "no_clients_found": "No clients found"
             }
         },
         

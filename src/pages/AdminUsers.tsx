@@ -26,6 +26,10 @@ import { Dialog } from "@headlessui/react";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTranslation } from "react-i18next";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
+import { Check, ChevronsUpDown } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 type Profile = {
   id: string;
@@ -61,6 +65,8 @@ export default function AdminUsers() {
   const [showPassword, setShowPassword] = useState(false);
   const [allEmails, setAllEmails] = useState<{email: string, full_name: string | null}[]>([]);
   const [selectedEmail, setSelectedEmail] = useState("");
+  const [emailSearchOpen, setEmailSearchOpen] = useState(false);
+  const [emailSearchTerm, setEmailSearchTerm] = useState("");
 
   // Vérification des permissions admin
   if (authLoading || adminLoading) {
@@ -562,24 +568,76 @@ const handleDeleteUser = async (profileId: string, email: string, userRole: stri
 
                 <div>
                   <Label htmlFor="user-select">{t('admin_users.modals.add_admin.select_client')} *</Label>
-                  <select
-                    id="user-select"
-                    value={selectedEmail}
-                    onChange={(e) => setSelectedEmail(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    required
-                  >
-                    <option value="">{t('admin_users.modals.add_admin.choose_client')}</option>
-                    {allEmails.length === 0 ? (
-                      <option value="" disabled>{t('admin_users.modals.add_admin.no_clients_available')}</option>
-                    ) : (
-                      allEmails.map((profile) => (
-                        <option key={profile.email} value={profile.email}>
-                          {profile.email} {profile.full_name ? `(${profile.full_name})` : ''}
-                        </option>
-                      ))
-                    )}
-                  </select>
+                  <Popover open={emailSearchOpen} onOpenChange={setEmailSearchOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={emailSearchOpen}
+                        className="w-full justify-between h-10 border-gray-300 hover:border-blue-500 transition-colors"
+                      >
+                        <div className="flex items-center gap-2 flex-1 text-left min-w-0">
+                          <Mail className="h-4 w-4 text-gray-400" />
+                          <span className={cn("truncate", !selectedEmail && "text-muted-foreground")}>
+                            {selectedEmail 
+                              ? allEmails.find(email => email.email === selectedEmail)?.email 
+                              : t('admin_users.modals.add_admin.choose_client')
+                            }
+                          </span>
+                        </div>
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent 
+                      className="w-[var(--radix-popover-trigger-width)] p-0 max-h-[60vh] overflow-y-auto" 
+                      align="start"
+                      side="bottom"
+                    >
+                      <Command>
+                        <CommandInput 
+                          placeholder={t('admin_users.modals.add_admin.search_client')}
+                          value={emailSearchTerm}
+                          onValueChange={setEmailSearchTerm}
+                        />
+                        <CommandEmpty className="py-6 text-center text-sm text-muted-foreground">
+                          {t('admin_users.modals.add_admin.no_clients_found')}
+                        </CommandEmpty>
+                        <CommandGroup className="max-h-60 overflow-y-auto">
+                          {allEmails
+                            .filter(profile => 
+                              profile.email.toLowerCase().includes(emailSearchTerm.toLowerCase()) ||
+                              (profile.full_name && profile.full_name.toLowerCase().includes(emailSearchTerm.toLowerCase()))
+                            )
+                            .map((profile) => (
+                              <CommandItem
+                                key={profile.email}
+                                value={profile.email}
+                                onSelect={(currentValue) => {
+                                  setSelectedEmail(currentValue === selectedEmail ? "" : currentValue);
+                                  setEmailSearchOpen(false);
+                                  setEmailSearchTerm("");
+                                }}
+                                className="flex items-center gap-2"
+                              >
+                                <Check
+                                  className={cn(
+                                    "h-4 w-4",
+                                    selectedEmail === profile.email ? "opacity-100" : "opacity-0"
+                                  )}
+                                />
+                                <div className="flex flex-col min-w-0 flex-1">
+                                  <span className="font-medium truncate">{profile.email}</span>
+                                  {profile.full_name && (
+                                    <span className="text-xs text-gray-500 truncate">{profile.full_name}</span>
+                                  )}
+                                </div>
+                              </CommandItem>
+                            ))
+                          }
+                        </CommandGroup>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                   <p className="text-xs text-gray-500 mt-1">
                     {allEmails.length} {t('admin_users.modals.add_admin.clients_available')}
                   </p>

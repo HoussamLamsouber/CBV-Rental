@@ -296,9 +296,9 @@ const Auth = () => {
                         disabled={loading}
                       >
                         {showLoginPassword ? (
-                          <EyeOff className="h-4 w-4" />
-                        ) : (
                           <Eye className="h-4 w-4" />
+                        ) : (
+                          <EyeOff className="h-4 w-4" />
                         )}
                       </button>
                     </div>

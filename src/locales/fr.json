@@ -48,6 +48,23 @@
     "saving": "Enregistrement",
     "redirecting_in": "Redirection vers la page d'accueil dans",
 
+    "common": {
+        "months": {
+        "jan": "Jan",
+        "feb": "Fév",
+        "mar": "Mar",
+        "apr": "Avr",
+        "may": "Mai",
+        "jun": "Juin",
+        "jul": "Juil",
+        "aug": "Aoû",
+        "sep": "Sep",
+        "oct": "Oct",
+        "nov": "Nov",
+        "dec": "Déc"
+        }
+    },
+
     "about_page": {
         "title": "Préparez votre arrivée avec sérénité",
         "subtitle": "Un service de location pensé pour vous : le bon véhicule, au bon moment. Profitez d'une expérience simple, rapide et sans stress, avant, pendant et après votre réservation.",
@@ -462,43 +479,56 @@
         "subtitle": "Vue d'ensemble de votre activité de location",
         
         "stats": {
-        "total_vehicles": "Véhicules Total",
-        "in_fleet": "Dans la flotte",
-        "performance": "Performance",
-        "reservation_ratio": "Ratio réservations/véhicules",
-        "total_revenue": "Revenu Total",
-        "this_month": "Ce mois",
-        "active_reservations": "Réservations Actives",
-        "currently_ongoing": "En cours actuellement"
+            "total_vehicles": "Véhicules Total",
+            "in_fleet": "Dans la flotte",
+            "performance": "Performance",
+            "reservation_ratio": "Ratio réservations/véhicules",
+            "total_revenue": "Revenu Total",
+            "this_month": "Ce mois",
+            "active_reservations": "Réservations Actives",
+            "currently_ongoing": "En cours actuellement"
         },
         
         "charts": {
-        "revenue": {
-            "title": "Revenus Mensuels",
-            "subtitle": "Évolution des revenus sur 6 mois"
-        },
-        "categories": {
-            "title": "Répartition par Catégorie",
-            "subtitle": "Distribution des véhicules par type"
-        },
-        "trends": {
-            "title": "Tendance des Réservations",
-            "subtitle": "Évolution du nombre de réservations"
-        }
+            "revenue": {
+                "title": "Revenus Mensuels",
+                "subtitle": "Évolution des revenus sur 6 mois",
+                "tooltip": "Revenu"
+            },
+            "categories": {
+                "title": "Répartition par Catégorie",
+                "subtitle": "Distribution des véhicules par type",
+                "tooltip": "Véhicules"
+            },
+            "trends": {
+                "title": "Tendance des Réservations",
+                "subtitle": "Évolution du nombre de réservations"
+            },
+            "month": "Mois: {{month}}"
         },
         
         "recent_reservations": {
-        "title": "Réservations Récentes",
-        "subtitle": "7 derniers jours"
+            "title": "Réservations Récentes",
+            "subtitle": "7 derniers jours",
+            "status": {
+                "pending": "En attente",
+                "accepted": "Acceptée", 
+                "confirmed": "Confirmée",
+                "active": "Active",
+                "completed": "Terminée",
+                "cancelled": "Annulée",
+                "refused": "Refusée",
+                "expired": "Expirée"
+            }
         },
         
         "actions": {
-        "see_all": "Voir tout"
+            "see_all": "Voir tout"
         },
         
         "messages": {
-        "cannot_load_data": "Impossible de charger les données du tableau de bord",
-        "no_recent_reservations": "Aucune réservation récente"
+            "cannot_load_data": "Impossible de charger les données du tableau de bord",
+            "no_recent_reservations": "Aucune réservation récente"
         }
     },
 

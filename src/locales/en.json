@@ -48,6 +48,23 @@
     "saving": "Saving",
     "redirecting_in": "Redirecting to home in",
 
+    "common": {
+        "months": {
+        "jan": "Jan",
+        "feb": "Feb",
+        "mar": "Mar",
+        "apr": "Apr",
+        "may": "May",
+        "jun": "Jun",
+        "jul": "Jul",
+        "aug": "Aug",
+        "sep": "Sep",
+        "oct": "Oct",
+        "nov": "Nov",
+        "dec": "Dec"
+        }
+    },
+
     "about_page": {
         "title": "Prepare your arrival with peace of mind",
         "subtitle": "A rental service designed for you: the right vehicle, at the right time. Enjoy a simple, fast and stress-free experience — before, during and after your booking.",
@@ -475,21 +492,34 @@
         "charts": {
             "revenue": {
                 "title": "Monthly Revenue",
-                "subtitle": "Revenue evolution over 6 months"
+                "subtitle": "Revenue evolution over 6 months",
+                "tooltip": "Revenue"
             },
             "categories": {
                 "title": "Distribution by Category",
-                "subtitle": "Vehicle distribution by type"
+                "subtitle": "Vehicle distribution by type",
+                "tooltip": "Vehicles"
             },
             "trends": {
                 "title": "Reservation Trends",
                 "subtitle": "Evolution of reservation numbers"
-            }
+            },
+            "month": "Month: {{month}}"
         },
         
         "recent_reservations": {
             "title": "Recent Reservations",
-            "subtitle": "Last 7 days"
+            "subtitle": "Last 7 days",
+            "status": {
+                "pending": "Pending",
+                "accepted": "Accepted",
+                "confirmed": "Confirmed", 
+                "active": "Active",
+                "completed": "Completed",
+                "cancelled": "Cancelled",
+                "refused": "Refused",
+                "expired": "Expired"
+            }
         },
         
         "actions": {

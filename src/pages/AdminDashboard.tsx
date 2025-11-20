@@ -84,16 +84,27 @@ export default function AdminDashboard() {
     performanceRate: 0
   });
   const { toast } = useToast();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
 
   const [categoryData, setCategoryData] = useState<ChartData[]>([]);
   const [revenueData, setRevenueData] = useState<ChartData[]>([]);
   const [reservationTrendData, setReservationTrendData] = useState<ChartData[]>([]);
+  const [translationKey, setTranslationKey] = useState(0);
 
   useEffect(() => {
     fetchData();
   }, []);
+
+  useEffect(() => {
+    // Forcer le re-rendu pour les traductions instantanées
+    setTranslationKey(prev => prev + 1);
+    
+    // Recalculer les données des graphiques si nécessaire
+    if (vehicles.length > 0 && allReservations.length > 0) {
+      prepareChartData(vehicles, allReservations);
+    }
+  }, [i18n.language]);
 
   const fetchData = async () => {
     try {
@@ -188,30 +199,49 @@ export default function AdminDashboard() {
     });
   };
 
+  // FONCTION POUR TRADUIRE LES STATUTS
+  const translateStatus = (status: string) => {
+    return t(`admin_dashboard.recent_reservations.status.${status.toLowerCase()}`, { defaultValue: status });
+  };
+
+  // FONCTION POUR LES COULEURS DES STATUTS
+  const getStatusColorClasses = (status: string) => {
+    const statusColors: { [key: string]: string } = {
+      pending: "bg-yellow-100 text-yellow-800",
+      accepted: "bg-green-100 text-green-800",
+      confirmed: "bg-blue-100 text-blue-800",
+      cancelled: "bg-purple-100 text-purple-800",
+      refused: "bg-red-100 text-red-800",
+      expired: "bg-orange-100 text-orange-800"
+    };
+    
+    return statusColors[status.toLowerCase()] || "bg-gray-100 text-gray-800";
+  };
+
   const prepareChartData = (vehicles: any[], allReservations: Reservation[]) => {
     const categoryStats: { [key: string]: number } = {};
     vehicles.forEach(vehicle => {
       const category = vehicle.category;
       categoryStats[category] = (categoryStats[category] || 0) + 1;
     });
-
+  
     const categoryChartData = Object.keys(categoryStats).map(category => ({
       name: t(`admin_vehicles.categories.${category}`),
       value: categoryStats[category],
     }));
     setCategoryData(categoryChartData);
-
+  
     const monthlyRevenue: { [key: string]: number } = {};
     const last6Months = Array.from({ length: 6 }, (_, i) => {
       const date = new Date();
       date.setMonth(date.getMonth() - i);
       return date.toISOString().slice(0, 7);
     }).reverse();
-
+  
     last6Months.forEach(month => {
       monthlyRevenue[month] = 0;
     });
-
+  
     allReservations
       .filter(res => res.status === "accepted")
       .forEach(reservation => {
@@ -230,20 +260,40 @@ export default function AdminDashboard() {
           monthlyRevenue[reservationMonth] += revenue;
         }
       });
-
+  
+    // FONCTION POUR TRADUIRE LES MOIS
+    const formatMonthForChart = (monthString: string) => {
+      const [year, month] = monthString.split('-');
+      const monthIndex = parseInt(month) - 1;
+      
+      const monthTranslations = [
+        t("common.months.jan"), t("common.months.feb"), t("common.months.mar"),
+        t("common.months.apr"), t("common.months.may"), t("common.months.jun"),
+        t("common.months.jul"), t("common.months.aug"), t("common.months.sep"),
+        t("common.months.oct"), t("common.months.nov"), t("common.months.dec")
+      ];
+      
+      return `${monthTranslations[monthIndex]} ${year}`;
+    };
+  
     const revenueChartData = last6Months.map(month => ({
-      name: format(new Date(month + "-01"), "MMM yyyy"),
+      name: formatMonthForChart(month), // ← Utiliser la nouvelle fonction
       value: Math.round(monthlyRevenue[month] / 100) * 100,
     }));
     setRevenueData(revenueChartData);
-
+  
     const reservationTrend = last6Months.map(month => ({
-      name: format(new Date(month + "-01"), "MMM yyyy"),
+      name: formatMonthForChart(month), // ← Utiliser la nouvelle fonction
       value: allReservations.filter(
         res => res.created_at.slice(0, 7) === month && res.status === "accepted"
       ).length,
     }));
     setReservationTrendData(reservationTrend);
+  };
+
+  const formatDateSafe = (dateString: string) => {
+    const date = new Date(dateString);
+    return isNaN(date.getTime()) ? "Date invalide" : format(date, "dd/MM/yyyy");
   };
 
   const COLORS = ["#2563EB", "#22C55E", "#F59E0B", "#8B5CF6", "#EC4899", "#06B6D4"];
@@ -314,6 +364,7 @@ export default function AdminDashboard() {
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.8 }}
                 className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8"
+                key={translationKey}
               >
                 <ChartCard
                   title={t("admin_dashboard.charts.revenue.title")}
@@ -324,10 +375,25 @@ export default function AdminDashboard() {
                   <ResponsiveContainer width="100%" height={300}>
                     <BarChart data={revenueData}>
                       <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="name" />
-                      <YAxis />
-                      <Tooltip formatter={(v) => [`${v} MAD`, "Revenu"]} />
-                      <Bar dataKey="value" fill="#2563EB" />
+                      <XAxis 
+                        dataKey="name"
+                        tick={{ fontSize: 12 }}
+                      />
+                      <YAxis 
+                        tick={{ fontSize: 12 }}
+                        tickFormatter={(value) => `${value} MAD`}
+                      />
+                      <Tooltip 
+                        formatter={(value: number) => [
+                          `${value.toLocaleString()} MAD`, 
+                          t("admin_dashboard.charts.revenue.tooltip")
+                        ]} 
+                      />
+                      <Bar 
+                        dataKey="value" 
+                        fill="#2563EB" 
+                        name={t("admin_dashboard.charts.revenue.tooltip")}
+                      />
                     </BarChart>
                   </ResponsiveContainer>
                 </ChartCard>
@@ -348,12 +414,18 @@ export default function AdminDashboard() {
                         }
                         outerRadius={100}
                         dataKey="value"
+                        nameKey="name"
                       >
                         {categoryData.map((_, index) => (
-                          <Cell key={index} fill={COLORS[index % COLORS.length]} />
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}
                       </Pie>
-                      <Tooltip formatter={(v) => [`${v} véhicules`, "Quantité"]} />
+                      <Tooltip 
+                        formatter={(value: number) => [
+                          value, 
+                          t("admin_dashboard.charts.categories.tooltip")
+                        ]} 
+                      />
                     </PieChart>
                   </ResponsiveContainer>
                 </ChartCard>
@@ -389,28 +461,21 @@ export default function AdminDashboard() {
                     <p>{t("admin_dashboard.messages.no_recent_reservations")}</p>
                   </div>
                 ) : (
-                  allReservations.slice(0, 5).map((r) => (
-                    <div
-                      key={r.id}
+                  allReservations.slice(0, 5).map((r,index) => (
+                    <div 
+                      key={r.id || `reservation-${index}`} 
                       className="p-4 border rounded-lg mb-2 hover:bg-gray-50 transition-colors"
                     >
                       <div className="flex justify-between items-center">
-                        <span className="font-semibold text-gray-800">{r.car_name}</span>
-                        <span
-                          className={`px-2 py-1 text-xs rounded-full ${
-                            r.status === "accepted"
-                              ? "bg-green-100 text-green-800"
-                              : r.status === "pending"
-                              ? "bg-yellow-100 text-yellow-800"
-                              : "bg-red-100 text-red-800"
-                          }`}
-                        >
-                          {r.status}
+                        <span className="font-semibold text-gray-800">
+                          {r.car_name || "Véhicule non spécifié"}
+                        </span>
+                        <span className={`px-2 py-1 text-xs rounded-full ${getStatusColorClasses(r.status)}`}>
+                          {translateStatus(r.status) || t("common.unknown")}
                         </span>
                       </div>
                       <p className="text-sm text-gray-600 mt-1">
-                        {format(new Date(r.pickup_date), "dd/MM/yyyy")} -{" "}
-                        {format(new Date(r.return_date), "dd/MM/yyyy")}
+                        {formatDateSafe(r.pickup_date)} - {formatDateSafe(r.return_date)}
                       </p>
                     </div>
                   ))

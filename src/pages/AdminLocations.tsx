@@ -17,6 +17,8 @@ interface Location {
   display_name: string;
   is_active: boolean;
   translation_key?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export default function AdminLocations() {
@@ -52,15 +54,15 @@ export default function AdminLocations() {
     try {
       setIsLoading(true);
       const { data, error } = await supabase
-        .from("active_locations" as any)
+        .from("active_locations")
         .select("*")
         .order("location_type")
         .order("display_name");
   
       if (error) throw error;
       
-      // Forcer le type avec 'as any'
-      setLocations((data as any) || []);
+      // Simplifier le typage - accepter les données telles quelles
+      setLocations((data as Location[]) || []);
     } catch (error: any) {
       console.error("Erreur chargement locations:", error);
       toast({
@@ -108,22 +110,23 @@ export default function AdminLocations() {
   const toggleLocationActive = async (location: Location) => {
     try {
       const { error } = await supabase
-        .from("active_locations" as any)
+        .from("active_locations")
         .update({ is_active: !location.is_active })
         .eq("id", location.id);
-
+  
       if (error) throw error;
-
-      const displayName = getTranslatedDisplayName(location);
-      
-      toast({
-        title: "Statut modifié",
-        description: `${displayName} est maintenant ${!location.is_active ? 'actif' : 'inactif'}`,
-      });
-
-      fetchLocations();
+  
+      // Mise à jour locale sans toast
+      setLocations(prevLocations => 
+        prevLocations.map(loc => 
+          loc.id === location.id 
+            ? { ...loc, is_active: !location.is_active }
+            : loc
+        )
+      );
     } catch (error: any) {
       console.error("Erreur modification:", error);
+      // Optionnel: garder le toast d'erreur seulement
       toast({
         title: "Erreur",
         description: "Impossible de modifier le statut",
@@ -160,18 +163,26 @@ export default function AdminLocations() {
         .replace(/[^a-z0-9\s]/g, '')
         .replace(/\s+/g, '_')
         .trim();
-
-      const { error } = await supabase
-        .from("active_locations" as any)
+  
+      const { data, error } = await supabase
+        .from("active_locations")
         .insert([{
           location_value: newLocation.location_value,
           location_type: newLocation.location_type,
           display_name: newLocation.display_name,
           translation_key: translationKey,
           is_active: true
-        }]);
+        }])
+        .select();
   
       if (error) throw error;
+  
+      // Accepter directement les données retournées
+      const addedLocation = data?.[0] as Location;
+      
+      if (addedLocation) {
+        setLocations(prevLocations => [...prevLocations, addedLocation]);
+      }
   
       toast({
         title: "Location ajoutée",
@@ -189,7 +200,6 @@ export default function AdminLocations() {
         isValid: true
       });
       setShowAddForm(false);
-      fetchLocations();
     } catch (error: any) {
       console.error("Erreur ajout:", error);
       
@@ -208,7 +218,6 @@ export default function AdminLocations() {
       }
     }
   };
-
   const getLocationIcon = (type: string) => {
     switch (type) {
       case 'airport':
@@ -272,7 +281,7 @@ export default function AdminLocations() {
     
     try {
       const { data, error } = await supabase
-        .from("active_locations" as any)
+        .from("active_locations")
         .select("location_value")
         .eq("location_value", locationValue)
         .single();

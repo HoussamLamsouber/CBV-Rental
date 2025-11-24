@@ -24,6 +24,7 @@ interface Vehicle {
   seats?: number;
   transmission?: string;
   reservation_count?: number;
+  available_now?: number;
 }
 
 export default function AdminVehicles() {
@@ -66,8 +67,24 @@ export default function AdminVehicles() {
       if (allResError) throw allResError;
 
       const vehiclesWithReservationCount = (carsData as Vehicle[]).map(vehicle => {
-        const reservationCount = allResData?.filter(res => res.car_id === vehicle.id).length || 0;
-        return { ...vehicle, reservation_count: reservationCount };
+        // Filtrer uniquement les réservations futures ou en cours
+        const activeReservations = allResData?.filter(
+          (res) =>
+            res.car_id === vehicle.id &&
+            ["pending", "accepted"].includes(res.status) &&
+            new Date(res.return_date) >= new Date() // pas déjà terminée
+        );
+
+        const usedCount = activeReservations?.length || 0;
+
+        // Calcul du nombre dispo
+        const availableCount = Math.max(vehicle.quantity - usedCount, 0);
+
+        return {
+          ...vehicle,
+          reservation_count: usedCount,
+          available_now: availableCount
+        };
       });
 
       setVehicles(vehiclesWithReservationCount || []);
@@ -233,6 +250,15 @@ export default function AdminVehicles() {
     });
   };
 
+  const getAvailabilityColor = (available_now: number, quantity: number) => {
+    const ratio = available_now / quantity;
+  
+    if (available_now === 0) return "bg-red-100 text-red-800 border-red-300";
+    if (ratio <= 0.3) return "bg-orange-100 text-orange-800 border-orange-300";
+    if (ratio <= 0.7) return "bg-yellow-100 text-yellow-800 border-yellow-300";
+    return "bg-green-100 text-green-800 border-green-300";
+  };  
+
   return (
     <>
       <div className="min-h-screen bg-gray-50 p-6">
@@ -265,19 +291,18 @@ export default function AdminVehicles() {
                     />
                     <div className="p-4">
                       <h2 className="text-lg font-semibold text-gray-900 truncate">{vehicle.name}</h2>
-                      <div className="flex items-center gap-2 mt-1 flex-wrap">
+                      <div className="flex items-center gap-2 mt-2">
                         <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                           {t(`admin_vehicles.categories.${vehicle.category}`)}
                         </span>
-                        {vehicle.available ? (
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                            {t('admin_vehicles.status.available')}
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                            {t('admin_vehicles.status.unavailable')}
-                          </span>
-                        )}
+
+                        <span
+                          className={`inline-flex items-center px-3 py-1 text-xs font-medium rounded-full border ${getAvailabilityColor(vehicle.available_now ?? 0, vehicle.quantity)}`}
+                        >
+                          {vehicle.available_now === 0
+                            ? t('admin_vehicles.status.fully_booked')
+                            : `${vehicle.available_now}/${vehicle.quantity} ${t('admin_vehicles.messages.available')}`}
+                        </span>
                       </div>
                       <div className="flex items-center justify-between mt-3 text-sm text-gray-600">
                         <span>{vehicle.seats} {t('admin_vehicles.messages.seats')}</span>

@@ -17,6 +17,7 @@
     "see_you_soon": "See you soon!",
     "error": "Error",
     "logout_error": "Unable to log out",
+    "email":"Email",
     
     "footer_description": "Your trusted partner for premium car rentals in Tangier and throughout Morocco.",
     "navigation": "Navigation",
@@ -638,7 +639,8 @@
             "reservations": "reservations",
             "image_uploaded": "Image uploaded",
             "image_upload_success": "Image has been successfully uploaded",
-            "cannot_upload_image": "Unable to upload image"
+            "cannot_upload_image": "Unable to upload image",
+            "available": "available"
         }
     },
 
@@ -697,7 +699,7 @@
             "verify_email": "Please check your emails and confirm your account.",
             "login_error": "Login error",
             "login_success": "Login successful!",
-            "welcome": "Welcome {email}"
+            "welcome": "Welcome {{name}}"
         },
         
         "admin_link": {

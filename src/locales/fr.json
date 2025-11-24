@@ -17,6 +17,7 @@
     "see_you_soon": "À bientôt !",
     "error": "Erreur",
     "logout_error": "Impossible de vous déconnecter",
+    "email":"Email",
 
     "footer_description": "Votre partenaire de confiance pour la location de véhicules premium à Tanger et dans tout le Maroc.",
     "navigation": "Navigation",
@@ -537,59 +538,60 @@
         "subtitle": "Surveillez les performances de votre flotte automobile",
         
         "stats": {
-        "total_vehicles": "Véhicules Total",
-        "available_vehicles": "Véhicules Disponibles",
-        "in_fleet": "Dans la flotte",
-        "ready_to_rent": "Prêts à louer",
-        "performance": "Performance",
-        "reservation_ratio": "Ratio réservations/véhicules",
-        "total_revenue": "Revenu Total",
-        "all_time": "Tous les temps",
-        "active_reservations": "Réservations Actives",
-        "total_reservations": "Réservations Totales",
-        "historical": "Historique total",
-        "this_month": "Ce mois",
-        "currently_ongoing": "En cours actuellement"
+            "total_vehicles": "Véhicules Total",
+            "available_vehicles": "Véhicules Disponibles",
+            "in_fleet": "Dans la flotte",
+            "ready_to_rent": "Prêts à louer",
+            "performance": "Performance",
+            "reservation_ratio": "Ratio réservations/véhicules",
+            "total_revenue": "Revenu Total",
+            "all_time": "Tous les temps",
+            "active_reservations": "Réservations Actives",
+            "total_reservations": "Réservations Totales",
+            "historical": "Historique total",
+            "this_month": "Ce mois",
+            "currently_ongoing": "En cours actuellement"
         },
         
         "vehicle_models": {
-        "title": "Modèles de Véhicules",
-        "subtitle": "Cliquez pour gérer chaque modèle",
-        "model_count": "modèles"
+            "title": "Modèles de Véhicules",
+            "subtitle": "Cliquez pour gérer chaque modèle",
+            "model_count": "modèles"
         },
         
         "recent_reservations": {
-        "title": "Réservations Récentes",
-        "subtitle": "7 derniers jours"
+            "title": "Réservations Récentes",
+            "subtitle": "7 derniers jours"
         },
         
         "status": {
-        "available": "Disponible",
-        "unavailable": "Indisponible"
+            "available": "Disponible",
+            "unavailable": "Indisponible",
+            "fully_booked": "Non disponible"
         },
         
         "fuel_types": {
-        "fuel_gasoline": "Essence",
-        "fuel_electric": "Électrique",
-        "fuel_diesel": "Diesel",
-        "fuel_hybrid": "Hybride"
+            "fuel_gasoline": "Essence",
+            "fuel_electric": "Électrique",
+            "fuel_diesel": "Diesel",
+            "fuel_hybrid": "Hybride"
         },
         
         "transmission_types": {
-        "transmission_manual": "Manuelle",
-        "transmission_automatic": "Automatique"
+            "transmission_manual": "Manuelle",
+            "transmission_automatic": "Automatique"
         },
 
         "categories": {
-        "category_electric": "Électrique",
-        "category_suv": "SUV",
-        "category_urban_suv": "SUV Urbain",
-        "category_sedan": "Berline"
+            "category_electric": "Électrique",
+            "category_suv": "SUV",
+            "category_urban_suv": "SUV Urbain",
+            "category_sedan": "Berline"
         },
         
         "actions": {
-        "add_vehicle": "Ajouter un véhicule",
-        "see_all": "Voir tout"
+            "add_vehicle": "Ajouter un véhicule",
+            "see_all": "Voir tout"
         },
         
         "modals": {
@@ -638,7 +640,8 @@
             "reservations": "réservations",
             "image_uploaded": "Image téléchargée",
             "image_upload_success": "L'image a été téléchargée avec succès",
-            "cannot_upload_image": "Impossible de télécharger l'image"
+            "cannot_upload_image": "Impossible de télécharger l'image",
+            "available": "disponible(s)"
         }
     },
 
@@ -697,7 +700,7 @@
             "verify_email": "Veuillez vérifier vos emails et confirmer votre compte.",
             "login_error": "Erreur de connexion",
             "login_success": "Connexion réussie !",
-            "welcome": "Bienvenue {email}"
+            "welcome": "Bienvenue {name}"
         },
         
         "admin_link": {

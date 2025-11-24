@@ -160,9 +160,9 @@ const Auth = () => {
       });
       return;
     }
-
+  
     setLoading(true);
-
+  
     try {
       console.log("Tentative de connexion pour:", loginEmail);
       
@@ -170,9 +170,9 @@ const Auth = () => {
         email: loginEmail.trim(),
         password: loginPassword.trim(),
       });
-
+  
       console.log("Réponse connexion Supabase:", { data, error });
-
+  
       if (error) {
         console.error("Erreur de connexion:", error);
         
@@ -197,9 +197,13 @@ const Auth = () => {
         }
       } else {
         console.log("Connexion réussie:", data);
+        
+        // Récupérer le nom complet depuis les metadata utilisateur
+        const userName = data.user?.user_metadata?.full_name || data.user?.email || '';
+        
         toast({
           title: t('auth.messages.login_success'),
-          description: t('auth.messages.welcome', { email: data.user?.email || '' }),
+          description: t('auth.messages.welcome', { name: userName }),
         });
       }
     } catch (error: any) {

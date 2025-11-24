@@ -298,72 +298,35 @@ const handleRemoveAdmin = async (profileId: string, email: string) => {
 
 const handleDeleteUser = async (profileId: string, email: string, userRole: string) => {
   const roleText = userRole === 'admin' ? t('admin_users.roles.admin') : t('admin_users.roles.client');
-  
+
   if (!confirm(t('admin_users.messages.confirm_delete_user', { email, role: roleText }))) {
     return;
   }
 
   try {
-    console.log("🗑️ Suppression de l'utilisateur:", email);
-
-    // Essayer de supprimer d'abord les réservations
-    const { error: reservationsError } = await supabase
-      .from("reservations")
-      .delete()
-      .eq("user_id", profileId);
-
-    if (reservationsError) {
-      console.warn("⚠️ Erreur suppression réservations:", reservationsError);
-      // On continue quand même
-    }
-
-    // Supprimer le profil
-    const { error: profileError } = await supabase
-      .from("profiles")
-      .delete()
-      .eq("id", profileId);
-
-    if (profileError) {
-      console.error("❌ Erreur suppression profil:", profileError);
-      throw profileError;
-    }
-
-    console.log("✅ Utilisateur supprimé");
-
+    const { error: rpcError } = await supabase.rpc('delete_user_profile', {
+      target_user_id: profileId
+    });
+  
+    if (rpcError) throw rpcError;
+  
     toast({
       title: t('admin_users.messages.user_deleted'),
       description: t('admin_users.messages.user_deleted_permanently', { email }),
     });
-
+  
     await loadProfiles();
-
-  } catch (error: any) {
-    console.error("Erreur suppression utilisateur:", error);
-    
-    // Si l'approche directe échoue, utiliser une fonction stockée
-    try {
-      const { error: rpcError } = await supabase.rpc('delete_user_profile', {
-        user_id: profileId
-      });
-
-      if (rpcError) throw rpcError;
-
-      toast({
-        title: t('admin_users.messages.user_deleted'),
-        description: t('admin_users.messages.user_deleted_permanently', { email }),
-      });
-
-      await loadProfiles();
-
-    } catch (rpcError: any) {
-      toast({
-        title: t("error"),
-        description: t('admin_users.messages.cannot_delete_user'),
-        variant: "destructive",
-      });
-    }
+  
+  } catch (rpcError: any) {
+    toast({
+      title: t("error"),
+      description: t('admin_users.messages.cannot_delete_user'),
+      variant: "destructive",
+    });
   }
+  
 };
+
 
   const formatDateTime = (dateString: string | null) => {
     if (!dateString) return t('admin_users.messages.never');

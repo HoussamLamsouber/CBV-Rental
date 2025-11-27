@@ -7,7 +7,7 @@ import { Dialog } from "@headlessui/react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Car, ArrowRight, Upload, X } from "lucide-react";
+import { Plus, Car, ArrowRight, Upload, X, Table, Grid, Search, Filter, Edit, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Footer } from "@/components/Footer";
 import { motion } from "framer-motion";
@@ -25,13 +25,100 @@ interface Vehicle {
   transmission?: string;
   reservation_count?: number;
   available_now?: number;
+  maintenance_count?: number;
+}
+
+interface VehicleCardProps {
+  vehicle: Vehicle;
+  getAvailabilityColor: (available_now: number, quantity: number) => string;
+  t: any;
+  onEdit: (vehicle: Vehicle) => void;
+  onDelete: (vehicle: Vehicle) => void;
+}
+
+// Composant VehicleCard séparé
+function VehicleCard({ vehicle, getAvailabilityColor, t, onEdit, onDelete }: VehicleCardProps) {
+  return (
+    <motion.div
+      key={vehicle.id}
+      whileHover={{ scale: 1.03, boxShadow: "0px 4px 15px rgba(0,0,0,0.1)" }}
+      className="bg-white border border-gray-200 rounded-xl overflow-hidden transition-all group"
+    >
+      <Link to={`/admin/vehicle/${vehicle.id}`}>
+        <img
+          src={vehicle.image_url || "/placeholder-car.jpg"}
+          alt={vehicle.name}
+          className="w-full h-40 object-cover group-hover:scale-105 transition-transform duration-300"
+        />
+        <div className="p-4">
+          <div className="flex items-start justify-between mb-2">
+            <h2 className="text-lg font-semibold text-gray-900 truncate flex-1">{vehicle.name}</h2>
+            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              <button 
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onEdit(vehicle);
+                }}
+                className="p-1 text-gray-400 hover:text-blue-600 transition-colors"
+                title="Modifier"
+              >
+                <Edit className="h-4 w-4" />
+              </button>
+              <button 
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onDelete(vehicle);
+                }}
+                className="p-1 text-gray-400 hover:text-red-600 transition-colors"
+                title="Supprimer"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-2 mb-3">
+            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+              {t(`admin_vehicles.categories.${vehicle.category}`)}
+            </span>
+
+            <span
+              className={`inline-flex items-center px-3 py-1 text-xs font-medium rounded-full border ${getAvailabilityColor(vehicle.available_now ?? 0, vehicle.quantity)}`}
+            >
+              {vehicle.available_now === 0
+                ? t('admin_vehicles.status.fully_booked')
+                : `${vehicle.available_now}/${vehicle.quantity} ${t('admin_vehicles.messages.available')}`}
+            </span>
+          </div>
+          
+          <div className="space-y-2 text-sm text-gray-600">
+            <div className="flex justify-between">
+              <span>{vehicle.seats} {t('admin_vehicles.messages.seats')}</span>
+              <span className="font-semibold text-gray-900">{vehicle.price} MAD</span>
+            </div>
+            <div className="flex justify-between text-xs">
+              <span>{t(`admin_vehicles.fuel_types.${vehicle.fuel}`)}</span>
+              <span>{t(`admin_vehicles.transmission_types.${vehicle.transmission}`)}</span>
+            </div>
+          </div>
+        </div>
+      </Link>
+    </motion.div>
+  );
 }
 
 export default function AdminVehicles() {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingVehicle, setEditingVehicle] = useState<Vehicle | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [imageUploading, setImageUploading] = useState(false);
+  const [viewMode, setViewMode] = useState<"cards" | "table">("cards");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterCategory, setFilterCategory] = useState("all");
   const { toast } = useToast();
   const { t } = useTranslation();
 
@@ -41,9 +128,9 @@ export default function AdminVehicles() {
     price: "",
     quantity: "",
     image_url: "",
-    fuel: "fuel_gasoline",
+    fuel: "",
     seats: "",
-    transmission: "transmission_manual"
+    transmission: ""
   });
 
   useEffect(() => {
@@ -53,6 +140,8 @@ export default function AdminVehicles() {
   const fetchVehicles = async () => {
     try {
       setIsLoading(true);
+
+      // Récupère les modèles
       const { data: carsData, error: carsError } = await supabase
         .from("cars")
         .select("*")
@@ -60,36 +149,33 @@ export default function AdminVehicles() {
 
       if (carsError) throw carsError;
 
-      const { data: allResData, error: allResError } = await supabase
-        .from("reservations")
-        .select("*");
+      // Récupère l'état réel de chaque véhicule physique
+      const { data: vehiclesData, error: vehiclesError } = await supabase
+        .from("vehicles")
+        .select("car_id, status")
+        .is("is_deleted", false);
 
-      if (allResError) throw allResError;
+      if (vehiclesError) throw vehiclesError;
 
-      const vehiclesWithReservationCount = (carsData as Vehicle[]).map(vehicle => {
-        // Filtrer uniquement les réservations futures ou en cours
-        const activeReservations = allResData?.filter(
-          (res) =>
-            res.car_id === vehicle.id &&
-            ["pending", "accepted"].includes(res.status) &&
-            new Date(res.return_date) >= new Date() // pas déjà terminée
-        );
+      // Construire la map count par modèle
+      const stockTracker = carsData.map(car => {
+        const relatedVehicles = vehiclesData.filter(v => v.car_id === car.id);
 
-        const usedCount = activeReservations?.length || 0;
-
-        // Calcul du nombre dispo
-        const availableCount = Math.max(vehicle.quantity - usedCount, 0);
+        const availableCount = relatedVehicles.filter(v => v.status === "available").length;
+        const reservedCount = relatedVehicles.filter(v => v.status === "reserved").length;
+        const maintenanceCount = relatedVehicles.filter(v => v.status === "maintenance").length;
 
         return {
-          ...vehicle,
-          reservation_count: usedCount,
-          available_now: availableCount
+          ...car,
+          available_now: availableCount,
+          reservation_count: reservedCount,
+          maintenance_count: maintenanceCount,
         };
       });
 
-      setVehicles(vehiclesWithReservationCount || []);
+      setVehicles(stockTracker);
     } catch (error) {
-      console.error("Erreur chargement véhicules:", error);
+      console.error(error);
       toast({
         title: t("error"),
         description: t('admin_vehicles.messages.cannot_load_data'),
@@ -154,7 +240,76 @@ export default function AdminVehicles() {
     }
   };
 
-  const handleCreateVehicle = async () => {
+  const handleCreateVehicle = async (e: React.FormEvent) => {
+
+    e.preventDefault(); // ← AJOUTEZ CETTE LIGNE
+  
+    // DEBUG: Afficher les valeurs actuelles
+    console.log('Valeurs du formulaire:', {
+      name: newVehicle.name,
+      category: newVehicle.category,
+      price: newVehicle.price,
+      quantity: newVehicle.quantity,
+      fuel: newVehicle.fuel,
+      transmission: newVehicle.transmission,
+      seats: newVehicle.seats
+    });
+
+    // Validation améliorée
+    const requiredFields = [
+      { field: 'name', value: newVehicle.name, label: 'Nom du modèle' },
+      { field: 'category', value: newVehicle.category, label: 'Catégorie' },
+      { field: 'price', value: newVehicle.price, label: 'Prix' },
+      { field: 'quantity', value: newVehicle.quantity, label: 'Quantité' },
+      { field: 'fuel', value: newVehicle.fuel, label: 'Carburant' },
+      { field: 'transmission', value: newVehicle.transmission, label: 'Transmission' },
+      { field: 'seats', value: newVehicle.seats, label: 'Sièges' }
+    ];
+
+    const missingFields = requiredFields.filter(field => !field.value);
+    
+    if (missingFields.length > 0) {
+      console.log('❌ Champs manquants:', missingFields);
+      toast({
+        title: t('admin_vehicles.messages.missing_fields'),
+        description: `Champs obligatoires manquants: ${missingFields.map(f => f.label).join(', ')}`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validation des nombres
+    const price = Number(newVehicle.price);
+    const quantity = Number(newVehicle.quantity);
+    const seats = Number(newVehicle.seats);
+
+    if (isNaN(price) || price <= 0) {
+      toast({
+        title: "Prix invalide",
+        description: "Le prix doit être un nombre positif",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (isNaN(quantity) || quantity <= 0) {
+      toast({
+        title: "Quantité invalide",
+        description: "La quantité doit être un nombre positif",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (isNaN(seats) || seats < 1 || seats > 9) {
+      toast({
+        title: "Sièges invalides",
+        description: "Le nombre de sièges doit être entre 1 et 9",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (!newVehicle.name || !newVehicle.category || !newVehicle.price || !newVehicle.quantity) {
       toast({
         title: t('admin_vehicles.messages.missing_fields'),
@@ -226,7 +381,7 @@ export default function AdminVehicles() {
       setIsCreateModalOpen(false);
       fetchVehicles();
     } catch (error: any) {
-      console.error("Erreur création modèle:", error);
+      console.error("❌ Erreur création modèle:", error);
       toast({
         title: t("error"),
         description: error.message || t('admin_vehicles.messages.cannot_create_model'),
@@ -250,6 +405,107 @@ export default function AdminVehicles() {
     });
   };
 
+  const handleEditVehicle = (vehicle: Vehicle) => {
+    setEditingVehicle(vehicle);
+    setNewVehicle({
+      name: vehicle.name,
+      category: vehicle.category,
+      price: vehicle.price.toString(),
+      quantity: vehicle.quantity.toString(),
+      image_url: vehicle.image_url || "",
+      fuel: vehicle.fuel || "fuel_gasoline",
+      seats: vehicle.seats?.toString() || "",
+      transmission: vehicle.transmission || "transmission_manual"
+    });
+    setIsEditModalOpen(true);
+  };
+
+  const handleUpdateVehicle = async () => {
+    if (!editingVehicle || !newVehicle.name || !newVehicle.category || !newVehicle.price || !newVehicle.quantity) {
+      toast({
+        title: t('admin_vehicles.messages.missing_fields'),
+        description: t('admin_vehicles.messages.fill_required_fields'),
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const { error } = await supabase
+        .from("cars")
+        .update({
+          name: newVehicle.name,
+          category: newVehicle.category,
+          price: Number(newVehicle.price),
+          quantity: Number(newVehicle.quantity),
+          image_url: newVehicle.image_url || null,
+          fuel: newVehicle.fuel,
+          seats: newVehicle.seats ? Number(newVehicle.seats) : null,
+          transmission: newVehicle.transmission,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", editingVehicle.id);
+
+      if (error) throw error;
+
+      toast({
+        title: t('admin_vehicles.messages.model_updated'),
+        description: t('admin_vehicles.messages.model_updated_success', { name: newVehicle.name }),
+      });
+
+      resetForm();
+      setIsEditModalOpen(false);
+      setEditingVehicle(null);
+      fetchVehicles();
+    } catch (error: any) {
+      console.error("Erreur modification modèle:", error);
+      toast({
+        title: "Erreur",
+        description: error.message || "Impossible de modifier le modèle",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeleteVehicle = async (vehicle: Vehicle) => {
+    if (!confirm(`Êtes-vous sûr de vouloir supprimer le modèle "${vehicle.name}" ?`)) {
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const { error } = await supabase
+        .from("cars")
+        .update({
+          is_deleted: true,
+          deleted_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", vehicle.id);
+
+      if (error) throw error;
+
+      toast({
+        title: t('admin_vehicles.messages.model_deleted'),
+        description: t('admin_vehicles.messages.model_deleted_success', { name: vehicle.name }),
+      });
+
+      fetchVehicles();
+    } catch (error: any) {
+      console.error("Erreur suppression modèle:", error);
+      toast({
+        title: "Erreur",
+        description: error.message || "Impossible de supprimer le modèle",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const getAvailabilityColor = (available_now: number, quantity: number) => {
     const ratio = available_now / quantity;
   
@@ -257,67 +513,281 @@ export default function AdminVehicles() {
     if (ratio <= 0.3) return "bg-orange-100 text-orange-800 border-orange-300";
     if (ratio <= 0.7) return "bg-yellow-100 text-yellow-800 border-yellow-300";
     return "bg-green-100 text-green-800 border-green-300";
-  };  
+  };
+
+  // Filtrage des véhicules
+  const filteredVehicles = vehicles.filter(vehicle => {
+    const matchesSearch = searchTerm === "" || 
+      vehicle.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      vehicle.category.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesCategory = filterCategory === "all" || vehicle.category === filterCategory;
+
+    return matchesSearch && matchesCategory;
+  });
+
+  // Calcul des statistiques
+  const totalVehicles = vehicles.length;
+  const availableVehicles = vehicles.reduce((sum, vehicle) => sum + (vehicle.available_now || 0), 0);
+  const reservedVehicles = vehicles.reduce((sum, vehicle) => sum + (vehicle.reservation_count || 0), 0);
 
   return (
     <>
-      <div className="min-h-screen bg-gray-50 p-6">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50/30 p-4 sm:p-6">
         <div className="max-w-7xl mx-auto">
-          {/* Barre de titre dynamique */}
+          {/* En-tête amélioré */}
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">{t('admin_vehicles.title')}</h1>
-            <p className="text-gray-600">{t('admin_vehicles.subtitle')}</p>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-white rounded-xl shadow-sm border border-gray-100">
+                  <Car className="h-8 w-8 text-blue-600" />
+                </div>
+                <div>
+                  <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
+                    {t('admin_vehicles.title')}
+                  </h1>
+                  <p className="text-gray-600 text-sm sm:text-base">
+                    {t('admin_vehicles.subtitle')}
+                  </p>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-3">
+                <div className="flex bg-white rounded-lg border border-gray-200 p-1">
+                  <button
+                    onClick={() => setViewMode("cards")}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-md transition-all ${
+                      viewMode === "cards" 
+                        ? "bg-blue-600 text-white shadow-sm" 
+                        : "text-gray-600 hover:text-gray-900"
+                    }`}
+                    title="Mode cartes"
+                  >
+                    <Grid className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={() => setViewMode("table")}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-md transition-all ${
+                      viewMode === "table" 
+                        ? "bg-blue-600 text-white shadow-sm" 
+                        : "text-gray-600 hover:text-gray-900"
+                    }`}
+                    title="Mode tableau"
+                  >
+                    <Table className="h-4 w-4" />
+                  </button>
+                </div>
+
+                <button
+                  onClick={() => setIsCreateModalOpen(true)}
+                  className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-2.5 rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all shadow-sm hover:shadow-md"
+                >
+                  <Plus className="h-4 w-4" />
+                  {t('admin_vehicles.actions.add_vehicle')}
+                </button>
+              </div>
+            </div>
           </div>
 
-          {/* Loader central */}
+          {/* Barre de recherche et filtres */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-8">
+            <div className="flex flex-col lg:flex-row gap-4">
+              <div className="flex-1 relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <input
+                  type="text"
+                  placeholder="Rechercher par nom, catégorie..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-gray-50/50 transition-colors"
+                />
+              </div>
+
+              <div className="flex gap-3">
+                <div className="relative">
+                  <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <select
+                    value={filterCategory}
+                    onChange={(e) => setFilterCategory(e.target.value)}
+                    className="pl-10 pr-8 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-gray-50/50 appearance-none cursor-pointer"
+                  >
+                    <option value="all">Toutes les catégories</option>
+                    <option value="category_electric">{t('admin_vehicles.categories.category_electric')}</option>
+                    <option value="category_suv">{t('admin_vehicles.categories.category_suv')}</option>
+                    <option value="category_urban_suv">{t('admin_vehicles.categories.category_urban_suv')}</option>
+                    <option value="category_sedan">{t('admin_vehicles.categories.category_sedan')}</option>
+                  </select>
+                </div>
+
+                {(searchTerm || filterCategory !== "all") && (
+                  <button
+                    onClick={() => {
+                      setSearchTerm("");
+                      setFilterCategory("all");
+                    }}
+                    className="flex items-center gap-2 px-4 py-3 border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors text-sm"
+                  >
+                    <X className="h-4 w-4" />
+                    Réinitialiser
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Liste des véhicules */}
           {isLoading ? (
             <div className="text-center py-24">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
               <p className="text-gray-600">{t('admin_vehicles.messages.loading')}</p>
             </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {vehicles.map(vehicle => (
-                <motion.div
-                  key={vehicle.id}
-                  whileHover={{ scale: 1.03, boxShadow: "0px 4px 15px rgba(0,0,0,0.1)" }}
-                  className="bg-white border border-gray-200 rounded-xl overflow-hidden transition-all"
+          ) : filteredVehicles.length === 0 ? (
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
+              <div className="text-gray-300 text-6xl mb-4">🚗</div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-3">
+                {searchTerm || filterCategory !== "all" 
+                  ? "Aucun résultat trouvé"
+                  : "Aucun véhicule"
+                }
+              </h3>
+              <p className="text-gray-600 max-w-md mx-auto mb-6">
+                {searchTerm || filterCategory !== "all"
+                  ? "Essayez de modifier vos critères de recherche."
+                  : "Créez votre premier véhicule pour commencer."
+                }
+              </p>
+              {(searchTerm || filterCategory !== "all") ? (
+                <button
+                  onClick={() => {
+                    setSearchTerm("");
+                    setFilterCategory("all");
+                  }}
+                  className="bg-blue-600 text-white px-6 py-2.5 rounded-lg hover:bg-blue-700 transition-colors"
                 >
-                  <Link to={`/admin/vehicle/${vehicle.id}`}>
-                    <img
-                      src={vehicle.image_url || "/placeholder-car.jpg"}
-                      alt={vehicle.name}
-                      className="w-full h-40 object-cover"
-                    />
-                    <div className="p-4">
-                      <h2 className="text-lg font-semibold text-gray-900 truncate">{vehicle.name}</h2>
-                      <div className="flex items-center gap-2 mt-2">
-                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                          {t(`admin_vehicles.categories.${vehicle.category}`)}
-                        </span>
-
-                        <span
-                          className={`inline-flex items-center px-3 py-1 text-xs font-medium rounded-full border ${getAvailabilityColor(vehicle.available_now ?? 0, vehicle.quantity)}`}
-                        >
+                  Réinitialiser
+                </button>
+              ) : (
+                <button
+                  onClick={() => setIsCreateModalOpen(true)}
+                  className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-2.5 rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all"
+                >
+                  <Plus className="h-4 w-4 inline mr-2" />
+                  {t('admin_vehicles.actions.add_vehicle')}
+                </button>
+              )}
+            </div>
+          ) : viewMode === "table" ? (
+            // Vue tableau
+            <div className="overflow-hidden bg-white rounded-xl shadow-sm border border-gray-100">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      Véhicule
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      Catégorie
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      Prix
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      Disponibilité
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      Sièges
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      Carburant
+                    </th>
+                    <th className="px-6 py-4 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {filteredVehicles.map((vehicle) => (
+                    <tr key={vehicle.id} className="hover:bg-gray-50/50 transition-colors">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center gap-3">
+                          <img
+                            src={vehicle.image_url || "/placeholder-car.jpg"}
+                            alt={vehicle.name}
+                            className="w-12 h-8 object-cover rounded-lg"
+                          />
+                          <span className="text-sm font-medium text-gray-900">{vehicle.name}</span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                        {t(`admin_vehicles.categories.${vehicle.category}`)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        {vehicle.price} MAD
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          getAvailabilityColor(vehicle.available_now ?? 0, vehicle.quantity)
+                        }`}>
                           {vehicle.available_now === 0
                             ? t('admin_vehicles.status.fully_booked')
-                            : `${vehicle.available_now}/${vehicle.quantity} ${t('admin_vehicles.messages.available')}`}
+                            : `${vehicle.available_now}/${vehicle.quantity}`}
                         </span>
-                      </div>
-                      <div className="flex items-center justify-between mt-3 text-sm text-gray-600">
-                        <span>{vehicle.seats} {t('admin_vehicles.messages.seats')}</span>
-                        <span>{vehicle.price} MAD</span>
-                      </div>
-                    </div>
-                  </Link>
-                </motion.div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                        {vehicle.seats || '-'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                        {t(`admin_vehicles.fuel_types.${vehicle.fuel}`)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex justify-center gap-1">
+                          <Link
+                            to={`/admin/vehicle/${vehicle.id}`}
+                            className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                            title="Voir détails"
+                          >
+                            <Car className="h-4 w-4" />
+                          </Link>
+                          <button
+                            onClick={() => handleEditVehicle(vehicle)}
+                            className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                            title="Modifier"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteVehicle(vehicle)}
+                            className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Supprimer"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            // Vue cartes
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredVehicles.map(vehicle => (
+                <VehicleCard 
+                  key={vehicle.id}
+                  vehicle={vehicle}
+                  getAvailabilityColor={getAvailabilityColor}
+                  t={t}
+                  onEdit={handleEditVehicle}
+                  onDelete={handleDeleteVehicle}
+                />
               ))}
 
               {/* Card pour ajouter un nouveau véhicule */}
               <motion.div
                 onClick={() => setIsCreateModalOpen(true)}
                 whileHover={{ scale: 1.03, backgroundColor: "#ebf8ff" }}
-                className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer transition-colors"
+                className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer transition-colors bg-white"
               >
                 <Plus className="h-8 w-8 text-blue-400 mb-2" />
                 <p className="text-gray-600 font-medium">{t('admin_vehicles.actions.add_vehicle')}</p>
@@ -335,7 +805,7 @@ export default function AdminVehicles() {
                   {t('admin_vehicles.modals.create_vehicle.title')}
                 </Dialog.Title>
                 
-                <div className="space-y-6">
+                <form onSubmit={handleCreateVehicle} className="space-y-6">
                   {/* Section Informations de base */}
                   <div>
                     <h3 className="text-lg font-medium text-gray-900 mb-4">
@@ -353,6 +823,7 @@ export default function AdminVehicles() {
                           placeholder={t('admin_vehicles.modals.create_vehicle.model_name_placeholder')}
                           className="mt-1"
                           required
+                          minLength={2}
                         />
                       </div>
                       
@@ -367,6 +838,7 @@ export default function AdminVehicles() {
                           className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                           required
                         >
+                          <option value="">{t('admin_vehicles.modals.create_vehicle.select_category')}</option>
                           <option value="category_electric">{t('admin_vehicles.categories.category_electric')}</option>
                           <option value="category_suv">{t('admin_vehicles.categories.category_suv')}</option>
                           <option value="category_urban_suv">{t('admin_vehicles.categories.category_urban_suv')}</option>
@@ -386,7 +858,7 @@ export default function AdminVehicles() {
                           placeholder="0.00"
                           className="mt-1"
                           min="0"
-                          step="1"
+                          step="0.01"
                           required
                         />
                       </div>
@@ -417,14 +889,16 @@ export default function AdminVehicles() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <Label htmlFor="fuel" className="text-sm font-medium">
-                          {t('admin_vehicles.modals.create_vehicle.fuel')}
+                          {t('admin_vehicles.modals.create_vehicle.fuel')} *
                         </Label>
                         <select
                           id="fuel"
                           value={newVehicle.fuel}
                           onChange={(e) => setNewVehicle({...newVehicle, fuel: e.target.value})}
                           className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          required
                         >
+                          <option value="">{t('admin_vehicles.modals.create_vehicle.select_fuel')}</option>
                           <option value="fuel_gasoline">{t('admin_vehicles.fuel_types.fuel_gasoline')}</option>
                           <option value="fuel_diesel">{t('admin_vehicles.fuel_types.fuel_diesel')}</option>
                           <option value="fuel_electric">{t('admin_vehicles.fuel_types.fuel_electric')}</option>
@@ -434,14 +908,16 @@ export default function AdminVehicles() {
 
                       <div>
                         <Label htmlFor="transmission" className="text-sm font-medium">
-                          {t('admin_vehicles.modals.create_vehicle.transmission')}
+                          {t('admin_vehicles.modals.create_vehicle.transmission')} *
                         </Label>
                         <select
                           id="transmission"
                           value={newVehicle.transmission}
                           onChange={(e) => setNewVehicle({...newVehicle, transmission: e.target.value})}
                           className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          required
                         >
+                          <option value="">{t('admin_vehicles.modals.create_vehicle.select_transmission')}</option>
                           <option value="transmission_manual">{t('admin_vehicles.transmission_types.transmission_manual')}</option>
                           <option value="transmission_automatic">{t('admin_vehicles.transmission_types.transmission_automatic')}</option>
                         </select>
@@ -449,7 +925,7 @@ export default function AdminVehicles() {
 
                       <div>
                         <Label htmlFor="seats" className="text-sm font-medium">
-                          {t('admin_vehicles.modals.create_vehicle.seats')}
+                          {t('admin_vehicles.modals.create_vehicle.seats')} *
                         </Label>
                         <Input
                           id="seats"
@@ -460,6 +936,7 @@ export default function AdminVehicles() {
                           className="mt-1"
                           min="1"
                           max="9"
+                          required
                         />
                       </div>
                     </div>
@@ -527,39 +1004,302 @@ export default function AdminVehicles() {
                       </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="flex justify-between items-center pt-6 border-t mt-6">
-                  <Button 
-                    variant="outline" 
-                    onClick={() => {
-                      resetForm();
-                      setIsCreateModalOpen(false);
-                    }}
-                  >
-                    {t('admin_vehicles.modals.create_vehicle.cancel')}
-                  </Button>
-                  
-                  <div className="flex gap-3">
+                  <div className="flex justify-between items-center pt-6 border-t mt-6">
                     <Button 
-                      variant="secondary" 
-                      onClick={resetForm}
+                      type="button"
+                      variant="outline" 
+                      onClick={() => {
+                        resetForm();
+                        setIsCreateModalOpen(false);
+                      }}
                       disabled={isLoading}
                     >
-                      {t('admin_vehicles.modals.create_vehicle.reset')}
+                      {t('admin_vehicles.modals.create_vehicle.cancel')}
                     </Button>
-                    <Button 
-                      onClick={handleCreateVehicle} 
-                      disabled={isLoading}
-                      className="bg-blue-600 hover:bg-blue-700"
-                    >
-                      {isLoading 
-                        ? t('admin_vehicles.modals.create_vehicle.creating') 
-                        : t('admin_vehicles.modals.create_vehicle.create_model')
-                      }
-                    </Button>
+                    
+                    <div className="flex gap-3">
+                      <Button 
+                        type="button"
+                        variant="secondary" 
+                        onClick={resetForm}
+                        disabled={isLoading}
+                      >
+                        {t('admin_vehicles.modals.create_vehicle.reset')}
+                      </Button>
+                      <Button 
+                        type="submit"
+                        disabled={isLoading}
+                        className="bg-blue-600 hover:bg-blue-700"
+                      >
+                        {isLoading 
+                          ? t('admin_vehicles.modals.create_vehicle.creating') 
+                          : t('admin_vehicles.modals.create_vehicle.create_model')
+                        }
+                      </Button>
+                    </div>
                   </div>
-                </div>
+                </form>
+              </Dialog.Panel>
+            </div>
+          </Dialog>
+
+          {/* Edit Vehicle Modal */}
+          <Dialog open={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} className="relative z-50">
+            <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
+            <div className="fixed inset-0 flex items-center justify-center p-4">
+              <Dialog.Panel className="bg-white rounded-xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+                <Dialog.Title className="text-xl font-semibold mb-6 flex items-center gap-2">
+                  <Edit className="h-5 w-5" />
+                  Modifier le modèle - {editingVehicle?.name}
+                </Dialog.Title>
+                
+                <form onSubmit={(e) => { e.preventDefault(); handleUpdateVehicle(); }} className="space-y-6">
+                  {/* Section Informations de base */}
+                  <div>
+                    <h3 className="text-lg font-medium text-gray-900 mb-4">
+                      {t('admin_vehicles.modals.create_vehicle.basic_info')}
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="edit-name" className="text-sm font-medium">
+                          {t('admin_vehicles.modals.create_vehicle.model_name')} *
+                        </Label>
+                        <Input
+                          id="edit-name"
+                          value={newVehicle.name}
+                          onChange={(e) => setNewVehicle({...newVehicle, name: e.target.value})}
+                          placeholder={t('admin_vehicles.modals.create_vehicle.model_name_placeholder')}
+                          className="mt-1"
+                          required
+                          minLength={2}
+                        />
+                      </div>
+                      
+                      <div>
+                        <Label htmlFor="edit-category" className="text-sm font-medium">
+                          {t('admin_vehicles.modals.create_vehicle.category')} *
+                        </Label>
+                        <select
+                          id="edit-category"
+                          value={newVehicle.category}
+                          onChange={(e) => setNewVehicle({...newVehicle, category: e.target.value})}
+                          className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          required
+                        >
+                          <option value="">{t('admin_vehicles.modals.create_vehicle.select_category')}</option>
+                          <option value="category_electric">{t('admin_vehicles.categories.category_electric')}</option>
+                          <option value="category_suv">{t('admin_vehicles.categories.category_suv')}</option>
+                          <option value="category_urban_suv">{t('admin_vehicles.categories.category_urban_suv')}</option>
+                          <option value="category_sedan">{t('admin_vehicles.categories.category_sedan')}</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <Label htmlFor="edit-price" className="text-sm font-medium">
+                          {t('admin_vehicles.modals.create_vehicle.price_per_day')} (MAD) *
+                        </Label>
+                        <Input
+                          id="edit-price"
+                          type="number"
+                          value={newVehicle.price}
+                          onChange={(e) => setNewVehicle({...newVehicle, price: e.target.value})}
+                          placeholder="0.00"
+                          className="mt-1"
+                          min="0"
+                          step="0.01"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <Label htmlFor="edit-quantity" className="text-sm font-medium">
+                          {t('admin_vehicles.modals.create_vehicle.initial_stock')} *
+                        </Label>
+                        <Input
+                          id="edit-quantity"
+                          type="number"
+                          value={newVehicle.quantity}
+                          onChange={(e) => setNewVehicle({...newVehicle, quantity: e.target.value})}
+                          placeholder="1"
+                          className="mt-1"
+                          min="1"
+                          required
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Section Spécifications techniques */}
+                  <div>
+                    <h3 className="text-lg font-medium text-gray-900 mb-4">
+                      {t('admin_vehicles.modals.create_vehicle.technical_specs')}
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="edit-fuel" className="text-sm font-medium">
+                          {t('admin_vehicles.modals.create_vehicle.fuel')} *
+                        </Label>
+                        <select
+                          id="edit-fuel"
+                          value={newVehicle.fuel}
+                          onChange={(e) => setNewVehicle({...newVehicle, fuel: e.target.value})}
+                          className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          required
+                        >
+                          <option value="">{t('admin_vehicles.modals.create_vehicle.select_fuel')}</option>
+                          <option value="fuel_gasoline">{t('admin_vehicles.fuel_types.fuel_gasoline')}</option>
+                          <option value="fuel_diesel">{t('admin_vehicles.fuel_types.fuel_diesel')}</option>
+                          <option value="fuel_electric">{t('admin_vehicles.fuel_types.fuel_electric')}</option>
+                          <option value="fuel_hybrid">{t('admin_vehicles.fuel_types.fuel_hybrid')}</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <Label htmlFor="edit-transmission" className="text-sm font-medium">
+                          {t('admin_vehicles.modals.create_vehicle.transmission')} *
+                        </Label>
+                        <select
+                          id="edit-transmission"
+                          value={newVehicle.transmission}
+                          onChange={(e) => setNewVehicle({...newVehicle, transmission: e.target.value})}
+                          className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          required
+                        >
+                          <option value="">{t('admin_vehicles.modals.create_vehicle.select_transmission')}</option>
+                          <option value="transmission_manual">{t('admin_vehicles.transmission_types.transmission_manual')}</option>
+                          <option value="transmission_automatic">{t('admin_vehicles.transmission_types.transmission_automatic')}</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <Label htmlFor="edit-seats" className="text-sm font-medium">
+                          {t('admin_vehicles.modals.create_vehicle.seats')} *
+                        </Label>
+                        <Input
+                          id="edit-seats"
+                          type="number"
+                          value={newVehicle.seats}
+                          onChange={(e) => setNewVehicle({...newVehicle, seats: e.target.value})}
+                          placeholder="5"
+                          className="mt-1"
+                          min="1"
+                          max="9"
+                          required
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Section Image */}
+                  <div>
+                    <h3 className="text-lg font-medium text-gray-900 mb-4">
+                      {t('admin_vehicles.modals.create_vehicle.image_section')}
+                    </h3>
+                    <div className="space-y-4">
+                      {newVehicle.image_url ? (
+                        <div className="relative">
+                          <img
+                            src={newVehicle.image_url}
+                            alt={t('admin_vehicles.modals.create_vehicle.image_preview_alt')}
+                            className="w-full h-48 object-cover rounded-lg"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setNewVehicle(prev => ({ ...prev, image_url: "" }))}
+                            className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full hover:bg-red-600"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                          <input
+                            type="file"
+                            id="edit-image-upload"
+                            accept="image/*"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) handleImageUpload(file);
+                            }}
+                            className="hidden"
+                          />
+                          <label
+                            htmlFor="edit-image-upload"
+                            className="cursor-pointer flex flex-col items-center justify-center"
+                          >
+                            <Upload className="h-8 w-8 text-gray-400 mb-2" />
+                            <p className="text-gray-600">
+                              {imageUploading 
+                                ? t('admin_vehicles.modals.create_vehicle.uploading') 
+                                : t('admin_vehicles.modals.create_vehicle.upload_image')
+                              }
+                            </p>
+                          </label>
+                        </div>
+                      )}
+                      
+                      <div>
+                        <Label htmlFor="edit-image_url" className="text-sm font-medium">
+                          {t('admin_vehicles.modals.create_vehicle.or_enter_url')}
+                        </Label>
+                        <Input
+                          id="edit-image_url"
+                          value={newVehicle.image_url}
+                          onChange={(e) => setNewVehicle({...newVehicle, image_url: e.target.value})}
+                          placeholder={t('admin_vehicles.modals.create_vehicle.url_placeholder')}
+                          className="mt-1"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-between items-center pt-6 border-t mt-6">
+                    <Button 
+                      type="button"
+                      variant="outline" 
+                      onClick={() => {
+                        resetForm();
+                        setIsEditModalOpen(false);
+                        setEditingVehicle(null);
+                      }}
+                      disabled={isLoading}
+                    >
+                      Annuler
+                    </Button>
+                    
+                    <div className="flex gap-3">
+                      <Button 
+                        type="button"
+                        variant="secondary" 
+                        onClick={() => {
+                          if (editingVehicle) {
+                            setNewVehicle({
+                              name: editingVehicle.name,
+                              category: editingVehicle.category,
+                              price: editingVehicle.price.toString(),
+                              quantity: editingVehicle.quantity.toString(),
+                              image_url: editingVehicle.image_url || "",
+                              fuel: editingVehicle.fuel || "",
+                              seats: editingVehicle.seats?.toString() || "",
+                              transmission: editingVehicle.transmission || ""
+                            });
+                          }
+                        }}
+                        disabled={isLoading}
+                      >
+                        Réinitialiser
+                      </Button>
+                      <Button 
+                        type="submit"
+                        disabled={isLoading}
+                        className="bg-blue-600 hover:bg-blue-700"
+                      >
+                        {isLoading ? "Modification..." : "Modifier le modèle"}
+                      </Button>
+                    </div>
+                  </div>
+                </form>
               </Dialog.Panel>
             </div>
           </Dialog>

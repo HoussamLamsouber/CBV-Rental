@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Search, Filter, X, ArrowLeft, Phone, Mail, Calendar, Car, User, Rows3, StretchHorizontal } from "lucide-react";
+import { Search, Filter, X, ArrowLeft, Phone, Mail, Calendar, Car, User, Rows3, StretchHorizontal, MapPin, Navigation, Check } from "lucide-react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { emailJSService } from "@/services/emailJSService";
 import { toast } from "@/hooks/use-toast";
@@ -24,6 +24,13 @@ export default function ReservationsAdmin() {
     reservation: null,
     reason: ""
   });
+
+  const [vehicleSelectionModal, setVehicleSelectionModal] = useState({
+    isOpen: false,
+    reservation: null,
+    availableVehicles: [],
+    selectedVehicleId: null
+  });
   
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -31,12 +38,33 @@ export default function ReservationsAdmin() {
   
   const { t, i18n } = useTranslation();
   
-  const translate = (key: string, fallback: string) => {
+  const translate = (key: string, fallback: string, params: Record<string, any> = {}) => {
     try {
-      const translation = t(key);
+      let translation = t(key);
+      
+      // Remplacer les paramètres si présents
+      if (params && Object.keys(params).length > 0) {
+        Object.keys(params).forEach(param => {
+          const placeholder = `{{${param}}}`;
+          if (translation.includes(placeholder)) {
+            translation = translation.replace(placeholder, params[param]);
+          }
+        });
+      }
+      
       return translation || fallback;
     } catch (error) {
-      return fallback;
+      // Fallback avec remplacement des paramètres
+      let fallbackText = fallback;
+      if (params && Object.keys(params).length > 0) {
+        Object.keys(params).forEach(param => {
+          const placeholder = `{{${param}}}`;
+          if (fallbackText.includes(placeholder)) {
+            fallbackText = fallbackText.replace(placeholder, params[param]);
+          }
+        });
+      }
+      return fallbackText;
     }
   };
 
@@ -318,154 +346,507 @@ export default function ReservationsAdmin() {
         reservation.id
       );
   
-      const { error: acceptError } = await supabase
-        .from("reservations")
-        .update({ 
-          status: "accepted"
-        })
-        .eq("id", reservation.id);
-  
-      if (acceptError) {
-        throw acceptError;
-      }
-  
-      try {
-        const acceptanceEmailData = {
-          reservationId: reservation.id,
-          clientName: reservation.guest_name || reservation.profiles?.full_name || translate('admin_reservations.reservation.unidentified', 'Client non identifié'),
-          clientEmail: reservation.guest_email || reservation.profiles?.email,
-          clientPhone: reservation.guest_phone || reservation.profiles?.telephone || translate('admin_reservations.reservation.not_provided', 'Non renseigné'),
-          carName: reservation.car_name,
-          carCategory: getTranslatedCategory(reservation.car_category),
-          pickupDate: new Date(reservation.pickup_date).toLocaleDateString(i18n.language === 'fr' ? 'fr-FR' : 'en-US'),
-          pickupTime: reservation.pickup_time || "14:00",
-          returnDate: new Date(reservation.return_date).toLocaleDateString(i18n.language === 'fr' ? 'fr-FR' : 'en-US'),
-          returnTime: reservation.return_time || "14:00",
-          pickupLocation: getTranslatedLocation(reservation.pickup_location),
-          returnLocation: getTranslatedLocation(reservation.return_location),
-          totalPrice: reservation.total_price,
-          language: i18n.language
-        };
-  
-        if (acceptanceEmailData.clientEmail) {
-          await emailJSService.sendReservationAcceptedEmail(acceptanceEmailData);
-        }
-      } catch (emailError) {
-        console.error("Erreur envoi email acceptation:", emailError);
-      }
-  
-      const { data: allPendingReservations, error: pendingError } = await supabase
-        .from("reservations")
-        .select(`
-          id, 
-          car_name, 
-          pickup_date, 
-          return_date, 
-          guest_name, 
-          guest_email, 
-          guest_phone, 
-          car_category, 
-          pickup_time, 
-          return_time, 
-          pickup_location, 
-          return_location, 
-          total_price,
-          user_id
-        `)
-        .eq("car_name", reservation.car_name)
-        .eq("status", "pending")
-        .neq("id", reservation.id);
-  
-      let refusedCount = 0;
-      let emailSentCount = 0;
-      
-      if (allPendingReservations && allPendingReservations.length > 0) {
-        const reservationsToRefuse = allPendingReservations.filter(req => {
-          const reqPickup = new Date(req.pickup_date);
-          const reqReturn = new Date(req.return_date);
-          const resPickup = new Date(reservation.pickup_date);
-          const resReturn = new Date(reservation.return_date);
-          
-          return (reqPickup <= resReturn && reqReturn >= resPickup);
+      if (!isAvailable) {
+        toast({
+          title: t('admin_reservations.toast.not_available', 'Véhicule non disponible'),
+          description: t('admin_reservations.toast.no_vehicles_available', 'Aucun véhicule disponible pour cette période.'),
+          variant: "destructive",
         });
-  
-        for (const req of reservationsToRefuse) {
-          try {
-            const { error: rejectError } = await supabase
-              .from("reservations")
-              .update({
-                status: "refused",
-                rejection_reason: AUTO_REFUSE_MESSAGE
-              })
-              .eq("id", req.id);
-            
-            if (!rejectError) {
-              refusedCount++;
-              
-              const clientEmail = await getReservationEmail(req);
-              
-              if (clientEmail) {
-                try {
-                  const emailData = {
-                    reservationId: req.id,
-                    clientName: req.guest_name || translate('admin_reservations.reservation.unidentified', 'Client non identifié'),
-                    clientEmail: clientEmail,
-                    clientPhone: req.guest_phone || translate('admin_reservations.reservation.not_provided', 'Non renseigné'),
-                    carName: req.car_name,
-                    carCategory: getTranslatedCategory(req.car_category),
-                    pickupDate: new Date(req.pickup_date).toLocaleDateString(i18n.language === 'fr' ? 'fr-FR' : 'en-US'),
-                    pickupTime: req.pickup_time || "14:00",
-                    returnDate: new Date(req.return_date).toLocaleDateString(i18n.language === 'fr' ? 'fr-FR' : 'en-US'),
-                    returnTime: req.return_time || "14:00",
-                    pickupLocation: getTranslatedLocation(req.pickup_location),
-                    returnLocation: getTranslatedLocation(req.return_location),
-                    totalPrice: req.total_price,
-                    rejectionReason: AUTO_REFUSE_MESSAGE,
-                    language: i18n.language
-                  };
-  
-                  const emailResult = await emailJSService.sendReservationRejectedEmail(emailData);
-                  
-                  if (emailResult.success) {
-                    emailSentCount++;
-                  }
-                } catch (emailError) {
-                  console.error(`Erreur email refus ${req.id}:`, emailError);
-                }
-              }
-            }
-          } catch (error) {
-            console.error(`Erreur refus ${req.id}:`, error);
-          }
-        }
+        return;
       }
   
-      await fetchReservations();
-      
-      // 🔥 NOUVEAU : Toasts simplifiés et plus courts
-      let title, description;
-      
-      if (refusedCount > 0) {
-        title = t('admin_reservations.toast.accept_with_auto_reject', '✅ Acceptée + {{count}} refus auto', { count: refusedCount });
-      } else {
-        title = t('admin_reservations.toast.accept_success', '✅ Réservation acceptée');
-        description = '';
-      }
-
-      toast({
-        title,
-        description,
+      // Ouvrir le pop-up de sélection de véhicule
+      setVehicleSelectionModal({
+        isOpen: true,
+        reservation: reservation,
+        availableVehicles: [], // Sera rempli plus tard
+        selectedVehicleId: null
       });
-
+  
+      // Charger les véhicules disponibles
+      await loadAvailableVehicles(reservation);
+  
     } catch (error: any) {
-      console.error("Erreur acceptation réservation:", error);
+      console.error("Erreur vérification disponibilité:", error);
       toast({
         title: t('admin_reservations.toast.error', 'Erreur'),
-        description: t('admin_reservations.toast.update_error', 'Impossible de traiter la réservation.'),
+        description: t('admin_reservations.toast.availability_check_error', 'Impossible de vérifier la disponibilité.'),
         variant: "destructive",
       });
     }
   };
+
+const loadAvailableVehicles = async (reservation: any) => {
+  try {
+    console.log("🔍 Recherche véhicules pour le modèle:", reservation.car_name);
+    
+    // 1. Trouver le car_id correspondant au car_name
+    const { data: carData, error: carError } = await supabase
+      .from("cars")
+      .select("id")
+      .eq("name", reservation.car_name)
+      .single();
+
+    if (carError || !carData) {
+      console.error("❌ Modèle de voiture non trouvé:", carError);
+      toast({
+        title: t('admin_reservations.toast.car_not_found', 'Modèle non trouvé'),
+        description: t('admin_reservations.toast.car_not_found_desc', 'Le modèle de véhicule n\'a pas été trouvé.'),
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const carId = carData.id;
+
+    // 2. Récupérer tous les véhicules de ce modèle avec leurs dépôts
+    const { data: allVehicles, error: vehiclesError } = await supabase
+      .from("vehicles")
+      .select(`
+        id,
+        car_id,
+        matricule,
+        status,
+        depot_id,
+        depots (
+          id,
+          name,
+          city,
+          address,
+          phone
+        ),
+        cars (
+          name,
+          image_url
+        )
+      `)
+      .eq("car_id", carId)
+      .eq("status", "available")
+      .is("deleted_at", null)
+      .order("matricule");
+
+    if (vehiclesError) {
+      console.error("❌ Erreur chargement véhicules:", vehiclesError);
+      throw vehiclesError;
+    }
+
+    console.log("🔍 Véhicules trouvés:", allVehicles);
+
+    if (!allVehicles || allVehicles.length === 0) {
+      setVehicleSelectionModal(prev => ({
+        ...prev,
+        availableVehicles: []
+      }));
+      toast({
+        title: t('admin_reservations.toast.no_vehicles', 'Aucun véhicule disponible'),
+        description: t('admin_reservations.toast.no_vehicles_model', 'Aucun véhicule de ce modèle n\'est actuellement disponible.'),
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // 3. Filtrer les véhicules disponibles pour la période
+    const availableVehicles = await Promise.all(
+      allVehicles.map(async (vehicle) => {
+        try {
+          const isVehicleAvailable = await checkSpecificVehicleAvailability(
+            vehicle.id,
+            new Date(reservation.pickup_date),
+            new Date(reservation.return_date)
+          );
+          
+          // Déterminer l'emplacement : priorité au dépôt
+          const location = vehicle.depots 
+            ? `${vehicle.depots.name} - ${vehicle.depots.city}`
+            : t('admin_reservations.vehicle_modal.location_unknown', 'Localisation inconnue');
+          
+          // Calculer la distance (simulée - vous pourriez intégrer Google Maps API plus tard)
+          const distanceInfo = calculateDistanceInfo(
+            reservation.pickup_location,
+            vehicle.depots?.city
+          );
+          
+          return {
+            id: vehicle.id,
+            name: vehicle.cars?.name || reservation.car_name,
+            image: vehicle.cars?.image_url,
+            status: vehicle.status,
+            registration_number: vehicle.matricule,
+            depot_info: vehicle.depots,
+            depot_city: vehicle.depots?.city,
+            depot_address: vehicle.depots?.address,
+            depot_phone: vehicle.depots?.phone,
+            distance: distanceInfo.distance,
+            distance_text: distanceInfo.text,
+            isClosest: false, // Sera calculé après
+            isAvailable: isVehicleAvailable
+          };
+        } catch (error) {
+          console.error(`❌ Erreur vérification véhicule ${vehicle.id}:`, error);
+          return {
+            id: vehicle.id,
+            name: vehicle.cars?.name || reservation.car_name,
+            image: vehicle.cars?.image_url,
+            status: vehicle.status,
+            registration_number: vehicle.matricule,
+            distance: null,
+            distance_text: t('admin_reservations.vehicle_modal.distance_unknown', 'Distance inconnue'),
+            isClosest: false,
+            isAvailable: false
+          };
+        }
+      })
+    );
+
+    const actuallyAvailableVehicles = availableVehicles.filter(v => v.isAvailable);
+    
+    // Marquer le véhicule le plus proche
+    if (actuallyAvailableVehicles.length > 0) {
+      const closestVehicle = actuallyAvailableVehicles
+        .filter(v => v.distance !== null)
+        .sort((a, b) => (a.distance || Infinity) - (b.distance || Infinity))[0];
+      
+      if (closestVehicle) {
+        actuallyAvailableVehicles.forEach(vehicle => {
+          vehicle.isClosest = vehicle.id === closestVehicle.id;
+        });
+      }
+    }
+    
+    console.log("🔍 Véhicules disponibles après filtrage:", actuallyAvailableVehicles);
+
+    setVehicleSelectionModal(prev => ({
+      ...prev,
+      availableVehicles: actuallyAvailableVehicles,
+      selectedVehicleId: actuallyAvailableVehicles[0]?.id || null,
+      reservation: reservation // S'assurer que la réservation est bien stockée
+    }));
+
+    if (actuallyAvailableVehicles.length === 0) {
+      toast({
+        title: t('admin_reservations.toast.no_available_vehicles', 'Aucun véhicule disponible'),
+        description: t('admin_reservations.toast.all_vehicles_reserved', 'Tous les véhicules de ce modèle sont réservés pour cette période.'),
+        variant: "destructive",
+      });
+    }
+
+  } catch (error) {
+    console.error("❌ Erreur chargement véhicules:", error);
+    toast({
+      title: t('admin_reservations.toast.error', 'Erreur'),
+      description: t('admin_reservations.toast.vehicles_load_error', 'Impossible de charger les véhicules disponibles.'),
+      variant: "destructive",
+    });
+  }
+};
+
+// Fonction simplifiée pour calculer la distance - à remplacer par Google Maps API si nécessaire
+const calculateDistanceInfo = (pickupLocation: string, depotCity: string | undefined) => {
+  if (!depotCity) {
+    return { 
+      distance: null, 
+      text: translate('admin_reservations.vehicle_modal.distance_unknown', 'Distance inconnue') 
+    };
+  }
+
+  // Mapping simplifié des distances entre villes principales
+  const distanceMap: { [key: string]: { [key: string]: number } } = {
+    'casablanca': {
+      'casablanca': 0,
+      'rabat': 90,
+      'marrakech': 240,
+      'tanger': 340,
+      'fes': 300
+    },
+    'rabat': {
+      'casablanca': 90,
+      'rabat': 0,
+      'marrakech': 330,
+      'tanger': 250,
+      'fes': 200
+    },
+    'marrakech': {
+      'casablanca': 240,
+      'rabat': 330,
+      'marrakech': 0,
+      'tanger': 580,
+      'fes': 530
+    },
+    'tanger': {
+      'casablanca': 340,
+      'rabat': 250,
+      'marrakech': 580,
+      'tanger': 0,
+      'fes': 350
+    },
+    'fes': {
+      'casablanca': 300,
+      'rabat': 200,
+      'marrakech': 530,
+      'tanger': 350,
+      'fes': 0
+    }
+  };
+
+  // Extraire la ville de la location de pickup
+  const pickupCity = extractCityFromLocation(pickupLocation);
+  const normalizedPickupCity = pickupCity.toLowerCase();
+  const normalizedDepotCity = depotCity.toLowerCase();
+
+  if (distanceMap[normalizedPickupCity] && distanceMap[normalizedPickupCity][normalizedDepotCity] !== undefined) {
+    const distance = distanceMap[normalizedPickupCity][normalizedDepotCity];
+    return {
+      distance,
+      text: distance === 0 
+        ? translate('admin_reservations.vehicle_modal.on_site', 'Sur place') 
+        : `${distance} km`
+    };
+  }
+
+  return { 
+    distance: null, 
+    text: translate('admin_reservations.vehicle_modal.distance_unavailable', 'Distance non disponible') 
+  };
+};
+const extractCityFromLocation = (location: string): string => {
+  // Logique pour extraire la ville de la location
+  // Ex: "airport_casablanca" -> "casablanca"
+  // Ex: "station_rabat" -> "rabat"
+  
+  const parts = location.split('_');
+  if (parts.length > 1) {
+    return parts[1];
+  }
+  return location;
+};
+  
+const checkSpecificVehicleAvailability = async (vehicleId: string, pickupDate: Date, returnDate: Date) => {
+  try {
+    console.log("🔍 Vérification disponibilité véhicule:", vehicleId);
+    
+    // Vérifier les réservations qui utilisent ce véhicule spécifique
+    const { data: vehicleReservations, error } = await supabase
+      .from("reservations")
+      .select("id, pickup_date, return_date, assigned_vehicle_id, status")
+      .eq("assigned_vehicle_id", vehicleId)
+      .eq("status", "accepted")
+      .is("deleted_at", null);
+
+    if (error) {
+      console.warn("⚠️ Erreur vérification réservations véhicule:", error);
+      // Si la colonne assigned_vehicle_id n'existe pas encore, considérer le véhicule comme disponible
+      return true;
+    }
+
+    console.log("🔍 Réservations existantes pour ce véhicule:", vehicleReservations);
+
+    // Vérifier les chevauchements de dates
+    const hasOverlap = vehicleReservations?.some(reservation => {
+      try {
+        const resPickup = new Date(reservation.pickup_date);
+        const resReturn = new Date(reservation.return_date);
+        
+        // Vérifier si les périodes se chevauchent
+        const overlaps = (pickupDate <= resReturn && returnDate >= resPickup);
+        if (overlaps) {
+          console.log(`🚫 Chevauchement détecté avec réservation ${reservation.id}`);
+        }
+        return overlaps;
+      } catch (dateError) {
+        console.error("❌ Erreur conversion date:", dateError);
+        return false;
+      }
+    });
+
+    console.log(`🔍 Véhicule ${vehicleId} disponible:`, !hasOverlap);
+    return !hasOverlap;
+
+  } catch (error) {
+    console.error("❌ Erreur vérification véhicule spécifique:", error);
+    return false;
+  }
+};
+
+const finalizeReservationAcceptance = async () => {
+  if (!vehicleSelectionModal.selectedVehicleId) {
+    toast({
+      title: t('admin_reservations.toast.select_vehicle', 'Sélection requise'),
+      description: t('admin_reservations.toast.select_vehicle_desc', 'Veuillez sélectionner un véhicule.'),
+      variant: "destructive",
+    });
+    return;
+  }
+
+  try {
+    const reservation = vehicleSelectionModal.reservation;
+    const selectedVehicleId = vehicleSelectionModal.selectedVehicleId;
+
+    console.log("🔍 Finalisation réservation:", reservation.id, "avec véhicule:", selectedVehicleId);
+
+    // 1. Mettre à jour la réservation avec le véhicule attribué
+    const updateData: any = { 
+      status: "accepted",
+      assigned_vehicle_id: selectedVehicleId // C'est maintenant un UUID qui référence vehicles(id)
+    };
+
+    const { error: reservationError } = await supabase
+      .from("reservations")
+      .update(updateData)
+      .eq("id", reservation.id);
+
+    if (reservationError) {
+      console.error("❌ Erreur mise à jour réservation:", reservationError);
+      throw reservationError;
+    }
+
+    console.log("✅ Réservation mise à jour");
+
+    // 2. Mettre à jour le statut du véhicule
+    const { error: vehicleError } = await supabase
+      .from("vehicles")
+      .update({ 
+        status: "reserved",
+        updated_at: new Date().toISOString()
+      })
+      .eq("id", selectedVehicleId);
+
+    if (vehicleError) {
+      console.error("❌ Erreur mise à jour véhicule:", vehicleError);
+      throw vehicleError;
+    }
+    
+    console.log("✅ Véhicule mis à jour (status: reserved)");
+
+    // 3. Envoyer l'email d'acceptation
+    try {
+      const acceptanceEmailData = {
+        reservationId: reservation.id,
+        clientName: reservation.guest_name || reservation.profiles?.full_name || translate('admin_reservations.reservation.unidentified', 'Client non identifié'),
+        clientEmail: reservation.guest_email || reservation.profiles?.email,
+        clientPhone: reservation.guest_phone || reservation.profiles?.telephone || translate('admin_reservations.reservation.not_provided', 'Non renseigné'),
+        carName: reservation.car_name,
+        carCategory: getTranslatedCategory(reservation.car_category),
+        pickupDate: new Date(reservation.pickup_date).toLocaleDateString(i18n.language === 'fr' ? 'fr-FR' : 'en-US'),
+        pickupTime: reservation.pickup_time || "14:00",
+        returnDate: new Date(reservation.return_date).toLocaleDateString(i18n.language === 'fr' ? 'fr-FR' : 'en-US'),
+        returnTime: reservation.return_time || "14:00",
+        pickupLocation: getTranslatedLocation(reservation.pickup_location),
+        returnLocation: getTranslatedLocation(reservation.return_location),
+        totalPrice: reservation.total_price,
+        language: i18n.language
+      };
+
+      if (acceptanceEmailData.clientEmail) {
+        await emailJSService.sendReservationAcceptedEmail(acceptanceEmailData);
+      }
+    } catch (emailError) {
+      console.error("❌ Erreur envoi email acceptation:", emailError);
+    }
+
+    // 4. Refuser automatiquement les réservations en conflit
+    const { data: allPendingReservations } = await supabase
+      .from("reservations")
+      .select(`
+        id, car_name, pickup_date, return_date, guest_name, guest_email, 
+        guest_phone, car_category, pickup_time, return_time, pickup_location, 
+        return_location, total_price, user_id
+      `)
+      .eq("car_name", reservation.car_name)
+      .eq("status", "pending")
+      .neq("id", reservation.id);
+
+    let refusedCount = 0;
+    
+    if (allPendingReservations && allPendingReservations.length > 0) {
+      const reservationsToRefuse = allPendingReservations.filter(req => {
+        const reqPickup = new Date(req.pickup_date);
+        const reqReturn = new Date(req.return_date);
+        const resPickup = new Date(reservation.pickup_date);
+        const resReturn = new Date(reservation.return_date);
+        
+        return (reqPickup <= resReturn && reqReturn >= resPickup);
+      });
+
+      for (const req of reservationsToRefuse) {
+        try {
+          const { error: rejectError } = await supabase
+            .from("reservations")
+            .update({
+              status: "refused",
+              rejection_reason: AUTO_REFUSE_MESSAGE
+            })
+            .eq("id", req.id);
+          
+          if (!rejectError) {
+            refusedCount++;
+            
+            const clientEmail = await getReservationEmail(req);
+            
+            if (clientEmail) {
+              try {
+                const emailData = {
+                  reservationId: req.id,
+                  clientName: req.guest_name || translate('admin_reservations.reservation.unidentified', 'Client non identifié'),
+                  clientEmail: clientEmail,
+                  clientPhone: req.guest_phone || translate('admin_reservations.reservation.not_provided', 'Non renseigné'),
+                  carName: req.car_name,
+                  carCategory: getTranslatedCategory(req.car_category),
+                  pickupDate: new Date(req.pickup_date).toLocaleDateString(i18n.language === 'fr' ? 'fr-FR' : 'en-US'),
+                  pickupTime: req.pickup_time || "14:00",
+                  returnDate: new Date(req.return_date).toLocaleDateString(i18n.language === 'fr' ? 'fr-FR' : 'en-US'),
+                  returnTime: req.return_time || "14:00",
+                  pickupLocation: getTranslatedLocation(req.pickup_location),
+                  returnLocation: getTranslatedLocation(req.return_location),
+                  totalPrice: req.total_price,
+                  rejectionReason: AUTO_REFUSE_MESSAGE,
+                  language: i18n.language
+                };
+
+                await emailJSService.sendReservationRejectedEmail(emailData);
+              } catch (emailError) {
+                console.error(`❌ Erreur email refus ${req.id}:`, emailError);
+              }
+            }
+          }
+        } catch (error) {
+          console.error(`❌ Erreur refus ${req.id}:`, error);
+        }
+      }
+    }
+
+    // Fermer le pop-up et rafraîchir
+    setVehicleSelectionModal({
+      isOpen: false,
+      reservation: null,
+      availableVehicles: [],
+      selectedVehicleId: null
+    });
+
+    await fetchReservations();
+    
+    // Message de succès
+    const selectedVehicle = vehicleSelectionModal.availableVehicles.find(
+      v => v.id === selectedVehicleId
+    );
+    
+    toast({
+      title: t('admin_reservations.toast.accept_success', '✅ Réservation acceptée'),
+      description: selectedVehicle?.registration_number 
+        ? t('admin_reservations.toast.vehicle_assigned', 'Véhicule {{registration}} attribué', { 
+            registration: selectedVehicle.registration_number 
+          })
+        : t('admin_reservations.toast.reservation_accepted', 'Réservation acceptée avec succès'),
+    });
+
+  } catch (error: any) {
+    console.error("❌ Erreur finalisation réservation:", error);
+    toast({
+      title: t('admin_reservations.toast.error', 'Erreur'),
+      description: t('admin_reservations.toast.accept_error', 'Impossible de finaliser l\'acceptation.'),
+      variant: "destructive",
+    });
+  }
+};
 
   const getReservationEmail = async (reservation: any): Promise<string | null> => {
     if (reservation.guest_email) {
@@ -1381,6 +1762,234 @@ export default function ReservationsAdmin() {
               >
                 {translate('admin_reservations.reject_modal.confirm', 'Confirmer le refus')}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de sélection de véhicule */}
+      {vehicleSelectionModal.isOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+            <div className="p-6 border-b">
+              <h3 className="text-lg font-semibold text-gray-900">
+                {translate('admin_reservations.vehicle_modal.title', 'Attribuer un véhicule')}
+              </h3>
+              <p className="text-sm text-gray-600 mt-1">
+                {translate('admin_reservations.vehicle_modal.subtitle', 'Sélectionnez le véhicule à attribuer à cette réservation')}
+              </p>
+              
+              {/* Info réservation avec détails de location */}
+              <div className="mt-4 p-4 bg-blue-50 rounded-lg">
+                <div className="flex items-start gap-4">
+                  {vehicleSelectionModal.reservation?.car_image && (
+                    <img
+                      src={vehicleSelectionModal.reservation.car_image}
+                      alt={vehicleSelectionModal.reservation.car_name}
+                      className="w-16 h-12 object-cover rounded"
+                    />
+                  )}
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="font-medium text-gray-900 text-lg">
+                        {vehicleSelectionModal.reservation?.car_name}
+                      </div>
+                      <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">
+                        {translateCategory(vehicleSelectionModal.reservation?.car_category)}
+                      </span>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                      {/* Dans la section info réservation */}
+                      <div>
+                        <div className="font-medium text-gray-700 mb-1">
+                          📍 {translate('admin_reservations.reservation.pickup_location', 'Lieu de prise en charge')}
+                        </div>
+                        <div className="text-gray-900">
+                          {translateLocation(vehicleSelectionModal.reservation?.pickup_location)}
+                        </div>
+                        <div className="text-gray-600 text-xs">
+                          {formatDate(vehicleSelectionModal.reservation?.pickup_date)} à {vehicleSelectionModal.reservation?.pickup_time}
+                        </div>
+                      </div>
+
+                      <div>
+                        <div className="font-medium text-gray-700 mb-1">
+                          🎯 {translate('admin_reservations.reservation.return_location', 'Lieu de restitution')}
+                        </div>
+                        <div className="text-gray-900">
+                          {translateLocation(vehicleSelectionModal.reservation?.return_location)}
+                        </div>
+                        <div className="text-gray-600 text-xs">
+                          {formatDate(vehicleSelectionModal.reservation?.return_date)} à {vehicleSelectionModal.reservation?.return_time}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-6">
+              {vehicleSelectionModal.availableVehicles.length === 0 ? (
+                <div className="text-center py-8">
+                  <div className="text-gray-400 text-4xl mb-4">🚗</div>
+                  <h4 className="text-lg font-medium text-gray-900 mb-2">
+                    {translate('admin_reservations.vehicle_modal.no_vehicles', 'Aucun véhicule disponible')}
+                  </h4>
+                  <p className="text-gray-600">
+                    {translate('admin_reservations.vehicle_modal.no_vehicles_desc', 'Tous les véhicules de ce modèle sont réservés pour cette période.')}
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {vehicleSelectionModal.availableVehicles.map((vehicle) => (
+                    <div
+                      key={vehicle.id}
+                      onClick={() => setVehicleSelectionModal(prev => ({
+                        ...prev,
+                        selectedVehicleId: vehicle.id
+                      }))}
+                      className={`p-4 border rounded-lg cursor-pointer transition-all ${
+                        vehicleSelectionModal.selectedVehicleId === vehicle.id
+                          ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200'
+                          : 'border-gray-200 hover:border-gray-300'
+                      } ${
+                        !vehicle.isAvailable ? 'opacity-50 cursor-not-allowed' : ''
+                      } ${vehicle.isClosest ? 'border-green-500 bg-green-50' : ''}`}
+                    >
+                      <div className="flex items-start gap-4">
+                        {vehicle.image ? (
+                          <img
+                            src={vehicle.image}
+                            alt={vehicle.name}
+                            className="w-20 h-14 object-cover rounded"
+                          />
+                        ) : (
+                          <div className="w-20 h-14 bg-gray-200 rounded flex items-center justify-center">
+                            <Car className="h-6 w-6 text-gray-400" />
+                          </div>
+                        )}
+                        
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <div className="font-medium text-gray-900">
+                              {vehicle.registration_number}
+                            </div>
+                            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                              vehicle.status === 'available' 
+                                ? 'bg-green-100 text-green-800'
+                                : vehicle.status === 'reserved'
+                                ? 'bg-orange-100 text-orange-800'
+                                : 'bg-gray-100 text-gray-800'
+                            }`}>
+                              {vehicle.status === 'available' && translate('admin_reservations.vehicle_status.available', 'Disponible')}
+                              {vehicle.status === 'reserved' && translate('admin_reservations.vehicle_status.reserved', 'Réservé')}
+                              {vehicle.status === 'maintenance' && translate('admin_reservations.vehicle_status.maintenance', 'Maintenance')}
+                            </span>
+                            
+                            {vehicle.isClosest && (
+                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                🏆 {translate('admin_reservations.vehicle_modal.closest', 'Le plus proche')}
+                              </span>
+                            )}
+                          </div>
+                          
+                          {/* Informations de localisation */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                            <div>
+                              <div className="flex items-center gap-2 text-gray-700 mb-1">
+                                <MapPin className="h-4 w-4 text-gray-400" />
+                                <span className="font-medium">
+                                  {translate('admin_reservations.vehicle_modal.depot', 'Dépôt')}:
+                                </span>
+                              </div>
+                              {vehicle.depot_address && (
+                                <div className="text-gray-600 text-xs">
+                                  {vehicle.depot_address}
+                                </div>
+                              )}
+                              {vehicle.depot_phone && (
+                                <div className="text-gray-600 text-xs flex items-center gap-1">
+                                  <Phone className="h-3 w-3" />
+                                  {vehicle.depot_phone}
+                                </div>
+                              )}
+                            </div>
+                            
+                            <div>
+                              <div className="flex items-center gap-2 text-gray-700 mb-1">
+                                <Navigation className="h-4 w-4 text-gray-400" />
+                                <span className="font-medium">
+                                  {translate('admin_reservations.vehicle_modal.distance', 'Distance')}:
+                                </span>
+                              </div>
+                              <div className={`font-medium ${
+                                vehicle.distance === 0 
+                                  ? 'text-green-600'
+                                  : vehicle.distance && vehicle.distance < 50
+                                  ? 'text-blue-600'
+                                  : 'text-orange-600'
+                              }`}>
+                                {vehicle.distance_text}
+                              </div>
+                              <div className="text-gray-600 text-xs">
+                                {translate('admin_reservations.vehicle_modal.from_pickup', 'du lieu de prise en charge')}
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {!vehicle.isAvailable && (
+                            <div className="text-xs text-red-600 mt-2">
+                              {translate('admin_reservations.vehicle_modal.not_available_period', 'Non disponible pour cette période')}
+                            </div>
+                          )}
+                        </div>
+                        
+                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                          vehicleSelectionModal.selectedVehicleId === vehicle.id
+                            ? 'bg-blue-500 border-blue-500'
+                            : 'border-gray-300'
+                        } ${!vehicle.isAvailable ? 'border-gray-200' : ''}`}>
+                          {vehicleSelectionModal.selectedVehicleId === vehicle.id && (
+                            <Check className="h-3 w-3 text-white" />
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="p-6 border-t bg-gray-50">
+              <div className="flex justify-between items-center">
+                <div className="text-sm text-gray-600">
+                  {translate('admin_reservations.vehicle_modal.found', '{{count}} véhicule(s) trouvé(s)', {
+                    count: vehicleSelectionModal.availableVehicles.length
+                  })}
+                </div>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setVehicleSelectionModal({
+                      isOpen: false,
+                      reservation: null,
+                      availableVehicles: [],
+                      selectedVehicleId: null
+                    })}
+                    className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+                  >
+                    {translate('admin_reservations.vehicle_modal.cancel', 'Annuler')}
+                  </button>
+                  <button
+                    onClick={finalizeReservationAcceptance}
+                    disabled={!vehicleSelectionModal.selectedVehicleId}
+                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:bg-gray-400 disabled:cursor-not-allowed"
+                  >
+                    {translate('admin_reservations.vehicle_modal.confirm', 'Confirmer l\'attribution')}
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>

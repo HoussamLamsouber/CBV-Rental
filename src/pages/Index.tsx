@@ -33,10 +33,13 @@ const Index = () => {
     const fetchCars = async () => {
       try {
         setLoading(true);
+        
+        // Requête pour récupérer uniquement les modèles non supprimés et disponibles
         const { data, error } = await supabase
           .from("cars")
-          .select("*") 
-          .is("is_deleted", false) as { data: Car[] | null; error: any };
+          .select("*")
+          .eq("is_deleted", false)
+          .eq("available", true);
 
         if (error) {
           console.error("Erreur fetch cars:", error);
@@ -100,7 +103,7 @@ const Index = () => {
         .from("reservations")
         .select("pickup_date, return_date")
         .eq("car_id", carId)
-        .eq("status", "active") as { data: Reservation[] | null; error: any };
+        .eq("status", "active");
 
       if (error) {
         console.error("Erreur récupération réservations:", error);
@@ -142,7 +145,7 @@ const Index = () => {
         .from("cars")
         .select("quantity")
         .eq("id", carId)
-        .single() as { data: Car | null; error: any };
+        .single();
 
       if (carError || !car) {
         console.error("Erreur récupération véhicule:", carError);
@@ -184,21 +187,15 @@ const Index = () => {
     }
 
     try {
-      let query = supabase.from("cars").select("*").eq("available", true);
+      // Utiliser la table cars directement avec les filtres de base
+      let query = supabase
+        .from("cars")
+        .select("*")
+        .eq("is_deleted", false)
+        .eq("available", true);
 
-      const categoryMap: Record<string, string[]> = {
-        all: ["Electique", "SUV", "SUV Urbain", "Berline"],
-        electrique: ["Electique"],
-        suv: ["SUV"],
-        "suv urbain": ["SUV Urbain"],
-        berline: ["Berline"],
-      };
+      const { data: allCars, error } = await query;
 
-      const { data: allCars, error } = await query as {
-        data: Car[] | null;
-        error: any;
-      };
-      
       if (error) throw error;
 
       // Vérifier la disponibilité pour chaque véhicule
@@ -218,7 +215,7 @@ const Index = () => {
 
       toast({
         title: t('index.messages.search_complete'),
-        description: t('index.messages.vehicles_available').replace('{count}', finalCars.length.toString())
+        description: t('index.messages.vehicles_available', { count: finalCars.length })
       });
     } catch (err) {
       console.error("Erreur recherche:", err);

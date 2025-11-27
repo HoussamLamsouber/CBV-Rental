@@ -102,6 +102,9 @@ export const Header = () => {
                 <DropdownMenuItem asChild>
                 <Link to="/admin/locations">Gestion des locations</Link>
                 </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                <Link to="/admin/depots">Gestion des depots</Link>
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           )}

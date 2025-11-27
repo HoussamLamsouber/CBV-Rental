@@ -169,7 +169,9 @@
             "status": "Statut",
             "accepted_on": "acceptée le",
             "rejected_on": "refusée le",
-            "contact": "Contact"
+            "contact": "Contact",
+            "pickup_location": "Lieu de prise en charge",
+            "return_location": "Lieu de restitution"
         },
         
         "messages": {
@@ -201,7 +203,49 @@
             "accepted_with_auto_reject": "✅ Acceptée + {{count}} refus auto",
             "reservation_rejected": "❌ Réservation refusée",
             "error": "Erreur",
-            "update_error": "Impossible de traiter la réservation."
+            "update_error": "Impossible de traiter la réservation.",
+            "not_available": "Véhicule non disponible",
+            "no_vehicles_available": "Aucun véhicule disponible pour cette période.",
+            "availability_check_error": "Impossible de vérifier la disponibilité.",
+            "car_not_found": "Modèle non trouvé",
+            "car_not_found_desc": "Le modèle de véhicule n'a pas été trouvé.",
+            "no_vehicles": "Aucun véhicule disponible",
+            "no_vehicles_model": "Aucun véhicule de ce modèle n'est actuellement disponible.",
+            "vehicles_load_error": "Impossible de charger les véhicules disponibles.",
+            "select_vehicle": "Sélection requise",
+            "select_vehicle_desc": "Veuillez sélectionner un véhicule.",
+            "accept_success": "✅ Réservation acceptée",
+            "vehicle_assigned": "Véhicule {{registration}} attribué",
+            "accept_error": "Impossible de finaliser l'acceptation.",
+            "all_vehicles_reserved": "Tous les véhicules de ce modèle sont réservés pour cette période.",
+            "no_available_vehicles": "Aucun véhicule disponible"
+        },
+
+        "vehicle_modal": {
+            "title": "Attribuer un véhicule",
+            "subtitle": "Sélectionnez le véhicule à attribuer à cette réservation",
+            "no_vehicles": "Aucun véhicule disponible",
+            "no_vehicles_desc": "Tous les véhicules de ce modèle sont réservés pour cette période.",
+            "cancel": "Annuler",
+            "confirm": "Confirmer l'attribution",
+            "location_unknown": "Localisation inconnue",
+            "not_available_period": "Non disponible pour cette période",
+            "closest": "Le plus proche",
+            "from_pickup": "du lieu de prise en charge", 
+            "found": "{{count}} véhicule(s) trouvé(s)",
+            "distance_unknown": "Distance inconnue",
+            "depot": "Dépôt",
+            "distance": "Distance",
+            "select_vehicle": "Sélectionner ce véhicule",
+            "registration": "Immatriculation",
+            "on_site": "Sur place",
+            "distance_unavailable": "Distance non disponible"
+        },
+
+        "vehicle_status": {
+            "available": "Disponible",
+            "reserved": "Réservé",
+            "maintenance": "Maintenance"
         },
 
         "categories": {
@@ -214,6 +258,18 @@
         "view_mode": {
             "cards_tooltip": "Vue cartes",
             "table_tooltip": "Vue tableau"
+        },
+
+        "depots": {
+            "casablanca": "Casablanca",
+            "rabat": "Rabat", 
+            "marrakech": "Marrakech",
+            "tanger": "Tanger",
+            "fes": "Fès",
+            "agence_principale": "Agence Principale",
+            "agence_ville": "Agence Ville",
+            "agence_medina": "Agence Médina",
+            "agence_city": "Agence City"
         },
 
         "auto_reject_message": "Votre réservation a été refusée car le véhicule n'est plus disponible pour cette période."
@@ -613,6 +669,8 @@
                 "technical_specs": "Spécifications techniques",
                 "image_section": "Image du véhicule",
                 "select_category": "Sélectionnez une catégorie",
+                "select_fuel": "Sélectionnez un carburant",
+                "select_transmission": "Sélectionnez une transmission",
                 "uploading": "Téléchargement...",
                 "upload_image": "Cliquez pour télécharger une image",
                 "or_enter_url": "Ou entrez une URL d'image",
@@ -628,9 +686,13 @@
             "missing_fields": "Champs manquants",
             "fill_required_fields": "Veuillez remplir tous les champs obligatoires.",
             "duplicate_model": "Modèle déjà existant",
-            "model_already_exists": "Un modèle avec le nom \"{name}\" existe déjà. Veuillez modifier le nom.",
+            "model_already_exists": "Un modèle avec le nom \"{{name}}\" existe déjà. Veuillez modifier le nom.",
             "model_created": "Modèle créé",
-            "model_created_success": "Le modèle {name} a été créé avec succès.",
+            "model_created_success": "Le modèle {{name}} a été créé avec succès.",
+            "model_updated": "Modèle modifié",
+            "model_updated_success": "Le modèle {{name}} a été modifié avec succès",
+            "model_deleted": "Modèle supprimé", 
+            "model_deleted_success": "Le modèle {{name}} a été supprimé avec succès",
             "cannot_create_model": "Impossible de créer le modèle.",
             "no_vehicles": "Aucun véhicule",
             "add_first_vehicle": "Commencez par ajouter votre premier véhicule",
@@ -700,7 +762,7 @@
             "verify_email": "Veuillez vérifier vos emails et confirmer votre compte.",
             "login_error": "Erreur de connexion",
             "login_success": "Connexion réussie !",
-            "welcome": "Bienvenue {name}"
+            "welcome": "Bienvenue {{name}}"
         },
         
         "admin_link": {
@@ -716,7 +778,7 @@
             "missing_dates": "Dates manquantes",
             "select_rental_dates": "Veuillez sélectionner les dates de location",
             "search_complete": "Recherche terminée",
-            "vehicles_available": "{count} véhicule(s) disponible(s) pour vos dates",
+            "vehicles_available": "{{count}} véhicule(s) disponible(s) pour vos dates",
             "search_error": "Erreur de recherche",
             "search_error_description": "Une erreur est survenue lors de la recherche",
             "missing_information": "Informations manquantes",
@@ -1115,6 +1177,139 @@
         "actions": {
             "back_to_home": "Retour à l'accueil",
             "go_to_dashboard": "Aller au tableau de bord"
+        }
+    },
+
+    "admin_depots": {
+        "title": "Gestion des Dépôts",
+        "subtitle": "{{total}} dépôt(s) au total • {{active}} actif(s) • {{inactive}} inactif(s)",
+        
+        "search": {
+            "placeholder": "Rechercher par nom, ville, adresse..."
+        },
+        
+        "filters": {
+            "all": "Tous les statuts",
+            "active": "Actifs",
+            "inactive": "Inactifs",
+            "reset": "Réinitialiser"
+        },
+        
+        "status": {
+            "active": "Actif",
+            "inactive": "Inactif"
+        },
+        
+        "actions": {
+            "create": "Nouveau dépôt",
+            "edit": "Modifier",
+            "update": "Modifier",
+            "delete": "Supprimer",
+            "cancel": "Annuler",
+            "select_all": "Tout sélectionner",
+            "deselect_all": "Tout désélectionner",
+            "assign_selected": "Assigner {{count}} véhicule(s)",
+            "view_vehicles": "Véhicules",
+            "add_vehicle": "Ajouter",
+            "remove_vehicle": "Retirer du dépôt",
+            "close": "Fermer",
+            "switch_table": "Mode tableau",
+            "switch_cards": "Mode cartes"
+        },
+        
+        "depot": {
+            "address": "Adresse",
+            "created": "Créé le"
+        },
+        
+        "messages": {
+            "loading": "Chargement des dépôts...",
+            "no_results": "Aucun résultat trouvé",
+            "no_depots": "Aucun dépôt",
+            "try_search": "Essayez de modifier vos critères de recherche.",
+            "create_first": "Créez votre premier dépôt pour commencer.",
+            "confirm_delete": "Êtes-vous sûr de vouloir supprimer ce dépôt ?",
+            "confirm_remove_vehicle": "Êtes-vous sûr de vouloir retirer ce véhicule du dépôt ?"
+        },
+        
+        "modal": {
+            "create_title": "Créer un nouveau dépôt",
+            "edit_title": "Modifier le dépôt"
+        },
+        
+        "form": {
+            "name": "Nom du dépôt *",
+            "name_placeholder": "Ex: Agence Principale Casablanca",
+            "address": "Adresse *",
+            "address_placeholder": "Ex: 123 Boulevard Mohammed V",
+            "city": "Ville *",
+            "city_placeholder": "Ex: Casablanca",
+            "phone": "Téléphone",
+            "phone_placeholder": "Ex: +212 522-123456",
+            "email": "Email",
+            "email_placeholder": "Ex: agence@location.ma",
+            "active": "Dépôt actif"
+        },
+        
+        "toast": {
+            "depot_created": "✅ Dépôt créé",
+            "depot_created_desc": "Le dépôt a été créé avec succès.",
+            "depot_updated": "✅ Dépôt modifié",
+            "depot_updated_desc": "Le dépôt a été modifié avec succès.",
+            "depot_deactivated": "✅ Dépôt désactivé",
+            "depot_deactivated_desc": "Le dépôt a été désactivé avec succès.",
+            "error_loading": "Erreur de chargement",
+            "loading_error_desc": "Impossible de charger les dépôts.",
+            "creation_error": "Erreur de création",
+            "creation_error_desc": "Impossible de créer le dépôt.",
+            "update_error": "Erreur de modification",
+            "update_error_desc": "Impossible de modifier le dépôt.",
+            "delete_error": "Erreur de suppression",
+            "delete_error_desc": "Impossible de supprimer le dépôt.",
+            "vehicles_assigned": "✅ Véhicules assignés",
+            "vehicles_assigned_desc": "{{count}} véhicule(s) assigné(s) au dépôt avec succès.",
+            "error_loading_available": "Erreur de chargement",
+            "loading_available_error_desc": "Impossible de charger les véhicules disponibles.",
+            "vehicle_removed": "✅ Véhicule retiré",
+            "vehicle_removed_desc": "Le véhicule a été retiré du dépôt avec succès.",
+            "remove_error": "Erreur de retrait",
+            "remove_error_desc": "Impossible de retirer le véhicule du dépôt.",
+            "assignment_error": "Erreur d'assignation",
+            "assignment_error_desc": "Impossible d'assigner les véhicules au dépôt.",
+            "depot_deleted": "✅ Dépôt supprimé",
+            "depot_deleted_desc": "Le dépôt a été supprimé définitivement avec succès.",
+            "depot_has_vehicles": "Impossible de supprimer le dépôt car il contient des véhicules. Veuillez d'abord retirer tous les véhicules."
+        },
+
+        "assign_modal": {
+            "title": "Assigner des véhicules au dépôt",
+            "selected": "sélectionné(s)",
+            "available": "{{count}} véhicule(s) disponible(s)",
+            "no_available_vehicles": "Aucun véhicule disponible",
+            "no_available_vehicles_desc": "Tous les véhicules sont déjà assignés à des dépôts."
+        },
+
+        "vehicles_modal": {
+            "title": "Véhicules du dépôt",
+            "vehicles_count": "véhicule(s)",
+            "no_vehicles": "Aucun véhicule",
+            "no_vehicles_desc": "Aucun véhicule n'est assigné à ce dépôt."
+        },
+        
+        "vehicle_status": {
+            "available": "Disponible",
+            "reserved": "Réservé",
+            "maintenance": "Maintenance"
+        },
+
+        "table": {
+            "name": "Nom",
+            "city": "Ville", 
+            "address": "Adresse",
+            "phone": "Téléphone",
+            "email": "Email",
+            "status": "Statut",
+            "actions": "Actions"
         }
     }
 }

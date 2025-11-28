@@ -369,7 +369,10 @@
             "guest": "Guest",
             "unknown": "Unknown",
             "not_specified": "Not specified",
-            "no_reservations": "No reservations for this vehicle"
+            "no_reservations": "No reservations for this vehicle",
+            "assigned_vehicle": "Vehicle assigned",
+            "vehicle_not_loaded": "Vehicle not loaded",
+            "no_vehicle_assigned": "No vehicle"
         },
         
         "calendar": {

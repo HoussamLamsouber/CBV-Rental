@@ -55,6 +55,12 @@ type ReservationRow = {
   total_price?: number;
   date?: string;
   created_at?: string;
+  assigned_vehicle_id?: string;
+  vehicles?: {
+    id: string;
+    matricule: string;
+    status: string;
+  } | null;
 };
 
 type Vehicle = {
@@ -144,62 +150,87 @@ export default function AdminVehicleDetail() {
 
         setVehicles(vehiclesData || []);
 
-        // 3. Charger TOUTES les réservations
+        // 3. Charger TOUTES les réservations avec les données associées
         console.log("🔄 Chargement des réservations...");
-        
-        const { data: allReservationsData, error: reservationsError } = await supabase
+
+        // D'abord charger les réservations sans jointures
+        const { data: simpleReservationsData, error: reservationsError } = await supabase
           .from("reservations")
-          .select(`
-            *,
-            profiles:user_id (
-              full_name,
-              email
-            )
-          `)
+          .select("*")
           .eq("car_id", id)
           .order("created_at", { ascending: false });
 
         if (reservationsError) {
-          console.error("❌ Erreur avec jointure profiles:", reservationsError);
-          
-          const { data: simpleReservationsData } = await supabase
-            .from("reservations")
-            .select("*")
-            .eq("car_id", id)
-            .order("created_at", { ascending: false });
-            
-          console.log("✅ Réservations chargées (sans profiles):", simpleReservationsData?.length);
-          setAllReservations(simpleReservationsData as ReservationRow[] || []);
+          console.error("❌ Erreur chargement réservations:", reservationsError);
+          setAllReservations([]);
         } else {
-          console.log("✅ Réservations chargées (avec profiles):", allReservationsData?.length);
+          console.log("✅ Réservations chargées:", simpleReservationsData?.length);
           
-          const cleanedReservations = allReservationsData?.map(reservation => ({
-            id: reservation.id,
-            car_id: reservation.car_id,
-            pickup_date: reservation.pickup_date,
-            return_date: reservation.return_date,
-            status: reservation.status,
-            pickup_location: reservation.pickup_location,
-            return_location: reservation.return_location,
-            car_name: reservation.car_name,
-            user_id: reservation.user_id,
-            profiles: reservation.profiles && !('error' in reservation.profiles) 
-              ? reservation.profiles 
-              : null,
-            guest_name: reservation.guest_name,
-            guest_email: reservation.guest_email,
-            guest_phone: reservation.guest_phone,
-            car_category: reservation.car_category,
-            car_price: reservation.car_price,
-            car_image: reservation.car_image,
-            pickup_time: reservation.pickup_time,
-            return_time: reservation.return_time,
-            total_price: reservation.total_price,
-            date: reservation.date,
-            created_at: reservation.created_at
-          })) as ReservationRow[];
+          // Enrichir les réservations avec les données des profils et véhicules
+          const enrichedReservations = await Promise.all(
+            (simpleReservationsData || []).map(async (reservation) => {
+              let profileInfo = null;
+              let vehicleInfo = null;
+
+              // Charger les informations du profil si user_id existe
+              if (reservation.user_id) {
+                try {
+                  const { data: profileData } = await supabase
+                    .from("profiles")
+                    .select("full_name, email")
+                    .eq("id", reservation.user_id)
+                    .single();
+                  
+                  profileInfo = profileData;
+                } catch (error) {
+                  console.warn(`Impossible de charger le profil pour ${reservation.user_id}`);
+                }
+              }
+
+              // Charger les informations du véhicule si assigned_vehicle_id existe
+              if (reservation.assigned_vehicle_id) {
+                try {
+                  const { data: vehicleData } = await supabase
+                    .from("vehicles")
+                    .select("id, matricule, status")
+                    .eq("id", reservation.assigned_vehicle_id)
+                    .single();
+                  
+                  vehicleInfo = vehicleData;
+                } catch (error) {
+                  console.warn(`Impossible de charger le véhicule pour ${reservation.assigned_vehicle_id}`);
+                }
+              }
+
+              return {
+                id: reservation.id,
+                car_id: reservation.car_id,
+                pickup_date: reservation.pickup_date,
+                return_date: reservation.return_date,
+                status: reservation.status,
+                pickup_location: reservation.pickup_location,
+                return_location: reservation.return_location,
+                car_name: reservation.car_name,
+                user_id: reservation.user_id,
+                profiles: profileInfo,
+                vehicles: vehicleInfo,
+                guest_name: reservation.guest_name,
+                guest_email: reservation.guest_email,
+                guest_phone: reservation.guest_phone,
+                car_category: reservation.car_category,
+                car_price: reservation.car_price,
+                car_image: reservation.car_image,
+                pickup_time: reservation.pickup_time,
+                return_time: reservation.return_time,
+                total_price: reservation.total_price,
+                date: reservation.date,
+                created_at: reservation.created_at,
+                assigned_vehicle_id: reservation.assigned_vehicle_id
+              };
+            })
+          );
           
-          setAllReservations(cleanedReservations || []);
+          setAllReservations(enrichedReservations);
         }
         
         // 4. Charger les réservations acceptées pour le calendrier
@@ -1017,6 +1048,7 @@ export default function AdminVehicleDetail() {
                     <th className="p-4 text-left">{t('admin_vehicle_detail.reservations.client')}</th>
                     <th className="p-4 text-left">{t('admin_vehicle_detail.reservations.period')}</th>
                     <th className="p-4 text-left">{t('admin_vehicle_detail.reservations.status')}</th>
+                    <th className="p-4 text-left">{t('admin_vehicle_detail.reservations.assigned_vehicle', 'Véhicule attribué')}</th>
                     <th className="p-4 text-left">{t('admin_vehicle_detail.reservations.locations')}</th>
                   </tr>
                 </thead>
@@ -1035,7 +1067,7 @@ export default function AdminVehicleDetail() {
                           </div>
                         </td>
                         <td className="p-4">
-                          {format(new Date(reservation.pickup_date), "dd/MM/yyyy")} - {" "}
+                          {format(new Date(reservation.pickup_date), "dd/MM/yyyy")}{" "}-{" "}
                           {format(new Date(reservation.return_date), "dd/MM/yyyy")}
                         </td>
                         <td className="p-4">
@@ -1051,8 +1083,38 @@ export default function AdminVehicleDetail() {
                             '❌ ' + t('admin_reservations.status.refused')}
                           </span>
                         </td>
+                        <td className="p-4">
+                          {reservation.vehicles ? (
+                            <div className="flex items-center gap-2">
+                              <div className="min-w-0">
+                                <div className="font-mono font-semibold text-sm text-gray-900 truncate">
+                                  {reservation.vehicles.matricule}
+                                </div>
+                              </div>
+                            </div>
+                          ) : reservation.assigned_vehicle_id ? (
+                            <div className="flex items-center gap-2 text-amber-600">
+                              <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center">
+                                <span className="text-xs">⚠️</span>
+                              </div>
+                              <div className="text-sm italic">
+                                {t('admin_vehicle_detail.reservations.vehicle_not_loaded', 'Véhicule non chargé')}
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-2 text-gray-400">
+                              <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
+                                <span className="text-xs">—</span>
+                              </div>
+                              <div className="text-sm italic">
+                                {t('admin_vehicle_detail.reservations.no_vehicle_assigned', 'Aucun véhicule')}
+                              </div>
+                            </div>
+                          )}
+                        </td>
                         <td className="p-4 text-sm">
-                          {translateLocation(reservation.pickup_location)} → {translateLocation(reservation.return_location)}
+                          {translateLocation(reservation.pickup_location)}{" "}→{" "}
+                          {translateLocation(reservation.return_location)}
                         </td>
                       </tr>
                     );

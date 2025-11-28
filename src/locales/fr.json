@@ -149,7 +149,9 @@
             "see_all": "Voir toutes les réservations",
             "accept": "Accepter",
             "reject": "Refuser",
-            "title": "Actions"
+            "title": "Actions",
+            "release_vehicle": "Libérer véhicule",
+            "change_vehicle": "Changer véhicule"
         },
         
         "reservation": {
@@ -218,7 +220,16 @@
             "vehicle_assigned": "Véhicule {{registration}} attribué",
             "accept_error": "Impossible de finaliser l'acceptation.",
             "all_vehicles_reserved": "Tous les véhicules de ce modèle sont réservés pour cette période.",
-            "no_available_vehicles": "Aucun véhicule disponible"
+            "no_available_vehicles": "Aucun véhicule disponible",
+            "vehicle_released": "✅ Véhicule libéré",
+            "vehicle_now_available": "Le véhicule est maintenant disponible.",
+            "cannot_release_vehicle": "Impossible de libérer le véhicule.",
+            "vehicle_changed": "✅ Véhicule changé",
+            "new_vehicle_assigned": "Nouveau véhicule {{registration}} attribué",
+            "vehicle_changed_success": "Véhicule changé avec succès",
+            "cannot_change_vehicle": "Impossible de changer le véhicule",
+            "same_vehicle": "Véhicule identique",
+            "same_vehicle_desc": "Le véhicule sélectionné est le même que celui actuellement attribué."
         },
 
         "vehicle_modal": {
@@ -239,7 +250,18 @@
             "select_vehicle": "Sélectionner ce véhicule",
             "registration": "Immatriculation",
             "on_site": "Sur place",
-            "distance_unavailable": "Distance non disponible"
+            "distance_unavailable": "Distance non disponible",
+            "change_vehicle": "Changer le véhicule"
+        },
+
+        "vehicle_info": {
+            "title": "Véhicule attribué",
+            "assigned_vehicle": "Véhicule attribué",
+            "registration": "Immatriculation",
+            "status": "Statut",
+            "depot": "Dépôt",
+            "not_assigned": "Non attribué",
+            "no_depot": "Dépôt non spécifié"
         },
 
         "vehicle_status": {
@@ -322,7 +344,9 @@
             "actions": "Actions",
             "delete": "Supprimer",
             "no_vehicles": "Aucun véhicule trouvé pour ce modèle",
-            "add_first_vehicle": "Ajouter le premier véhicule"
+            "add_first_vehicle": "Ajouter le premier véhicule",
+            "depot": "Dépôt",
+            "no_depot_assigned": "Aucun dépôt assigné"
         },
         
         "offers_management": {

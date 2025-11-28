@@ -31,6 +31,17 @@ export default function ReservationsAdmin() {
     availableVehicles: [],
     selectedVehicleId: null
   });
+
+  // Vérifier les statuts des véhicules au chargement et toutes les minutes
+  useEffect(() => {
+    // Vérifier immédiatement au chargement
+    checkAndUpdateVehicleStatus();
+
+    // Vérifier toutes les minutes
+    const interval = setInterval(checkAndUpdateVehicleStatus, 60000);
+
+    return () => clearInterval(interval);
+  }, []);
   
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -68,6 +79,74 @@ export default function ReservationsAdmin() {
     }
   };
 
+  const checkAndUpdateVehicleStatus = async () => {
+    try {
+      console.log("🔄 Vérification des statuts des véhicules...");
+      
+      // Récupérer toutes les réservations avec leurs véhicules assignés
+      const { data: allReservations, error } = await supabase
+        .from("reservations")
+        .select(`
+          id,
+          assigned_vehicle_id,
+          return_date,
+          return_time,
+          status,
+          pickup_date,
+          pickup_time
+        `)
+        .not("assigned_vehicle_id", "is", null);
+
+      if (error) {
+        console.error("❌ Erreur chargement réservations:", error);
+        return;
+      }
+
+      const now = new Date();
+      let updatedCount = 0;
+
+      // Pour chaque réservation avec véhicule assigné, vérifier si elle est terminée
+      for (const reservation of allReservations || []) {
+        const returnDateTime = new Date(`${reservation.return_date}T${reservation.return_time || "23:59:59"}`);
+        const pickupDateTime = new Date(`${reservation.pickup_date}T${reservation.pickup_time}`);
+        
+        // Vérifier si la réservation est terminée (date de retour passée)
+        // OU si elle est expirée (date de pickup passée et status pending)
+        const isCompleted = now > returnDateTime;
+        const isExpired = reservation.status === 'pending' && now > pickupDateTime;
+        
+        if ((isCompleted || isExpired) && reservation.assigned_vehicle_id) {
+          console.log(`✅ Réservation ${reservation.id} terminée/expirée, libération du véhicule ${reservation.assigned_vehicle_id}`);
+          
+          // Mettre à jour le statut du véhicule à "available"
+          const { error: vehicleError } = await supabase
+            .from("vehicles")
+            .update({ 
+              status: "available",
+              updated_at: new Date().toISOString()
+            })
+            .eq("id", reservation.assigned_vehicle_id);
+
+          if (vehicleError) {
+            console.error(`❌ Erreur mise à jour véhicule ${reservation.assigned_vehicle_id}:`, vehicleError);
+          } else {
+            updatedCount++;
+            console.log(`✅ Véhicule ${reservation.assigned_vehicle_id} remis à disponible`);
+          }
+        }
+      }
+
+      if (updatedCount > 0) {
+        console.log(`🎯 ${updatedCount} véhicule(s) remis à disponible`);
+        // Recharger les réservations pour refléter les changements
+        await fetchReservations();
+      }
+
+    } catch (error) {
+      console.error("❌ Erreur vérification statuts véhicules:", error);
+    }
+  };
+
   async function fetchReservations() {
     setLoading(true);
     
@@ -88,9 +167,11 @@ export default function ReservationsAdmin() {
         return;
       }
 
-      const reservationsWithProfiles = await Promise.all(
+      const reservationsWithDetails = await Promise.all(
         reservationsData.map(async (reservation) => {
           let profileInfo = null;
+          let vehicleInfo = null;
+          let depotInfo = null;
           
           if (reservation.user_id) {
             try {
@@ -105,6 +186,41 @@ export default function ReservationsAdmin() {
               }
             } catch (error) {
               console.warn(`Impossible de charger le profil pour ${reservation.user_id}`);
+            }
+          }
+
+          // Charger les informations du véhicule attribué si disponible
+          if (reservation.assigned_vehicle_id) {
+            try {
+              const { data: vehicleData, error: vehicleError } = await supabase
+                .from("vehicles")
+                .select(`
+                  id,
+                  matricule,
+                  status,
+                  depot_id,
+                  depots (
+                    id,
+                    name,
+                    city,
+                    address,
+                    phone
+                  )
+                `)
+                .eq("id", reservation.assigned_vehicle_id)
+                .single();
+
+              if (!vehicleError && vehicleData) {
+                vehicleInfo = {
+                  id: vehicleData.id,
+                  registration_number: vehicleData.matricule,
+                  status: vehicleData.status,
+                  depot_info: vehicleData.depots
+                };
+                depotInfo = vehicleData.depots;
+              }
+            } catch (error) {
+              console.warn(`Impossible de charger le véhicule pour ${reservation.assigned_vehicle_id}`);
             }
           }
 
@@ -131,12 +247,15 @@ export default function ReservationsAdmin() {
             updated_at: reservation.updated_at,
             user_id: reservation.user_id,
             profiles: profileInfo,
-            rejection_reason: reservation.rejection_reason
+            rejection_reason: reservation.rejection_reason,
+            assigned_vehicle_id: reservation.assigned_vehicle_id,
+            vehicle_info: vehicleInfo,
+            depot_info: depotInfo
           };
         })
       );
 
-      setReservations(reservationsWithProfiles);
+      setReservations(reservationsWithDetails);
 
     } catch (error: any) {
       console.error("Erreur chargement réservations:", error);
@@ -145,9 +264,74 @@ export default function ReservationsAdmin() {
     }
   }
 
+  // Composant pour afficher les informations du véhicule attribué
+const VehicleInfoCard = ({ reservation }) => {
+  if (!reservation.assigned_vehicle_id || !reservation.vehicle_info) {
+    return null;
+  }
+
+  return (
+    <div className="mt-3 p-4 bg-white rounded-xl border border-green-300 shadow-md">
+      <div className="flex items-center gap-2 mb-4 border-b pb-2">
+        <Car className="h-5 w-5 text-green-700" />
+        <span className="font-semibold text-green-800">
+          {translate('admin_reservations.vehicle_info.assigned_vehicle', 'Véhicule attribué')}
+        </span>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        
+        {/* --- VEHICLE DETAILS --- */}
+        <div className="space-y-2">
+          <h3 className="text-gray-700 text-xs font-semibold uppercase tracking-wide">
+            {translate('admin_reservations.vehicle_info.details', 'Détails du véhicule')}
+          </h3>
+
+          <div className="text-sm">
+            <span className="text-gray-500 text-xs">Immatriculation</span>
+            <div className="font-mono font-semibold text-gray-900 bg-gray-100 px-2 py-1 rounded">
+              {reservation.vehicle_info.registration_number}
+            </div>
+          </div>
+        </div>
+
+        {/* --- DEPOT --- */}
+        {reservation.depot_info && (
+          <div className="space-y-2">
+            <h3 className="text-gray-700 text-xs font-semibold uppercase tracking-wide flex items-center gap-1">
+              <MapPin className="h-3 w-3 text-green-600" />
+              {translate('admin_reservations.vehicle_info.depot', 'Dépôt')}
+            </h3>
+
+            <div className="text-sm space-y-1">
+              <div className="font-semibold text-gray-900">
+                {reservation.depot_info.name}
+              </div>
+
+              <div className="text-gray-600 text-xs flex items-center gap-1">
+                📍 {reservation.depot_info.city}
+                {reservation.depot_info.address && ` • ${reservation.depot_info.address}`}
+              </div>
+
+              {reservation.depot_info.phone && (
+                <div className="flex items-center gap-1 text-gray-600 text-xs">
+                  <Phone className="h-3 w-3" />
+                  {reservation.depot_info.phone}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+
   function calculateBusinessStatus(reservation: any) {
     const now = new Date();
     const pickupDateTime = new Date(`${reservation.pickup_date}T${reservation.pickup_time}`);
+    const returnDateTime = new Date(`${reservation.return_date}T${reservation.return_time || "23:59:59"}`);
     
     if (reservation.status === 'pending' && now > pickupDateTime) {
       return 'expired';
@@ -158,13 +342,12 @@ export default function ReservationsAdmin() {
     }
     
     if (reservation.status === 'accepted') {
-      const returnDateTime = new Date(`${reservation.return_date}T${reservation.return_time}`);
       if (now < pickupDateTime) {
-        return 'accepted';
+        return 'accepted'; // Acceptée mais pas encore active
       } else if (now >= pickupDateTime && now <= returnDateTime) {
-        return 'active';
+        return 'active'; // En cours
       } else if (now > returnDateTime) {
-        return 'completed';
+        return 'completed'; // Terminée
       }
     }
     
@@ -268,22 +451,41 @@ export default function ReservationsAdmin() {
       });
       return;
     }
-  
+
     try {
       const reservation = rejectModal.reservation;
+
+      // Si la réservation avait un véhicule assigné, le libérer
+      if (reservation.assigned_vehicle_id) {
+        const { error: vehicleError } = await supabase
+          .from("vehicles")
+          .update({ 
+            status: "available",
+            updated_at: new Date().toISOString()
+          })
+          .eq("id", reservation.assigned_vehicle_id);
+
+        if (vehicleError) {
+          console.error("❌ Erreur libération véhicule:", vehicleError);
+        } else {
+          console.log(`✅ Véhicule ${reservation.assigned_vehicle_id} libéré après refus`);
+        }
+      }
       
+      // UNE SEULE mise à jour de la réservation
       const { error } = await supabase
         .from("reservations")
         .update({ 
           status: "refused",
-          rejection_reason: rejectModal.reason
+          rejection_reason: rejectModal.reason,
+          assigned_vehicle_id: null // Retirer l'assignation du véhicule
         })
         .eq("id", reservation.id);
-  
+
       if (error) {
         throw new Error(`Impossible de refuser: ${error.message}`);
       }
-  
+
       // 🔥 ENVOYER L'EMAIL DE REFUS MANUEL
       try {
         const clientEmail = await getReservationEmail(reservation);
@@ -303,17 +505,16 @@ export default function ReservationsAdmin() {
             pickupLocation: getTranslatedLocation(reservation.pickup_location),
             returnLocation: getTranslatedLocation(reservation.return_location),
             totalPrice: reservation.total_price,
-            rejectionReason: rejectModal.reason, // 🔥 Utiliser la raison personnalisée
+            rejectionReason: rejectModal.reason,
             language: i18n.language
           };
-  
+
           await emailJSService.sendReservationRejectedEmail(emailData);
         }
       } catch (emailError) {
         console.error("Erreur envoi email refus manuel:", emailError);
-        // Ne pas bloquer le processus si l'email échoue
       }
-  
+
       // Fermer la modal et rafraîchir
       closeRejectModal();
       await fetchReservations();
@@ -321,7 +522,7 @@ export default function ReservationsAdmin() {
       toast({
         title: translate('admin_reservations.toast.reservation_rejected', '❌ Réservation refusée'),
       });
-  
+
     } catch (error: any) {
       console.error("Erreur refus:", error);
       toast({
@@ -336,6 +537,51 @@ export default function ReservationsAdmin() {
     'admin_reservations.auto_reject_message', 
     'Votre réservation a été refusée car le véhicule n’est plus disponible pour cette période.'
   );
+
+  const handleForceReleaseVehicle = async (reservation: any) => {
+    if (!reservation.assigned_vehicle_id) return;
+
+    try {
+      const { error: vehicleError } = await supabase
+        .from("vehicles")
+        .update({ 
+          status: "available",
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", reservation.assigned_vehicle_id);
+
+      if (vehicleError) {
+        throw vehicleError;
+      }
+
+      // Optionnel : marquer la réservation comme terminée
+      const { error: reservationError } = await supabase
+        .from("reservations")
+        .update({ 
+          status: "completed"
+        })
+        .eq("id", reservation.id);
+
+      if (reservationError) {
+        console.error("Erreur mise à jour réservation:", reservationError);
+      }
+
+      toast({
+        title: translate('admin_reservations.toast.vehicle_released', '✅ Véhicule libéré'),
+        description: translate('admin_reservations.toast.vehicle_now_available', 'Le véhicule est maintenant disponible.'),
+      });
+
+      await fetchReservations();
+
+    } catch (error: any) {
+      console.error("Erreur libération véhicule:", error);
+      toast({
+        title: translate('admin_reservations.toast.error', 'Erreur'),
+        description: error.message || translate('admin_reservations.toast.cannot_release_vehicle', 'Impossible de libérer le véhicule.'),
+        variant: "destructive",
+      });
+    }
+  };
 
   const handleAcceptReservation = async (reservation: any) => {
     try {
@@ -909,6 +1155,141 @@ const finalizeReservationAcceptance = async () => {
     return category;
   };
 
+  const handleChangeVehicle = async (reservation: any) => {
+    try {
+      // Ouvrir le pop-up de sélection de véhicule
+      setVehicleSelectionModal({
+        isOpen: true,
+        reservation: reservation,
+        availableVehicles: [],
+        selectedVehicleId: reservation.assigned_vehicle_id // Pré-sélectionner le véhicule actuel
+      });
+
+      // Charger les véhicules disponibles
+      await loadAvailableVehicles(reservation);
+
+    } catch (error: any) {
+      console.error("Erreur ouverture modal changement véhicule:", error);
+      toast({
+        title: t('admin_reservations.toast.error', 'Erreur'),
+        description: t('admin_reservations.toast.cannot_change_vehicle', 'Impossible d\'ouvrir le modal de changement de véhicule.'),
+        variant: "destructive",
+      });
+    }
+  };
+
+  const finalizeVehicleChange = async () => {
+    if (!vehicleSelectionModal.selectedVehicleId) {
+      toast({
+        title: t('admin_reservations.toast.select_vehicle', 'Sélection requise'),
+        description: t('admin_reservations.toast.select_vehicle_desc', 'Veuillez sélectionner un véhicule.'),
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const reservation = vehicleSelectionModal.reservation;
+      const selectedVehicleId = vehicleSelectionModal.selectedVehicleId;
+
+      // Si le véhicule sélectionné est le même que l'actuel, ne rien faire
+      if (selectedVehicleId === reservation.assigned_vehicle_id) {
+        toast({
+          title: t('admin_reservations.toast.same_vehicle', 'Véhicule identique'),
+          description: t('admin_reservations.toast.same_vehicle_desc', 'Le véhicule sélectionné est le même que celui actuellement attribué.'),
+          variant: "default",
+        });
+        setVehicleSelectionModal({
+          isOpen: false,
+          reservation: null,
+          availableVehicles: [],
+          selectedVehicleId: null
+        });
+        return;
+      }
+
+      console.log("🔄 Changement de véhicule pour la réservation:", reservation.id);
+
+      // 1. Libérer l'ancien véhicule s'il existe
+      if (reservation.assigned_vehicle_id) {
+        const { error: freeOldVehicleError } = await supabase
+          .from("vehicles")
+          .update({ 
+            status: "available",
+            updated_at: new Date().toISOString()
+          })
+          .eq("id", reservation.assigned_vehicle_id);
+
+        if (freeOldVehicleError) {
+          console.error("❌ Erreur libération ancien véhicule:", freeOldVehicleError);
+        } else {
+          console.log(`✅ Ancien véhicule ${reservation.assigned_vehicle_id} libéré`);
+        }
+      }
+
+      // 2. Mettre à jour la réservation avec le nouveau véhicule
+      const { error: reservationError } = await supabase
+        .from("reservations")
+        .update({ 
+          assigned_vehicle_id: selectedVehicleId
+        })
+        .eq("id", reservation.id);
+
+      if (reservationError) {
+        console.error("❌ Erreur mise à jour réservation:", reservationError);
+        throw reservationError;
+      }
+
+      // 3. Réserver le nouveau véhicule
+      const { error: vehicleError } = await supabase
+        .from("vehicles")
+        .update({ 
+          status: "reserved",
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", selectedVehicleId);
+
+      if (vehicleError) {
+        console.error("❌ Erreur réservation nouveau véhicule:", vehicleError);
+        throw vehicleError;
+      }
+
+      console.log("✅ Véhicule changé avec succès");
+
+      // Fermer le pop-up et rafraîchir
+      setVehicleSelectionModal({
+        isOpen: false,
+        reservation: null,
+        availableVehicles: [],
+        selectedVehicleId: null
+      });
+
+      await fetchReservations();
+      
+      // Message de succès
+      const selectedVehicle = vehicleSelectionModal.availableVehicles.find(
+        v => v.id === selectedVehicleId
+      );
+      
+      toast({
+        title: t('admin_reservations.toast.vehicle_changed', '✅ Véhicule changé'),
+        description: selectedVehicle?.registration_number 
+          ? t('admin_reservations.toast.new_vehicle_assigned', 'Nouveau véhicule {{registration}} attribué', { 
+              registration: selectedVehicle.registration_number 
+            })
+          : t('admin_reservations.toast.vehicle_changed_success', 'Véhicule changé avec succès'),
+      });
+
+    } catch (error: any) {
+      console.error("❌ Erreur changement véhicule:", error);
+      toast({
+        title: t('admin_reservations.toast.error', 'Erreur'),
+        description: error.message || t('admin_reservations.toast.cannot_change_vehicle', 'Impossible de changer le véhicule.'),
+        variant: "destructive",
+      });
+    }
+  };
+
   useEffect(() => {
     fetchReservations();
   }, []);
@@ -926,6 +1307,13 @@ const finalizeReservationAcceptance = async () => {
     
     if (status === 'pending') {
       return filteredReservations.filter(r => r.status === 'pending' && r.business_status !== 'expired').length;
+    }
+    
+    // Pour "accepted", on ne compte que celles qui sont acceptées mais pas encore actives
+    if (status === 'accepted') {
+      return filteredReservations.filter(r => 
+        r.status === 'accepted' && r.business_status === 'accepted'
+      ).length;
     }
     
     // Ajouter le cas pour les réservations annulées
@@ -948,6 +1336,11 @@ const finalizeReservationAcceptance = async () => {
     } else if (activeTab === 'cancelled') {
       displayStatus = reservation.status;
       if (displayStatus !== 'cancelled') return false;
+    } else if (activeTab === 'accepted') {
+      // MODIFICATION: Seulement les réservations acceptées mais pas encore actives
+      if (reservation.status !== 'accepted' || reservation.business_status !== 'accepted') {
+        return false;
+      }
     } else {
       displayStatus = reservation.status;
       if (displayStatus !== activeTab) return false;
@@ -1147,6 +1540,9 @@ const finalizeReservationAcceptance = async () => {
                 {translate('admin_reservations.reservation.vehicle', 'Véhicule')} / {translate('admin_reservations.reservation.details', 'Client')}
               </th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                {translate('admin_reservations.vehicle_info.title', 'Véhicule attribué')}
+              </th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 {translate('admin_reservations.reservation.pickup', 'Période')}
               </th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -1196,6 +1592,26 @@ const finalizeReservationAcceptance = async () => {
                       </div>
                     </div>
                   </div>
+                </td>
+
+                <td className="px-4 py-3">
+                  {reservation.vehicle_info ? (
+                    <div className="text-sm">
+                      <div className="font-medium text-gray-900">
+                        {reservation.vehicle_info.registration_number}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {reservation.depot_info?.name || translate('admin_reservations.vehicle_info.no_depot', 'Dépôt non spécifié')}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {reservation.depot_info?.city}
+                      </div>
+                    </div>
+                  ) : (
+                    <span className="text-sm text-gray-400 italic">
+                      {translate('admin_reservations.vehicle_info.not_assigned', 'Non attribué')}
+                    </span>
+                  )}
                 </td>
 
                 <td className="px-4 py-3">
@@ -1286,12 +1702,34 @@ const finalizeReservationAcceptance = async () => {
                       </button>
                     </div>
                   )}
+
+                  {/* Bouton pour changer de véhicule - SEULEMENT pour les réservations acceptées mais pas encore actives */}
+                  {reservation.status === "accepted" && reservation.business_status === "accepted" && reservation.assigned_vehicle_id && (
+                    <button
+                      onClick={() => handleChangeVehicle(reservation)}
+                      className="bg-blue-600 text-white px-3 py-1 rounded text-xs hover:bg-blue-700 transition-colors"
+                    >
+                      {translate('admin_reservations.actions.change_vehicle', 'Changer véhicule')}
+                    </button>
+                  )}
+                  
+                  {/* Bouton pour libérer manuellement le véhicule */}
+                  {reservation.business_status === "completed" && reservation.assigned_vehicle_id && (
+                    <button
+                      onClick={() => handleForceReleaseVehicle(reservation)}
+                      className="bg-orange-600 text-white px-3 py-1 rounded text-xs hover:bg-orange-700 transition-colors"
+                    >
+                      {translate('admin_reservations.actions.release_vehicle', 'Libérer véhicule')}
+                    </button>
+                  )}
+                  
                   {reservation.business_status === "expired" && (
                     <div className="text-xs text-orange-600 italic">
                       {translate('admin_reservations.messages.expired_reservation', 'Réservation expirée')}
                     </div>
                   )}
-                  {(reservation.status !== "pending" && reservation.business_status !== "expired") && (
+                  
+                  {(reservation.status !== "pending" && reservation.business_status !== "expired" && reservation.business_status !== "completed") && (
                     <div className="text-xs text-gray-500 italic">
                       {formatDateTime(reservation.updated_at || reservation.created_at)}
                     </div>
@@ -1582,6 +2020,9 @@ const finalizeReservationAcceptance = async () => {
                               )}
                             </div>
                           </div>
+
+                          {/* Section informations du véhicule attribué */}
+                          <VehicleInfoCard reservation={reservation} />
                           
                           <div className="flex items-center justify-between sm:flex-col sm:items-end gap-2">
                           <div className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
@@ -1704,13 +2145,33 @@ const finalizeReservationAcceptance = async () => {
                       </div>
                     )}
 
+                    {/* Bouton pour changer de véhicule - SEULEMENT pour les réservations acceptées mais pas encore actives */}
+                    {reservation.status === "accepted" && reservation.business_status === "accepted" && reservation.assigned_vehicle_id && (
+                      <button
+                        onClick={() => handleChangeVehicle(reservation)}
+                        className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm text-center"
+                      >
+                        {translate('admin_reservations.actions.change_vehicle', 'Changer véhicule')}
+                      </button>
+                    )}
+
+                    {/* Bouton pour libérer manuellement le véhicule */}
+                    {reservation.business_status === "completed" && reservation.assigned_vehicle_id && (
+                      <button
+                        onClick={() => handleForceReleaseVehicle(reservation)}
+                        className="bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition-colors font-medium text-sm text-center"
+                      >
+                        {translate('admin_reservations.actions.release_vehicle', 'Libérer véhicule')}
+                      </button>
+                    )}
+
                     {reservation.business_status === "expired" && (
                       <div className="text-xs text-orange-600 italic text-right w-full sm:w-auto">
                         {translate('admin_reservations.messages.expired_on', 'Expirée le')} {formatDateTime(reservation.pickup_date)}
                       </div>
                     )}
 
-                    {(reservation.status !== "pending" && reservation.business_status !== "expired") && (
+                    {(reservation.status !== "pending" && reservation.business_status !== "expired" && reservation.business_status !== "completed") && (
                       <div className="text-xs text-gray-500 italic text-right w-full sm:w-auto">
                         {translate('admin_reservations.reservation.status', 'Statut')}{' '}
                         {reservation.status === "accepted"
@@ -1773,10 +2234,16 @@ const finalizeReservationAcceptance = async () => {
           <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
             <div className="p-6 border-b">
               <h3 className="text-lg font-semibold text-gray-900">
-                {translate('admin_reservations.vehicle_modal.title', 'Attribuer un véhicule')}
+                {vehicleSelectionModal.reservation?.assigned_vehicle_id 
+                  ? translate('admin_reservations.vehicle_modal.change_vehicle_title', 'Changer le véhicule attribué')
+                  : translate('admin_reservations.vehicle_modal.title', 'Attribuer un véhicule')
+                }
               </h3>
               <p className="text-sm text-gray-600 mt-1">
-                {translate('admin_reservations.vehicle_modal.subtitle', 'Sélectionnez le véhicule à attribuer à cette réservation')}
+                {vehicleSelectionModal.reservation?.assigned_vehicle_id 
+                  ? translate('admin_reservations.vehicle_modal.change_vehicle_subtitle', 'Sélectionnez le nouveau véhicule à attribuer à cette réservation')
+                  : translate('admin_reservations.vehicle_modal.subtitle', 'Sélectionnez le véhicule à attribuer à cette réservation')
+                }
               </p>
               
               {/* Info réservation avec détails de location */}
@@ -1982,11 +2449,14 @@ const finalizeReservationAcceptance = async () => {
                     {translate('admin_reservations.vehicle_modal.cancel', 'Annuler')}
                   </button>
                   <button
-                    onClick={finalizeReservationAcceptance}
+                    onClick={vehicleSelectionModal.reservation?.assigned_vehicle_id ? finalizeVehicleChange : finalizeReservationAcceptance}
                     disabled={!vehicleSelectionModal.selectedVehicleId}
                     className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:bg-gray-400 disabled:cursor-not-allowed"
                   >
-                    {translate('admin_reservations.vehicle_modal.confirm', 'Confirmer l\'attribution')}
+                    {vehicleSelectionModal.reservation?.assigned_vehicle_id 
+                      ? translate('admin_reservations.vehicle_modal.change_vehicle', 'Changer le véhicule')
+                      : translate('admin_reservations.vehicle_modal.confirm', 'Confirmer l\'attribution')
+                    }
                   </button>
                 </div>
               </div>

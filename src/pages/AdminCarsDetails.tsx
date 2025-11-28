@@ -66,6 +66,14 @@ type Vehicle = {
   objet: string;
   status?: string;
   created_at: string;
+  depot_id?: string;
+  depots?: {
+    id: string;
+    name: string;
+    city: string;
+    address: string;
+    phone: string;
+  } | null;
 };
 
 export default function AdminVehicleDetail() {
@@ -117,10 +125,19 @@ export default function AdminVehicleDetail() {
         
         setVehicle(vData as CarRow);
 
-        // 2. Charger les véhicules individuels
+        // 2. Charger les véhicules individuels avec leurs dépôts
         const { data: vehiclesData } = await supabase
           .from("vehicles")
-          .select("*")
+          .select(`
+            *,
+            depots (
+              id,
+              name,
+              city,
+              address,
+              phone
+            )
+          `)
           .eq("car_id", id)
           .is("is_deleted", false)
           .order("matricule");
@@ -853,6 +870,7 @@ export default function AdminVehicleDetail() {
                     <th className="p-4 text-left font-semibold">{t('admin_vehicle_detail.vehicles_management.license_plate')}</th>
                     <th className="p-4 text-left font-semibold">{t('admin_vehicle_detail.vehicles_management.obd_code')}</th>
                     <th className="p-4 text-left font-semibold">{t('admin_vehicle_detail.vehicles_management.obd_date')}</th>
+                    <th className="p-4 text-left font-semibold">{t('admin_vehicle_detail.vehicles_management.depot')}</th>
                     <th className="p-4 text-left font-semibold">{t('admin_vehicle_detail.vehicles_management.object')}</th>
                     <th className="p-4 text-left font-semibold">{t('admin_vehicle_detail.vehicles_management.status')}</th>
                     <th className="p-4 text-left font-semibold">{t('admin_vehicle_detail.vehicles_management.change_status')}</th>
@@ -869,6 +887,23 @@ export default function AdminVehicleDetail() {
                         <td className="p-4">{vehicleItem.obd || '-'}</td>
                         <td className="p-4">
                           {vehicleItem.date_obd ? format(new Date(vehicleItem.date_obd), "dd/MM/yyyy") : '-'}
+                        </td>
+                        <td className="p-4">
+                          {vehicleItem.depots ? (
+                            <div className="space-y-1">
+                              <div className="font-medium text-sm">{vehicleItem.depots.name}</div>
+                              <div className="text-xs text-gray-600">{vehicleItem.depots.city}</div>
+                              {vehicleItem.depots.address && (
+                                <div className="text-xs text-gray-500 truncate max-w-xs">
+                                  {vehicleItem.depots.address}
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-gray-400 italic text-sm">
+                              {t('admin_vehicle_detail.vehicles_management.no_depot_assigned')}
+                            </span>
+                          )}
                         </td>
                         <td className="p-4">{vehicleItem.objet || '-'}</td>
                         <td className="p-4">

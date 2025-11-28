@@ -149,7 +149,9 @@
             "see_all": "View all reservations",
             "accept": "Accept",
             "reject": "Reject",
-            "title": "Actions"
+            "title": "Actions",
+            "release_vehicle": "Release vehicle",
+            "change_vehicle": "Change vehicle"
         },
         
         "reservation": {
@@ -218,7 +220,16 @@
             "vehicle_assigned": "Vehicle {{registration}} assigned",
             "accept_error": "Unable to finalize acceptance.",
             "all_vehicles_reserved": "All vehicles of this model are reserved for this period.",
-            "no_available_vehicles": "No vehicles available"
+            "no_available_vehicles": "No vehicles available",
+            "vehicle_released": "✅ Vehicle released",
+            "vehicle_now_available": "The vehicle is now available.",
+            "cannot_release_vehicle": "Cannot release the vehicle.",
+            "vehicle_changed": "✅ Véhicule changé",
+            "new_vehicle_assigned": "New vehicle {{registration}} assigned",
+            "vehicle_changed_success": "Vehicle changed successfully",
+            "cannot_change_vehicle": "Cannot change the vehicle",
+            "same_vehicle": "Same vehicle",
+            "same_vehicle_desc": "The vehicue selected is the same as the one assigned."
         },
 
         "vehicle_modal": {
@@ -239,7 +250,18 @@
             "select_vehicle": "Select this vehicle",
             "registration": "Registration",
             "on_site": "On site",
-            "distance_unavailable": "Distance unavailable"
+            "distance_unavailable": "Distance unavailable",
+            "change_vehicle": "Change vehicle"
+        },
+
+        "vehicle_info": {
+            "title": "Assigned Vehicle",
+            "assigned_vehicle": "Assigned Vehicle", 
+            "registration": "Registration",
+            "status": "Status",
+            "depot": "Depot",
+            "not_assigned": "Not assigned",
+            "no_depot": "Depot not specified"
         },
 
         "vehicle_status": {
@@ -322,7 +344,9 @@
             "actions": "Actions",
             "delete": "Delete",
             "no_vehicles": "No vehicles found for this model",
-            "add_first_vehicle": "Add first vehicle"
+            "add_first_vehicle": "Add first vehicle",
+            "depot": "Depot",
+            "no_depot_assigned": "No depot assigned"
         },
         
         "offers_management": {

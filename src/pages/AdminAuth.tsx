@@ -62,7 +62,7 @@ const AdminLogin = () => {
           title: t("admin_login.success_title"),
           description: t("admin_login.success_message"),
         });
-        navigate("/");
+        navigate("/admin/dashboard");
       }
     } catch {
       toast({

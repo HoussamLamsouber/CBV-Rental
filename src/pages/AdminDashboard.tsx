@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Footer } from "@/components/Footer";
 import { format, subDays, startOfMonth, endOfMonth, isWithinInterval } from "date-fns";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -485,7 +484,6 @@ export default function AdminDashboard() {
           )}
         </div>
       </div>
-      <Footer />
     </>
   );
 }

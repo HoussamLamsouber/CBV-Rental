@@ -511,6 +511,15 @@
         "admin_count": "admin(s)",
         "client_count": "client(s)",
         
+        "table": {
+            "name": "Nom",
+            "email": "Email",
+            "phone": "Téléphone",
+            "role": "Rôle",
+            "registration_date": "Date d'inscription",
+            "actions": "Actions"
+        },
+        
         "modals": {
             "add_admin": {
                 "title": "Promouvoir un client en administrateur",
@@ -845,11 +854,23 @@
             "refused": "Refusée",
             "cancelled": "Annulée"
         },
+
+        "table": {
+            "vehicle": "Véhicule",
+            "dates": "Dates",
+            "locations": "Lieux",
+            "client": "Client",
+            "status": "Statut",
+            "price": "Prix",
+            "actions": "Actions"
+        },
         
         "actions": {
             "view_vehicles": "Voir les véhicules",
             "cancel_reservation": "Annuler la réservation",
-            "cancelling": "Annulation..."
+            "cancelling": "Annulation...",
+            "view_details": "Voir détails",
+            "cancel": "Annuler"
         },
         
         "messages": {
@@ -898,7 +919,17 @@
         "specialOffers": "Offres spéciales",
         "noSpecialOffers": "Aucune offre spéciale disponible",
         "checkStandardRates": "Consultez nos tarifs standards",
-        "bookNow": "Réserver maintenant",
+        "bookNow": "Réserver",
+
+        "vehicle": "Véhicule",
+        "category": "Catégorie",
+        "specifications": "Spécifications",
+        "price": "Prix",
+        "offers": "Offres",
+        "actions": "Actions",
+        "offers_available": "offre(s) spéciale(s)",
+        "from": "À partir de",
+        "noOffers": "Aucune offre",
 
         "periods": {
             "period_1_3_days": "1-3 jours",
@@ -972,8 +1003,41 @@
         "returnDate": "Date de retour",
         "pickupTime": "Heure de départ",
         "returnTime": "Heure de retour",
-        "searchButton": "Rechercher",
-        "swap": "Même lieux"
+        "search": "Rechercher",
+        "swap": "Même lieux",
+        "filters": "Filtres",
+        "category": "Catégorie",
+        "transmission": "Transmission",
+        "fuel": "Carburant",
+        "all": "Toutes",
+        "allFuel": "Tous",
+        "resetFilters": "Réinitialiser les filtres",
+        "select": "Sélectionner",
+        "selectTime": "Sélectionner l'heure",
+        "hours": "Heure",
+        "minutes": "Minutes",
+        "noLocations": "Aucune location trouvée",
+        "loadingLocations": "Chargement...",
+        "errorRequired": "Veuillez remplir tous les champs obligatoires",
+
+        "fuel_types": {
+            "fuel_gasoline": "Essence",
+            "fuel_electric": "Électrique",
+            "fuel_diesel": "Diesel",
+            "fuel_hybrid": "Hybride"
+        },
+        
+        "transmission_types": {
+            "transmission_manual": "Manuelle",
+            "transmission_automatic": "Automatique"
+        },
+
+        "categories": {
+            "category_electric": "Électrique",
+            "category_suv": "SUV",
+            "category_urban_suv": "SUV Urbain",
+            "category_sedan": "Berline"
+        }
     },
 
     "airports": {
@@ -1071,7 +1135,7 @@
             "phone": "Votre numéro de téléphone"
         },
         
-        "guest_info": {
+        "user_info": {
             "title": "Vos informations"
         },
         
@@ -1095,7 +1159,9 @@
             "not_provided": "Non renseigné",
             "request_sent": "Demande envoyée !",
             "request_sent_description": "Votre demande a été transmise à notre équipe. Vous recevrez une confirmation par email après traitement.",
-            "cannot_make_reservation": "Impossible d'effectuer la réservation."
+            "cannot_make_reservation": "Impossible d'effectuer la réservation.",
+            "authentication_required": "Authentification requise",
+            "please_login_to_reserve": "Veuillez vous connecter pour effectuer une réservation"
         },
 
         "categories": {

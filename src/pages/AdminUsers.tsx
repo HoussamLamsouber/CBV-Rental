@@ -3,7 +3,6 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,7 +19,9 @@ import {
   UserCog,
   UserX,
   Eye,
-  Trash2
+  Trash2,
+  ChevronDown,
+  ChevronUp
 } from "lucide-react";
 import { Dialog } from "@headlessui/react";
 import { Badge } from "@/components/ui/badge";
@@ -30,6 +31,14 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 type Profile = {
   id: string;
@@ -67,6 +76,8 @@ export default function AdminUsers() {
   const [selectedEmail, setSelectedEmail] = useState("");
   const [emailSearchOpen, setEmailSearchOpen] = useState(false);
   const [emailSearchTerm, setEmailSearchTerm] = useState("");
+  const [sortField, setSortField] = useState<keyof Profile>('created_at');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
 
   // Vérification des permissions admin
   if (authLoading || adminLoading) {
@@ -106,39 +117,65 @@ export default function AdminUsers() {
         return matchesSearch && profile.role === 'client';
       }
     });
-    setFilteredProfiles(filtered);
-  }, [searchTerm, profiles, activeTab]);
-
-const loadProfiles = async () => {
-  try {
-    setLoading(true);
-    console.log("🔄 Chargement de tous les profils...");
     
-    const { data: profilesData, error: profilesError } = await supabase
-      .from("profiles")
-      .select("*")
-      .order("created_at", { ascending: false });
-
-    if (profilesError) {
-      console.error("❌ Erreur profils:", profilesError);
-      throw profilesError;
-    }
-
-    console.log("✅ Profils chargés:", profilesData);
-    setProfiles(profilesData || []);
-    setFilteredProfiles(profilesData || []);
-
-  } catch (error: any) {
-    console.error("💥 Erreur chargement profils:", error);
-    toast({
-      title: t("error"),
-      description: t('admin_users.messages.cannot_load_users'),
-      variant: "destructive",
+    // Trier les résultats
+    const sorted = [...filtered].sort((a, b) => {
+      let aValue = a[sortField];
+      let bValue = b[sortField];
+      
+      // Gérer les valeurs nulles
+      if (aValue === null) aValue = '';
+      if (bValue === null) bValue = '';
+      
+      if (sortDirection === 'asc') {
+        return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
+      } else {
+        return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
+      }
     });
-  } finally {
-    setLoading(false);
-  }
-};
+    
+    setFilteredProfiles(sorted);
+  }, [searchTerm, profiles, activeTab, sortField, sortDirection]);
+
+  const handleSort = (field: keyof Profile) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('desc');
+    }
+  };
+
+  const loadProfiles = async () => {
+    try {
+      setLoading(true);
+      console.log("🔄 Chargement de tous les profils...");
+      
+      const { data: profilesData, error: profilesError } = await supabase
+        .from("profiles")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (profilesError) {
+        console.error("❌ Erreur profils:", profilesError);
+        throw profilesError;
+      }
+
+      console.log("✅ Profils chargés:", profilesData);
+      setProfiles(profilesData || []);
+      setFilteredProfiles(profilesData || []);
+
+    } catch (error: any) {
+      console.error("💥 Erreur chargement profils:", error);
+      toast({
+        title: t("error"),
+        description: t('admin_users.messages.cannot_load_users'),
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Charger tous les emails au montage du composant
   useEffect(() => {
@@ -146,187 +183,185 @@ const loadProfiles = async () => {
   }, []);
 
   // Modifiez la fonction loadAllEmails pour ne charger que les clients
-const loadAllEmails = async () => {
-  try {
-    console.log("🔄 Chargement des clients...");
-    
-    const { data: profiles, error } = await supabase
-      .from("profiles")
-      .select("email, full_name, role")
-      .eq("role", "client")
-      .order("email");
-
-    if (error) {
-      console.error("❌ Erreur chargement clients:", error);
-      throw error;
-    }
-
-    console.log("📋 Clients chargés:", profiles);
-    setAllEmails(profiles || []);
-
-  } catch (error) {
-    console.error("💥 Erreur chargement emails:", error);
-  }
-};
-
-const handleAddAdmin = async () => {
-  if (!selectedEmail) return;
-
-  try {
-    const cleanEmail = selectedEmail.trim().toLowerCase();
-    
-    console.log("🔍 Promotion via fonction stockée:", cleanEmail);
-
-    // Utiliser la fonction stockée
-    const { error } = await supabase.rpc('promote_to_admin', {
-      user_email: cleanEmail
-    });
-
-    if (error) {
-      console.error("❌ Erreur fonction stockée:", error);
-      throw error;
-    }
-
-    console.log("✅ Fonction stockée exécutée");
-
-    // Vérifier le résultat
-    const { data: verificationData } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("email", cleanEmail)
-      .single();
-
-    console.log("🔍 Rôle après promotion:", verificationData?.role);
-
-    if (verificationData?.role === 'admin') {
-      toast({
-        title: t('admin_users.messages.promotion_success'),
-        description: t('admin_users.messages.now_admin', { email: cleanEmail }),
-      });
-    } else {
-      toast({
-        title: t('admin_users.messages.no_change'),
-        description: t('admin_users.messages.not_client_or_not_exists', { email: cleanEmail }),
-        variant: "default",
-      });
-    }
-
-    setSelectedEmail("");
-    setIsAddAdminModalOpen(false);
-    
-    setTimeout(async () => {
-      await loadProfiles();
-      await loadAllEmails();
-    }, 1000);
-
-  } catch (error: any) {
-    console.error("💥 Erreur:", error);
-    toast({
-      title: t("error"),
-      description: t('admin_users.messages.cannot_promote_user'),
-      variant: "destructive",
-    });
-  }
-};
-
-const handleRemoveAdmin = async (profileId: string, email: string) => {
-  if (!confirm(t('admin_users.messages.confirm_remove_admin', { email }))) {
-    return;
-  }
-
-  try {
-    console.log("🔍 Retrait des droits admin pour:", email);
-
-    // Approche directe d'abord
-    const { error } = await supabase
-      .from("profiles")
-      .update({ role: "client" })
-      .eq("id", profileId);
-
-    if (error) {
-      console.error("❌ Erreur retrait admin:", error);
-      throw error;
-    }
-
-    // Vérification
-    const { data: verificationData } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", profileId)
-      .single();
-
-    console.log("🔍 Rôle après retrait:", verificationData?.role);
-
-    if (verificationData?.role === 'client') {
-      toast({
-        title: t('admin_users.messages.rights_removed'),
-        description: t('admin_users.messages.no_longer_admin', { email }),
-      });
-    } else {
-      throw new Error(t('admin_users.messages.removal_failed'));
-    }
-
-    await loadProfiles();
-
-  } catch (error: any) {
-    console.error("Erreur retrait admin:", error);
-    
-    // Si l'approche directe échoue, utiliser une fonction stockée
+  const loadAllEmails = async () => {
     try {
-      const { error: rpcError } = await supabase.rpc('demote_admin', {
-        user_id: profileId
+      console.log("🔄 Chargement des clients...");
+      
+      const { data: profiles, error } = await supabase
+        .from("profiles")
+        .select("email, full_name, role")
+        .eq("role", "client")
+        .order("email");
+
+      if (error) {
+        console.error("❌ Erreur chargement clients:", error);
+        throw error;
+      }
+
+      console.log("📋 Clients chargés:", profiles);
+      setAllEmails(profiles || []);
+
+    } catch (error) {
+      console.error("💥 Erreur chargement emails:", error);
+    }
+  };
+
+  const handleAddAdmin = async () => {
+    if (!selectedEmail) return;
+
+    try {
+      const cleanEmail = selectedEmail.trim().toLowerCase();
+      
+      console.log("🔍 Promotion via fonction stockée:", cleanEmail);
+
+      // Utiliser la fonction stockée
+      const { error } = await supabase.rpc('promote_to_admin', {
+        user_email: cleanEmail
       });
 
-      if (rpcError) throw rpcError;
+      if (error) {
+        console.error("❌ Erreur fonction stockée:", error);
+        throw error;
+      }
 
-      toast({
-        title: t('admin_users.messages.rights_removed'),
-        description: t('admin_users.messages.no_longer_admin', { email }),
-      });
+      console.log("✅ Fonction stockée exécutée");
 
-      await loadProfiles();
+      // Vérifier le résultat
+      const { data: verificationData } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("email", cleanEmail)
+        .single();
 
-    } catch (rpcError: any) {
+      console.log("🔍 Rôle après promotion:", verificationData?.role);
+
+      if (verificationData?.role === 'admin') {
+        toast({
+          title: t('admin_users.messages.promotion_success'),
+          description: t('admin_users.messages.now_admin', { email: cleanEmail }),
+        });
+      } else {
+        toast({
+          title: t('admin_users.messages.no_change'),
+          description: t('admin_users.messages.not_client_or_not_exists', { email: cleanEmail }),
+          variant: "default",
+        });
+      }
+
+      setSelectedEmail("");
+      setIsAddAdminModalOpen(false);
+      
+      setTimeout(async () => {
+        await loadProfiles();
+        await loadAllEmails();
+      }, 1000);
+
+    } catch (error: any) {
+      console.error("💥 Erreur:", error);
       toast({
         title: t("error"),
-        description: t('admin_users.messages.cannot_remove_admin_rights'),
+        description: t('admin_users.messages.cannot_promote_user'),
         variant: "destructive",
       });
     }
-  }
-};
+  };
 
-const handleDeleteUser = async (profileId: string, email: string, userRole: string) => {
-  const roleText = userRole === 'admin' ? t('admin_users.roles.admin') : t('admin_users.roles.client');
+  const handleRemoveAdmin = async (profileId: string, email: string) => {
+    if (!confirm(t('admin_users.messages.confirm_remove_admin', { email }))) {
+      return;
+    }
 
-  if (!confirm(t('admin_users.messages.confirm_delete_user', { email, role: roleText }))) {
-    return;
-  }
+    try {
+      console.log("🔍 Retrait des droits admin pour:", email);
 
-  try {
-    const { error: rpcError } = await supabase.rpc('delete_user_profile', {
-      target_user_id: profileId
-    });
-  
-    if (rpcError) throw rpcError;
-  
-    toast({
-      title: t('admin_users.messages.user_deleted'),
-      description: t('admin_users.messages.user_deleted_permanently', { email }),
-    });
-  
-    await loadProfiles();
-  
-  } catch (rpcError: any) {
-    toast({
-      title: t("error"),
-      description: t('admin_users.messages.cannot_delete_user'),
-      variant: "destructive",
-    });
-  }
-  
-};
+      // Approche directe d'abord
+      const { error } = await supabase
+        .from("profiles")
+        .update({ role: "client" })
+        .eq("id", profileId);
 
+      if (error) {
+        console.error("❌ Erreur retrait admin:", error);
+        throw error;
+      }
+
+      // Vérification
+      const { data: verificationData } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", profileId)
+        .single();
+
+      console.log("🔍 Rôle après retrait:", verificationData?.role);
+
+      if (verificationData?.role === 'client') {
+        toast({
+          title: t('admin_users.messages.rights_removed'),
+          description: t('admin_users.messages.no_longer_admin', { email }),
+        });
+      } else {
+        throw new Error(t('admin_users.messages.removal_failed'));
+      }
+
+      await loadProfiles();
+
+    } catch (error: any) {
+      console.error("Erreur retrait admin:", error);
+      
+      // Si l'approche directe échoue, utiliser une fonction stockée
+      try {
+        const { error: rpcError } = await supabase.rpc('demote_admin', {
+          user_id: profileId
+        });
+
+        if (rpcError) throw rpcError;
+
+        toast({
+          title: t('admin_users.messages.rights_removed'),
+          description: t('admin_users.messages.no_longer_admin', { email }),
+        });
+
+        await loadProfiles();
+
+      } catch (rpcError: any) {
+        toast({
+          title: t("error"),
+          description: t('admin_users.messages.cannot_remove_admin_rights'),
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
+  const handleDeleteUser = async (profileId: string, email: string, userRole: string) => {
+    const roleText = userRole === 'admin' ? t('admin_users.roles.admin') : t('admin_users.roles.client');
+
+    if (!confirm(t('admin_users.messages.confirm_delete_user', { email, role: roleText }))) {
+      return;
+    }
+
+    try {
+      const { error: rpcError } = await supabase.rpc('delete_user_profile', {
+        target_user_id: profileId
+      });
+    
+      if (rpcError) throw rpcError;
+    
+      toast({
+        title: t('admin_users.messages.user_deleted'),
+        description: t('admin_users.messages.user_deleted_permanently', { email }),
+      });
+    
+      await loadProfiles();
+    
+    } catch (rpcError: any) {
+      toast({
+        title: t("error"),
+        description: t('admin_users.messages.cannot_delete_user'),
+        variant: "destructive",
+      });
+    }
+  };
 
   const formatDateTime = (dateString: string | null) => {
     if (!dateString) return t('admin_users.messages.never');
@@ -341,6 +376,20 @@ const handleDeleteUser = async (profileId: string, email: string, userRole: stri
 
   const adminsCount = profiles.filter(p => p.role === 'admin').length;
   const clientsCount = profiles.filter(p => p.role === 'client').length;
+
+  const SortableHeader = ({ field, children }: { field: keyof Profile; children: React.ReactNode }) => (
+    <TableHead 
+      className="cursor-pointer hover:bg-gray-50 transition-colors"
+      onClick={() => handleSort(field)}
+    >
+      <div className="flex items-center gap-1">
+        {children}
+        {sortField === field && (
+          sortDirection === 'asc' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />
+        )}
+      </div>
+    </TableHead>
+  );
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -405,89 +454,114 @@ const handleDeleteUser = async (profileId: string, email: string, userRole: stri
           </CardContent>
         </Card>
 
-        {/* Liste */}
+        {/* Tableau en vue liste */}
         {loading ? (
           <div className="flex justify-center py-12">
             <LoadingSpinner message={t('admin_users.messages.loading_users')} />
           </div>
         ) : (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {filteredProfiles.map((profile) => (
-              <Card key={profile.id} className="relative">
-                <CardHeader className="pb-3">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <CardTitle className="flex items-center gap-2 text-lg">
-                        {profile.full_name || t('admin_users.messages.not_provided')}
-                        {profile.role === 'admin' && (
-                          <Badge variant="default">{t('admin_users.roles.admin')}</Badge>
+          <Card>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <SortableHeader field="full_name">
+                      {t('admin_users.table.name')}
+                    </SortableHeader>
+                    <SortableHeader field="email">
+                      {t('admin_users.table.email')}
+                    </SortableHeader>
+                    <SortableHeader field="telephone">
+                      {t('admin_users.table.phone')}
+                    </SortableHeader>
+                    <SortableHeader field="role">
+                      {t('admin_users.table.role')}
+                    </SortableHeader>
+                    <SortableHeader field="created_at">
+                      {t('admin_users.table.registration_date')}
+                    </SortableHeader>
+                    <TableHead className="text-right">
+                      {t('admin_users.table.actions')}
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredProfiles.map((profile) => (
+                    <TableRow key={profile.id} className="hover:bg-gray-50">
+                      <TableCell className="font-medium">
+                        <div className="flex items-center gap-2">
+                          {profile.full_name || t('admin_users.messages.not_provided')}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Mail className="h-4 w-4 text-gray-400" />
+                          <span className="truncate max-w-[200px]">{profile.email}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {profile.telephone ? (
+                          <div className="flex items-center gap-2">
+                            <Phone className="h-4 w-4 text-gray-400" />
+                            {profile.telephone}
+                          </div>
+                        ) : (
+                          <span className="text-gray-400">{t('admin_users.messages.not_provided')}</span>
                         )}
-                        {profile.role === 'client' && (
+                      </TableCell>
+                      <TableCell>
+                        {profile.role === 'admin' ? (
+                          <Badge variant="default">{t('admin_users.roles.admin')}</Badge>
+                        ) : (
                           <Badge variant="secondary">{t('admin_users.roles.client')}</Badge>
                         )}
-                      </CardTitle>
-                    </div>
-                    
-                    {/* Boutons d'actions */}
-                    <div className="flex gap-1">
-                      {/* Bouton Voir réservations */}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => navigate(`/admin/reservations?user=${profile.id}`)}
-                        title={t('admin_users.actions.view_reservations')}
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      
-                      {/* Bouton Supprimer pour tous les utilisateurs */}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDeleteUser(profile.id, profile.email, profile.role)}
-                        title={t('admin_users.actions.delete_user', { 
-                          role: profile.role === 'admin' ? t('admin_users.roles.admin') : t('admin_users.roles.client')
-                        })}
-                      >
-                        <Trash2 className="h-4 w-4 text-red-600 hover:bg-red-600 hover:text-white" />
-                      </Button>
-                      
-                      {/* Bouton Retirer admin (uniquement pour les admins) */}
-                      {activeTab === 'admins' && profile.role === 'admin' && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleRemoveAdmin(profile.id, profile.email)}
-                          title={t('admin_users.actions.remove_admin_rights')}
-                        >
-                          <UserX className="h-4 w-4 text-orange-600" />
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                </CardHeader>
-                
-                <CardContent className="space-y-3">
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <Mail className="h-4 w-4" />
-                    <span className="truncate">{profile.email}</span>
-                  </div>
-                  
-                  {profile.telephone && (
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                      <Phone className="h-4 w-4" />
-                      <span>{profile.telephone}</span>
-                    </div>
-                  )}
-                  
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <Calendar className="h-4 w-4" />
-                    <span>{t('admin_users.messages.registered_on')} {formatDateTime(profile.created_at)}</span>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Calendar className="h-4 w-4 text-gray-400" />
+                          {formatDateTime(profile.created_at)}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => navigate(`/admin/reservations?user=${profile.id}`)}
+                            title={t('admin_users.actions.view_reservations')}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteUser(profile.id, profile.email, profile.role)}
+                            title={t('admin_users.actions.delete_user', { 
+                              role: profile.role === 'admin' ? t('admin_users.roles.admin') : t('admin_users.roles.client')
+                            })}
+                          >
+                            <Trash2 className="h-4 w-4 text-red-600" />
+                          </Button>
+                          
+                          {activeTab === 'admins' && profile.role === 'admin' && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleRemoveAdmin(profile.id, profile.email)}
+                              title={t('admin_users.actions.remove_admin_rights')}
+                            >
+                              <UserX className="h-4 w-4 text-orange-600" />
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
         )}
 
         {/* Message si aucun résultat */}
@@ -646,8 +720,6 @@ const handleDeleteUser = async (profileId: string, email: string, userRole: stri
           </div>
         </Dialog>
       </main>
-      
-      <Footer />
     </div>
   );
 }

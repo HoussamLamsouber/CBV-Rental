@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Lock } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { Footer } from "@/components/Footer";
 import { useNavigate } from "react-router-dom";
 
 export default function ResetPassword() {
@@ -129,8 +128,6 @@ export default function ResetPassword() {
           </CardContent>
         </Card>
       </div>
-
-      <Footer />
     </>
   );
 }

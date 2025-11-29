@@ -1,7 +1,7 @@
 // components/AdminDepots.tsx
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Plus, Edit, Trash2, MapPin, Phone, Mail, Search, Filter, X, Car, Check, Table, Grid, Building2, Users, Activity } from "lucide-react";
+import { Plus, Edit, Trash2, MapPin, Phone, Mail, Search, Filter, X, Car, Check, Table, Building2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useTranslation } from "react-i18next";
 
@@ -29,131 +29,6 @@ interface Vehicle {
   };
 }
 
-// Composant DepotCard séparé avec design amélioré
-function DepotCard({ depot, openEditModal, handleDeleteDepot, openVehiclesModal, openAssignVehicleModal }: any) {
-  const { t } = useTranslation();
-
-  const translate = (key: string, fallback: string, options?: any): string => {
-    try {
-      const result = t(key, options);
-      return typeof result === 'string' ? result : fallback;
-    } catch (error) {
-      return fallback;
-    }
-  };
-
-  return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-all duration-300 group">
-      <div className="p-6">
-        <div className="flex items-start justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <div className={`p-2 rounded-lg ${
-              depot.is_active ? 'bg-blue-50 text-blue-600' : 'bg-gray-50 text-gray-400'
-            }`}>
-              <Building2 className="h-5 w-5" />
-            </div>
-            <div>
-              <h3 className="font-semibold text-lg text-gray-900 group-hover:text-blue-600 transition-colors">
-                {depot.name}
-              </h3>
-              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                depot.is_active 
-                  ? 'bg-green-50 text-green-700 border border-green-200' 
-                  : 'bg-gray-50 text-gray-600 border border-gray-200'
-              }`}>
-                {depot.is_active 
-                  ? translate('admin_depots.status.active', 'Actif')
-                  : translate('admin_depots.status.inactive', 'Inactif')
-                }
-              </span>
-            </div>
-          </div>
-          
-          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-            <button
-              onClick={() => openEditModal(depot)}
-              className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-              title={translate('admin_depots.actions.edit', 'Modifier')}
-            >
-              <Edit className="h-4 w-4" />
-            </button>
-            <button
-              onClick={() => handleDeleteDepot(depot.id)}
-              className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-              title={translate('admin_depots.actions.delete', 'Supprimer')}
-            >
-              <Trash2 className="h-4 w-4" />
-            </button>
-          </div>
-        </div>
-        
-        <div className="space-y-3 text-sm">
-          <div className="flex items-start gap-2">
-            <MapPin className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
-            <div>
-              <p className="text-gray-900 font-medium">{depot.address}</p>
-              <p className="text-gray-600">{depot.city}</p>
-            </div>
-          </div>
-          
-          {depot.phone && (
-            <div className="flex items-center gap-2">
-              <Phone className="h-4 w-4 text-gray-400 flex-shrink-0" />
-              <span className="text-gray-900">{depot.phone}</span>
-            </div>
-          )}
-          
-          {depot.email && (
-            <div className="flex items-center gap-2">
-              <Mail className="h-4 w-4 text-gray-400 flex-shrink-0" />
-              <span className="text-gray-900 truncate">{depot.email}</span>
-            </div>
-          )}
-
-          {/* Actions véhicules */}
-          <div className="flex gap-2 pt-3 border-t border-gray-100">
-            <button
-              onClick={() => openVehiclesModal(depot)}
-              className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg text-xs hover:bg-blue-100 transition-colors flex-1 justify-center"
-            >
-              <Car className="h-3.5 w-3.5" />
-              {translate('admin_depots.actions.view_vehicles', 'Véhicules')}
-            </button>
-            <button
-              onClick={() => openAssignVehicleModal(depot)}
-              className="flex items-center gap-2 px-3 py-1.5 bg-green-50 text-green-700 rounded-lg text-xs hover:bg-green-100 transition-colors flex-1 justify-center"
-            >
-              <Plus className="h-3.5 w-3.5" />
-              {translate('admin_depots.actions.add_vehicle', 'Ajouter')}
-            </button>
-          </div>
-          
-          <div className="text-xs text-gray-500 pt-2">
-            {translate('admin_depots.depot.created', 'Créé le')} {new Date(depot.created_at).toLocaleDateString('fr-FR')}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// Composant de statistiques
-function StatsCard({ title, value, icon: Icon, color }: any) {
-  return (
-    <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm font-medium text-gray-600">{title}</p>
-          <p className="text-2xl font-bold text-gray-900 mt-1">{value}</p>
-        </div>
-        <div className={`p-3 rounded-lg ${color}`}>
-          <Icon className="h-6 w-6 text-white" />
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export default function AdminDepots() {
   const [depots, setDepots] = useState<Depot[]>([]);
   const [loading, setLoading] = useState(true);
@@ -167,7 +42,6 @@ export default function AdminDepots() {
   const [availableVehicles, setAvailableVehicles] = useState<Vehicle[]>([]);
   const [selectedVehicles, setSelectedVehicles] = useState<string[]>([]);
   const [filterActive, setFilterActive] = useState<"all" | "active" | "inactive">("all");
-  const [viewMode, setViewMode] = useState<"cards" | "table">("cards");
   
   const { t } = useTranslation();
 
@@ -614,31 +488,6 @@ export default function AdminDepots() {
             </div>
             
             <div className="flex items-center gap-3">
-              <div className="flex bg-white rounded-lg border border-gray-200 p-1">
-                <button
-                  onClick={() => setViewMode("cards")}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-md transition-all ${
-                    viewMode === "cards" 
-                      ? "bg-blue-600 text-white shadow-sm" 
-                      : "text-gray-600 hover:text-gray-900"
-                  }`}
-                  title={translate('admin_depots.actions.switch_cards', 'Mode cartes')}
-                >
-                  <Grid className="h-4 w-4" />
-                </button>
-                <button
-                  onClick={() => setViewMode("table")}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-md transition-all ${
-                    viewMode === "table" 
-                      ? "bg-blue-600 text-white shadow-sm" 
-                      : "text-gray-600 hover:text-gray-900"
-                  }`}
-                  title={translate('admin_depots.actions.switch_table', 'Mode tableau')}
-                >
-                  <Table className="h-4 w-4" />
-                </button>
-              </div>
-
               <button
                 onClick={openCreateModal}
                 className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-2.5 rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all shadow-sm hover:shadow-md"
@@ -730,8 +579,8 @@ export default function AdminDepots() {
               </button>
             )}
           </div>
-        ) : viewMode === "table" ? (
-          // Vue tableau améliorée
+        ) : (
+          // Vue tableau uniquement
           <div className="overflow-hidden bg-white rounded-xl shadow-sm border border-gray-100">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
@@ -816,20 +665,6 @@ export default function AdminDepots() {
                 ))}
               </tbody>
             </table>
-          </div>
-        ) : (
-          // Vue cartes
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredDepots.map((depot) => (
-              <DepotCard 
-                key={depot.id} 
-                depot={depot} 
-                openEditModal={openEditModal} 
-                handleDeleteDepot={handleDeleteDepot} 
-                openVehiclesModal={openVehiclesModal}
-                openAssignVehicleModal={openAssignVehicleModal}
-              />
-            ))}
           </div>
         )}
       </div>

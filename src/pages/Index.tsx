@@ -50,7 +50,6 @@ const Index = () => {
           });
         } else if (data) {
           setCars(data);
-          setSearchResults(data);
         }
       } catch (err) {
         console.error("Erreur fetchCars:", err);
@@ -187,12 +186,23 @@ const Index = () => {
     }
 
     try {
-      // Utiliser la table cars directement avec les filtres de base
       let query = supabase
         .from("cars")
         .select("*")
         .eq("is_deleted", false)
         .eq("available", true);
+
+      if (data.filters?.category) {
+        query = query.eq("category", data.filters.category);
+      }
+
+      if (data.filters?.transmission) {
+        query = query.eq("transmission", data.filters.transmission);
+      }
+
+      if (data.filters?.fuel) {
+        query = query.eq("fuel", data.filters.fuel);
+      }
 
       const { data: allCars, error } = await query;
 
@@ -217,6 +227,7 @@ const Index = () => {
         title: t('index.messages.search_complete'),
         description: t('index.messages.vehicles_available', { count: finalCars.length })
       });
+
     } catch (err) {
       console.error("Erreur recherche:", err);
       toast({
@@ -228,6 +239,7 @@ const Index = () => {
       setSearchLoading(false);
     }
   };
+
 
   const handleOpenReserve = (car: Car) => {
     if (!searchData?.pickupDate || !searchData?.returnDate) {
@@ -292,33 +304,30 @@ const Index = () => {
       {/* Section résultats */}
       <section className="py-8 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
-          {/* Grille des véhicules */}
-          <CarGrid
-            cars={searchResults}
-            onReserve={handleOpenReserve}
-            canReserve={isSearchReady}
-          />
+          
+          {/* N'affiche les voitures que si une recherche a été effectuée */}
+          {searchData ? (
+            <CarGrid
+              cars={searchResults}
+              onReserve={handleOpenReserve}
+              canReserve={isSearchReady}
+            />
+          ) : (
+            <div className="text-center py-16 text-gray-500">
+              🔎 {t("index.messages.start_search_placeholder") || "Commencez par effectuer une recherche pour voir les véhicules disponibles."}
+            </div>
+          )}
 
           {/* Message si aucun résultat */}
           {searchData && searchResults.length === 0 && !searchLoading && (
             <div className="text-center py-12">
-              <div className="text-gray-400 text-6xl mb-4">🔍</div>
+              <div className="text-gray-400 text-6xl mb-4">🚫</div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
                 {t('index.messages.no_vehicles_available')}
               </h3>
               <p className="text-gray-600 max-w-md mx-auto mb-6">
                 {t('index.messages.no_vehicles_match_criteria')}
               </p>
-              <div className="space-y-3">
-                <p className="text-sm text-gray-500">
-                  {t('index.messages.suggestions')} :
-                </p>
-                <ul className="text-sm text-gray-600 space-y-1">
-                  <li>• {t('index.messages.try_different_dates')}</li>
-                  <li>• {t('index.messages.expand_search_categories')}</li>
-                  <li>• {t('index.messages.check_other_locations')}</li>
-                </ul>
-              </div>
             </div>
           )}
         </div>

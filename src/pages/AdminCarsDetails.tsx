@@ -2,7 +2,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { format, addDays } from "date-fns";
@@ -670,15 +669,15 @@ export default function AdminVehicleDetail() {
 
   // RETOURS CONDITIONNELS FINAUX
   if (!id) { 
-    return <div><main className="container mx-auto p-6">{t('admin_vehicle_detail.messages.missing_id')}</main><Footer/></div>;
+    return <div><main className="container mx-auto p-6">{t('admin_vehicle_detail.messages.missing_id')}</main></div>;
   } 
   
   if (loading) { 
-    return <div><main className="container mx-auto p-6">{t('admin_vehicle_detail.messages.loading')}</main><Footer/></div>;
+    return <div><main className="container mx-auto p-6">{t('admin_vehicle_detail.messages.loading')}</main></div>;
   }
   
   if (!vehicle) { 
-    return <div><main className="container mx-auto p-6">{t('admin_vehicle_detail.messages.vehicle_not_found')}</main><Footer/></div>;
+    return <div><main className="container mx-auto p-6">{t('admin_vehicle_detail.messages.vehicle_not_found')}</main></div>;
   }
 
   // Le reste du rendu JSX
@@ -1402,7 +1401,6 @@ export default function AdminVehicleDetail() {
           </div>
         </Dialog>
       </main>
-      <Footer />
     </>
   );
 }

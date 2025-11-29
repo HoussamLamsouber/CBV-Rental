@@ -366,164 +366,162 @@ const MaReservation = () => {
           </div>
         </div>
 
-        <div className="grid gap-4 sm:gap-6">
-          {activeReservations.map(res => (
-            <Card key={res.id} className="overflow-hidden">
-              <CardContent className="p-0">
-                <div className="flex flex-col sm:flex-row">
-                  <div className="sm:w-48 flex-shrink-0 relative overflow-hidden rounded">
-                    <Dialog>
-                      <DialogTrigger asChild>
-                        <button className="relative group w-full h-full">
-                          <img
-                            src={res.car_image || "/placeholder-car.jpg"}
-                            alt={res.car_name}
-                            className="w-full h-40 sm:h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                          />
-                          <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
-                            <ZoomIn className="text-white w-6 h-6" />
-                          </div>
-                        </button>
-                      </DialogTrigger>
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+  <div className="overflow-x-auto">
+    <table className="w-full">
+      <thead className="bg-gray-50 border-b border-gray-200">
+        <tr>
+          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            {t('ma_reservation.table.vehicle', 'Véhicule')}
+          </th>
+          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            {t('ma_reservation.table.dates', 'Dates')}
+          </th>
+          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            {t('ma_reservation.table.locations', 'Lieux')}
+          </th>
+          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            {t('ma_reservation.table.client', 'Client')}
+          </th>
+          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            {t('ma_reservation.table.status', 'Statut')}
+          </th>
+          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            {t('ma_reservation.table.price', 'Prix')}
+          </th>
+          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            {t('ma_reservation.table.actions', 'Actions')}
+          </th>
+        </tr>
+      </thead>
+      <tbody className="divide-y divide-gray-200">
+        {activeReservations.map(res => (
+          <tr key={res.id} className="hover:bg-gray-50/50 transition-colors">
+            {/* Colonne Véhicule */}
+            <td className="px-4 py-4">
+              <div className="flex items-center gap-3">
+                <img 
+                  src={res.car_image || "/placeholder-car.jpg"} 
+                  alt={res.car_name} 
+                  className="w-16 h-12 object-cover rounded-lg"
+                />
+                <div>
+                  <div className="font-semibold text-gray-900 text-sm">{res.car_name}</div>
+                  <Badge variant="outline" className="text-xs mt-1">
+                    {t(`offers_page.categories.${res.car_category}`)}
+                  </Badge>
+                </div>
+              </div>
+            </td>
 
-                      <DialogContent className="max-w-4xl p-0 bg-transparent border-none shadow-none">
-                        <img
-                          src={res.car_image || "/placeholder-car.jpg"}
-                          alt={res.car_name}
-                          className="w-full h-auto rounded-lg"
-                        />
-                      </DialogContent>
-                    </Dialog>
+            {/* Colonne Dates */}
+            <td className="px-4 py-4">
+              <div className="space-y-1 text-sm">
+                <div>
+                  <div className="font-medium text-gray-900">
+                    {formatDisplayDate(res.pickup_date)}
                   </div>
+                  <div className="text-gray-600 text-xs">{res.pickup_time}</div>
+                </div>
+                <div>
+                  <div className="font-medium text-gray-900">
+                    {formatDisplayDate(res.return_date)}
+                  </div>
+                  <div className="text-gray-600 text-xs">{res.return_time}</div>
+                </div>
+              </div>
+            </td>
 
-
-                  
-                  <div className="flex-1 p-4 sm:p-6">
-                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Car className="h-4 w-4 text-gray-400" />
-                          <h2 className="font-semibold text-lg text-gray-900">{res.car_name}</h2>
-                        </div>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <Badge variant="outline">{t(`offers_page.categories.${res.car_category}`)}</Badge>
-                          {getStatusBadge(res.status)}
-                        </div>
-                      </div>
-                      
-                      <div className="text-right">
-                        <div className="text-2xl font-bold text-primary">{res.total_price} {t('ma_reservation.currency')}</div>
-                        <div className="text-sm text-gray-500">{t('ma_reservation.total_price')}</div>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-                      <div className="space-y-3">
-                        <div className="flex items-center gap-2">
-                          <Calendar className="h-4 w-4 text-gray-400 flex-shrink-0" />
-                          <div>
-                            <div className="font-medium">
-                              {t('ma_reservation.messages.from_date').replace('{date}', formatDisplayDate(res.pickup_date))}
-                            </div>
-                            <div className="text-gray-600">{res.pickup_time}</div>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                          <Clock className="h-4 w-4 text-gray-400 flex-shrink-0" />
-                          <div>
-                            <div className="font-medium">
-                              {t('ma_reservation.messages.to_date').replace('{date}', formatDisplayDate(res.return_date))}
-                            </div>
-                            <div className="text-gray-600">{res.return_time}</div>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="space-y-3">
-                        <div className="flex items-start gap-2">
-                          <MapPin className="h-4 w-4 text-gray-400 flex-shrink-0 mt-0.5" />
-                          <div>
-                            <div className="font-medium">{t('ma_reservation.pickup')}</div>
-                            <div className="text-gray-600">{getTranslatedLocation(res.pickup_location)}</div>
-                          </div>
-                        </div>
-                        
-                        <div className="flex items-start gap-2">
-                          <MapPin className="h-4 w-4 text-gray-400 flex-shrink-0 mt-0.5" />
-                          <div>
-                            <div className="font-medium">{t('ma_reservation.return')}</div>
-                            <div className="text-gray-600">{getTranslatedLocation(res.return_location)}</div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="mt-4 pt-4 border-t border-gray-200">
-                      <div className="flex items-center gap-2 mb-2">
-                        <User className="h-4 w-4 text-gray-400" />
-                        <span className="font-medium text-sm">{t('ma_reservation.client_info')}</span>
-                      </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
-                        <div className="flex items-center gap-2">
-                          <Mail className="h-3 w-3 text-gray-400" />
-                          <span className="text-gray-600">{res.client_email}</span>
-                        </div>
-                        {res.client_phone && (
-                          <div className="flex items-center gap-2">
-                            <Phone className="h-3 w-3 text-gray-400" />
-                            <span className="text-gray-600">{res.client_phone}</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {(res.status === 'pending' || res.status === 'accepted') && !isReservationPassed(res) ? (
-                      <div className="mt-4 pt-4 border-t border-gray-200">
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => handleCancelReservation(res)}
-                          disabled={cancellingId === res.id}
-                          className="w-full sm:w-auto flex items-center gap-2"
-                        >
-                          {cancellingId === res.id ? (
-                            <>
-                              <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
-                              {t('ma_reservation.actions.cancelling')}
-                            </>
-                          ) : (
-                            <>
-                              <Trash2 className="h-4 w-4" />
-                              {t('ma_reservation.actions.cancel_reservation')}
-                            </>
-                          )}
-                        </Button>
-                      </div>
-                    ) : res.status === 'cancelled' ? (
-                      <div className="mt-4 pt-4 border-t border-gray-200">
-                        <div className="flex items-center gap-2 text-sm text-red-600">
-                          <AlertTriangle className="h-4 w-4" />
-                          {t('ma_reservation.messages.reservation_cancelled')}
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="mt-4 pt-4 border-t border-gray-200">
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                          <AlertTriangle className="h-4 w-4 text-gray-400" />
-                          {isReservationPassed(res) 
-                            ? t('ma_reservation.messages.cannot_cancel_passed')
-                            : t('ma_reservation.messages.cannot_cancel')
-                          }
-                        </div>
-                      </div>
-                    )}
+            {/* Colonne Lieux */}
+            <td className="px-4 py-4">
+              <div className="space-y-1 text-sm">
+                <div>
+                  <div className="font-medium text-gray-900 text-xs">
+                    {t('ma_reservation.pickup')}
+                  </div>
+                  <div className="text-gray-600 text-xs">
+                    {getTranslatedLocation(res.pickup_location)}
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                <div>
+                  <div className="font-medium text-gray-900 text-xs">
+                    {t('ma_reservation.return')}
+                  </div>
+                  <div className="text-gray-600 text-xs">
+                    {getTranslatedLocation(res.return_location)}
+                  </div>
+                </div>
+              </div>
+            </td>
+
+            {/* Colonne Client */}
+            <td className="px-4 py-4">
+              <div className="space-y-1 text-sm">
+                <div className="text-gray-900">{res.client_name}</div>
+                <div className="text-gray-600 text-xs">{res.client_email}</div>
+                {res.client_phone && (
+                  <div className="text-gray-600 text-xs">{res.client_phone}</div>
+                )}
+              </div>
+            </td>
+
+            {/* Colonne Statut */}
+            <td className="px-4 py-4">
+              {getStatusBadge(res.status)}
+            </td>
+
+            {/* Colonne Prix */}
+            <td className="px-4 py-4">
+              <div className="text-right">
+                <div className="font-bold text-primary text-lg">
+                  {res.total_price} {t('ma_reservation.currency')}
+                </div>
+                <div className="text-gray-500 text-xs">
+                  {t('ma_reservation.total_price')}
+                </div>
+              </div>
+            </td>
+
+            {/* Colonne Actions */}
+            <td className="px-4 py-4">
+              <div className="flex flex-col gap-2">
+                {/* Bouton Annuler */}
+                {(res.status === 'pending' || res.status === 'accepted') && !isReservationPassed(res) ? (
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => handleCancelReservation(res)}
+                    disabled={cancellingId === res.id}
+                    className="flex items-center gap-1 w-full"
+                  >
+                    {cancellingId === res.id ? (
+                      <>
+                        <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
+                        {t('ma_reservation.actions.cancelling')}
+                      </>
+                    ) : (
+                      <>
+                        <Trash2 className="h-3 w-3" />
+                        {t('ma_reservation.actions.cancel')}
+                      </>
+                    )}
+                  </Button>
+                ) : (
+                  <div className="text-xs text-gray-500 text-center">
+                    {isReservationPassed(res) 
+                      ? t('ma_reservation.messages.cannot_cancel_passed')
+                      : t('ma_reservation.messages.cannot_cancel')
+                    }
+                  </div>
+                )}
+              </div>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+</div>
       </div>
     );
   };

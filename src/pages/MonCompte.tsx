@@ -12,6 +12,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { useTranslation } from "react-i18next";
+import { useAuth } from "@/contexts/AuthContext";
+import { AdminLayout } from "@/components/AdminLayout";
 
 interface UserProfile {
   id: string;
@@ -20,6 +22,7 @@ interface UserProfile {
   adresse: string;
   telephone: string;
   dateNaissance: string;
+  role: string;
 }
 
 const initialUserInfo: UserProfile = {
@@ -29,12 +32,14 @@ const initialUserInfo: UserProfile = {
   adresse: "",
   telephone: "",
   dateNaissance: "",
+  role: "",
 };
 
 const MonCompte = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const { isUserAdmin } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [userInfo, setUserInfo] = useState<UserProfile>(initialUserInfo);
   const [loading, setLoading] = useState(true);
@@ -64,7 +69,7 @@ const MonCompte = () => {
 
     const { data, error } = await supabase
       .from('profiles')
-      .select(`id, email, full_name, adresse, telephone, dateNaissance`)
+      .select(`id, email, full_name, adresse, telephone, dateNaissance, role`)
       .eq('id', user.id)
       .single();
 
@@ -83,6 +88,7 @@ const MonCompte = () => {
         adresse: data.adresse || '',
         telephone: data.telephone || '',
         dateNaissance: data.dateNaissance || '',
+        role: data.role || 'client',
       });
     }
     setLoading(false);
@@ -139,21 +145,22 @@ const MonCompte = () => {
     setUserInfo(prev => ({ ...prev, [id as keyof UserProfile]: value }));
   };
 
-  if (loading && !userInfo.id) {
+  // Contenu de la page profil
+  const ProfileContent = () => {
+    if (loading && !userInfo.id) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+          <LoadingSpinner message={t('mon_compte.messages.loading_profile')} />
+        </div>
+      );
+    }
+
+    const { firstName, lastName } = getNames(userInfo.full_name);
+    const avatarFallbackText = `${firstName?.[0] || ''}${lastName?.[0] || ''}`;
+
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-        <LoadingSpinner message={t('mon_compte.messages.loading_profile')} />
-      </div>
-    );
-  }
-
-  const { firstName, lastName } = getNames(userInfo.full_name);
-  const avatarFallbackText = `${firstName?.[0] || ''}${lastName?.[0] || ''}`;
-
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <main className="container mx-auto px-4 py-6">
-        <div className="max-w-4xl mx-auto space-y-6">
+      <div className={isUserAdmin ? "p-6" : "min-h-screen bg-gray-50"}>
+        <div className={isUserAdmin ? "max-w-4xl mx-auto space-y-6" : "container mx-auto px-4 py-6 max-w-4xl space-y-6"}>
           
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="flex items-center gap-4">
@@ -164,9 +171,17 @@ const MonCompte = () => {
               </Avatar>
               
               <div className="min-w-0 flex-1">
-                <h1 className="text-xl sm:text-3xl font-bold text-gray-900 truncate">
-                  {t('mon_compte.title')}
-                </h1>
+                <div className="flex items-center gap-3">
+                  <h1 className="text-xl sm:text-3xl font-bold text-gray-900 truncate">
+                    {t('mon_compte.title')}
+                  </h1>
+                  {userInfo.role === 'admin' && (
+                    <Badge variant="default" className="flex items-center gap-1">
+                      <Shield className="h-3 w-3" />
+                      {t('admin_users.roles.admin')}
+                    </Badge>
+                  )}
+                </div>
                 <p className="text-gray-600 text-sm sm:text-base truncate">
                   {userInfo.full_name || t('mon_compte.messages.full_name_not_provided')}
                 </p>
@@ -323,10 +338,23 @@ const MonCompte = () => {
             </CardContent>
           </Card>
         </div>
-      </main>
-      <Footer />
-    </div>
-  );
+        {/* Footer seulement pour les clients */}
+        {!isUserAdmin && <Footer />}
+      </div>
+    );
+  };
+
+  // Si l'utilisateur est admin, utiliser AdminLayout, sinon afficher normalement (sans Header car géré par App.tsx)
+  if (isUserAdmin) {
+    return (
+      <AdminLayout>
+        <ProfileContent />
+      </AdminLayout>
+    );
+  }
+
+  // Pour les clients, afficher seulement le contenu (le Header est géré par App.tsx)
+  return <ProfileContent />;
 };
 
 export default MonCompte;

@@ -7,7 +7,6 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "react-i18next";
 import { Search, MapPin, Building, Train, Plane, ToggleLeft, ToggleRight, Plus, X } from "lucide-react";
-import { Footer } from "@/components/Footer";
 import { cn } from "@/lib/utils";
 
 interface Location {
@@ -251,7 +250,6 @@ export default function AdminLocations() {
             </div>
           </div>
         </div>
-        <Footer />
       </>
     );
   }
@@ -616,7 +614,6 @@ export default function AdminLocations() {
           </div>
         </div>
       </div>
-      <Footer />
     </>
   );
 }

@@ -13,7 +13,8 @@ import {
   ChevronsUpDown,
   Search,
   ArrowRightLeft,
-  Car
+  Car,
+  SlidersHorizontal
 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -21,6 +22,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 
+// --- Types ---
 export interface SearchData {
   pickupLocation: string;
   returnLocation: string;
@@ -29,13 +31,18 @@ export interface SearchData {
   returnDate: Date | undefined;
   pickupTime: string;
   returnTime: string;
+  filters?: {
+    category?: string;
+    transmission?: string;
+    fuel?: string;
+  };
 }
 
 interface SearchFormProps {
   onSearch: (searchData: SearchData) => void;
 }
 
-// Component réutilisable pour l'autocomplétion
+// --- Autocomplete Input ---
 const AutoCompleteInput = ({
   items,
   placeholder,
@@ -51,6 +58,7 @@ const AutoCompleteInput = ({
 }) => {
   const [open, setOpen] = useState(false);
   const selectedItem = items.find((item) => item.value === value);
+  const { t } = useTranslation();
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -78,7 +86,7 @@ const AutoCompleteInput = ({
         <Command>
           <CommandInput placeholder={placeholder} />
           <CommandEmpty className="py-6 text-center text-sm text-muted-foreground">
-            Aucune location trouvée
+            {t("searchForm.noLocations")}
           </CommandEmpty>
           <CommandGroup className="max-h-60 overflow-y-auto">
             {items.map((item) => (
@@ -108,7 +116,7 @@ const AutoCompleteInput = ({
   );
 };
 
-// Composant réutilisable pour les sélecteurs de date
+// --- Date Picker ---
 const DatePickerField = ({
   label,
   date,
@@ -125,6 +133,7 @@ const DatePickerField = ({
   disabledCondition?: (date: Date) => boolean;
 }) => {
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const { t } = useTranslation();
 
   return (
     <div className="space-y-3">
@@ -145,14 +154,14 @@ const DatePickerField = ({
             )}
           >
             <CalendarIcon className="mr-2 h-4 w-4" />
-            {date ? format(date, "dd/MM/yy") : "Sélectionner"}
+            {date ? format(date, "dd/MM/yy") : t("searchForm.select")}
           </Button>
         </PopoverTrigger>
         <PopoverContent 
           className="w-auto p-0 mx-4 sm:mx-0" 
           align="center"
           side="bottom"
-          avoidCollisions={true}
+          avoidCollisions
           collisionPadding={16}
         >
           <div className="max-h-[80vh] overflow-y-auto">
@@ -174,6 +183,7 @@ const DatePickerField = ({
   );
 };
 
+// --- Time Picker ---
 const TimePickerField = ({
   label,
   value,
@@ -188,11 +198,12 @@ const TimePickerField = ({
   const [open, setOpen] = useState(false);
   const hours = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, "0"));
   const minutes = ["00","05","10","15","20","25","30","35","40","45","50","55"];
+  const { t } = useTranslation();
 
   return (
     <div className="space-y-3 ml-20">
       <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-        <ClockIcon className={`h-4 w-4 text-${color}-600`} />
+        <ClockIcon className={`h-4 w-4 ${color === 'blue' ? 'text-blue-600' : 'text-green-600'}`} />
         {label}
       </Label>
       <Popover open={open} onOpenChange={setOpen}>
@@ -201,13 +212,13 @@ const TimePickerField = ({
             variant="outline"
             className={`h-12 w-32 justify-start text-left text-gray-800 border-gray-300 focus:border-${color}-500 cursor-pointer`}
           >
-            {value || "Sélectionner l'heure"}
+            {value || t("searchForm.selectTime")}
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-56 p-3">
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <p className="text-xs font-semibold text-gray-500 mb-1">Heure</p>
+              <p className="text-xs font-semibold text-gray-500 mb-1">{t("searchForm.hours")}</p>
               <div className="max-h-40 overflow-y-auto space-y-1">
                 {hours.map((h) => (
                   <Button
@@ -225,7 +236,7 @@ const TimePickerField = ({
               </div>
             </div>
             <div>
-              <p className="text-xs font-semibold text-gray-500 mb-1">Minutes</p>
+              <p className="text-xs font-semibold text-gray-500 mb-1">{t("searchForm.minutes")}</p>
               <div className="max-h-40 overflow-y-auto space-y-1">
                 {minutes.map((m) => (
                   <Button
@@ -250,6 +261,7 @@ const TimePickerField = ({
   );
 };
 
+// --- Search Form ---
 export const SearchForm = ({ onSearch }: SearchFormProps) => {
   const { t } = useTranslation();
 
@@ -263,10 +275,28 @@ export const SearchForm = ({ onSearch }: SearchFormProps) => {
   const [activeLocations, setActiveLocations] = useState<{ value: string; label: string }[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Charger les locations actives depuis Supabase
-  useEffect(() => {
-    fetchActiveLocations();
-  }, []);
+  const [filters, setFilters] = useState({
+    category: "",
+    transmission: "",
+    fuel: ""
+  });
+
+  const activeFilterCount = Object.values(filters).filter(Boolean).length;
+
+  const [filterOptions, setFilterOptions] = useState({
+    category: [] as string[],
+    transmission: [] as string[],
+    fuel: [] as string[]
+  });
+
+  useEffect(() => { fetchFilters(); fetchActiveLocations(); }, []);
+
+  const fetchFilters = async () => {
+    const { data, error } = await supabase.from("cars").select("category, transmission, fuel");
+    if (error || !data) return;
+    const unique = (key: string) => [...new Set(data.map((car) => car[key]).filter(Boolean))];
+    setFilterOptions({ category: unique("category"), transmission: unique("transmission"), fuel: unique("fuel") });
+  };
 
   const fetchActiveLocations = async () => {
     try {
@@ -277,69 +307,34 @@ export const SearchForm = ({ onSearch }: SearchFormProps) => {
         .eq("is_active", true)
         .order("location_type")
         .order("display_name");
-
       if (error) throw error;
 
-      // Transformer les données pour le composant d'autocomplétion avec traductions
-      const formattedLocations = data?.map((location: any) => {
-        let translatedLabel = location.display_name;
-        
-        if (location.translation_key) {
-          const translationNamespace = location.location_type === 'airport' ? 'airports' : 'stations';
-          const translation = t(`${translationNamespace}.${location.translation_key}`);
-          if (translation && !translation.startsWith(translationNamespace + '.')) {
-            translatedLabel = translation;
-          }
+      const formatted = data.map((loc: any) => {
+        let label = loc.display_name;
+        if (loc.translation_key) {
+          const ns = loc.location_type === 'airport' ? 'airports' : 'stations';
+          const tr = t(`${ns}.${loc.translation_key}`);
+          if (tr && !tr.startsWith(ns + '.')) label = tr;
         }
-
-        return {
-          value: location.location_value,
-          label: translatedLabel,
-          type: location.location_type
-        };
-      }) || [];
-
-      setActiveLocations(formattedLocations);
-    } catch (error) {
-      console.error("Erreur chargement locations actives:", error);
+        return { value: loc.location_value, label, type: loc.location_type };
+      });
+      setActiveLocations(formatted);
+    } catch (err) {
+      console.error("Erreur chargement locations:", err);
       setActiveLocations(getFallbackLocations());
-    } finally {
-      setIsLoading(false);
-    }
+    } finally { setIsLoading(false); }
   };
 
-  // Fallback en cas d'erreur de chargement
   const getFallbackLocations = () => {
-    const airports = [
-      { value: "airport_agadir", label: t("airports.agadir") },
-      { value: "airport_casablanca", label: t("airports.casablanca") },
-      { value: "airport_marrakech", label: t("airports.marrakech") },
-      { value: "airport_rabat", label: t("airports.rabat") },
-      { value: "airport_tanger", label: t("airports.tanger") },
-    ];
-
-    const stations = [
-      { value: "station_casa_voyageurs", label: t("stations.casa_voyageurs") },
-      { value: "station_rabat_agdal", label: t("stations.rabat_agdal") },
-      { value: "station_marrakech", label: t("stations.marrakech") },
-    ];
-
+    const airports = ["agadir","casablanca","marrakech","rabat","tanger"].map(a => ({ value: `airport_${a}`, label: t(`airports.${a}`) }));
+    const stations = ["casa_voyageurs","rabat_agdal","marrakech"].map(s => ({ value: `station_${s}`, label: t(`stations.${s}`) }));
     return [...airports, ...stations];
   };
 
-  // Fonction pour obtenir le label d'une location
-  const getLocationLabel = (value: string) => {
-    const location = activeLocations.find(item => item.value === value);
-    return location ? location.label : value;
-  };
+  const getLocationLabel = (value: string) => activeLocations.find(item => item.value === value)?.label || value;
 
   const handleSearch = () => {
-    if (!pickupLocation || !pickupDate || !returnDate) {
-      // Vous pouvez ajouter une notification d'erreur ici
-      console.error("Veuillez remplir tous les champs obligatoires");
-      return;
-    }
-
+    if (!pickupLocation || !pickupDate || !returnDate) return console.error(t("searchForm.errorRequired"));
     onSearch({
       pickupLocation,
       returnLocation: sameLocation ? pickupLocation : returnLocation,
@@ -347,25 +342,111 @@ export const SearchForm = ({ onSearch }: SearchFormProps) => {
       pickupDate,
       returnDate,
       pickupTime,
-      returnTime
+      returnTime,
+      filters
     });
   };
 
   return (
     <div className="bg-white/95 backdrop-blur-sm border border-gray-200/80 rounded-2xl p-4 sm:p-6 shadow-xl shadow-blue-500/5 relative overflow-visible">
-      {/* Header avec titre */}
+      {/* Header */}
       <div className="flex items-center gap-3 mb-6 sm:mb-8">
         <div className="p-2 bg-blue-100 rounded-lg">
           <Car className="h-5 w-5 text-blue-600" />
         </div>
         <div>
-          <h2 className="text-lg sm:text-xl font-bold text-gray-900">
-            {t("searchForm.title")}
-          </h2>
+          <h2 className="text-lg sm:text-xl font-bold text-gray-900">{t("searchForm.title")}</h2>
         </div>
       </div>
 
-      {/* Lieux */}
+      {/* Filters */}
+      <div className="absolute top-4 right-4 sm:top-6 sm:right-6 z-10">
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" className="flex items-center gap-2">
+              <SlidersHorizontal className="h-4 w-4" />
+              {t("searchForm.filters")}
+              {activeFilterCount > 0 && (
+                <span className="bg-blue-600 text-white text-xs py-0.5 px-2 rounded-full">
+                  {activeFilterCount}
+                </span>
+              )}
+            </Button>
+          </PopoverTrigger>
+
+          <PopoverContent className="p-4 w-72 space-y-4">
+            {/* Catégorie */}
+            <div>
+              <Label className="font-medium text-sm mb-1 block">
+                {t("searchForm.category")}
+              </Label>
+              <select
+                className="w-full border p-2 rounded"
+                value={filters.category}
+                onChange={(e) => setFilters({ ...filters, category: e.target.value })}
+              >
+                <option value="">{t("searchForm.all")}</option>
+                {filterOptions.category.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {t(`searchForm.categories.${cat.toLowerCase()}`)}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Transmission */}
+            <div>
+              <Label className="font-medium text-sm mb-1 block">
+                {t("searchForm.transmission")}
+              </Label>
+              <select
+                className="w-full border p-2 rounded"
+                value={filters.transmission}
+                onChange={(e) => setFilters({ ...filters, transmission: e.target.value })}
+              >
+                <option value="">{t("searchForm.all")}</option>
+                {filterOptions.transmission.map((tr) => (
+                  <option key={tr} value={tr}>
+                    {t(`searchForm.transmission_types.${tr.toLowerCase()}`)}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Carburant */}
+            <div>
+              <Label className="font-medium text-sm mb-1 block">
+                {t("searchForm.fuel")}
+              </Label>
+              <select
+                className="w-full border p-2 rounded"
+                value={filters.fuel}
+                onChange={(e) => setFilters({ ...filters, fuel: e.target.value })}
+              >
+                <option value="">{t("searchForm.allFuel")}</option>
+                {filterOptions.fuel.map((f) => (
+                  <option key={f} value={f}>
+                    {t(`searchForm.fuel_types.${f.toLowerCase()}`)}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Reset filters */}
+            {activeFilterCount > 0 && (
+              <Button
+                variant="ghost"
+                className="w-full text-red-500"
+                onClick={() => setFilters({ category: "", transmission: "", fuel: "" })}
+              >
+                {t("searchForm.resetFilters")}
+              </Button>
+            )}
+          </PopoverContent>
+        </Popover>
+      </div>
+
+      {/* Locations */}
       <div className="space-y-4 sm:space-y-0 sm:flex sm:items-end sm:gap-4 mb-6 sm:mb-8">
         <div className="flex-1 space-y-3 min-w-0">
           <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
@@ -374,7 +455,7 @@ export const SearchForm = ({ onSearch }: SearchFormProps) => {
           </Label>
           <AutoCompleteInput
             items={activeLocations}
-            placeholder={isLoading ? "Chargement..." : t("searchForm.pickupPlaceholder")}
+            placeholder={isLoading ? t("searchForm.loadingLocations") : t("searchForm.pickupPlaceholder")}
             value={pickupLocation}
             onSelect={setPickupLocation}
             icon={<MapPinIcon className="h-4 w-4 text-blue-600" />}
@@ -392,7 +473,7 @@ export const SearchForm = ({ onSearch }: SearchFormProps) => {
                 ? "bg-green-50 border-green-200 text-green-600"
                 : "bg-gray-50 border-gray-200 text-gray-600 hover:bg-blue-50 hover:border-blue-200 hover:text-blue-600"
             )}
-            title={sameLocation ? t("searchForm.swap") : t("searchForm.swap")}
+            title={t("searchForm.swap")}
           >
             <ArrowRightLeft className="h-4 w-4" />
           </Button>
@@ -419,7 +500,7 @@ export const SearchForm = ({ onSearch }: SearchFormProps) => {
           ) : (
             <AutoCompleteInput
               items={activeLocations}
-              placeholder={isLoading ? "Chargement..." : t("searchForm.returnPlaceholder")}
+              placeholder={isLoading ? t("searchForm.loadingLocations") : t("searchForm.returnPlaceholder")}
               value={returnLocation}
               onSelect={setReturnLocation}
               icon={<MapPinIcon className="h-4 w-4 text-green-600" />}
@@ -428,7 +509,7 @@ export const SearchForm = ({ onSearch }: SearchFormProps) => {
         </div>
       </div>
 
-      {/* Dates et heures */}
+      {/* Dates & Times */}
       <div className="space-y-6 sm:space-y-0 sm:grid sm:grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 mb-6 sm:mb-8">
         <div className="space-y-4">
           <div className="flex items-center gap-2 mb-3">
@@ -477,16 +558,17 @@ export const SearchForm = ({ onSearch }: SearchFormProps) => {
         </div>
       </div>
 
-      {/* Bouton de recherche */}
-      <Button
-        onClick={handleSearch}
-        disabled={isLoading || !pickupLocation || !pickupDate || !returnDate}
-        className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 transition-all duration-300 font-semibold h-12 text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
-        size="lg"
-      >
-        <Search className="h-5 w-5 mr-2" />
-        {isLoading ? "Chargement..." : t("searchForm.searchButton")}
-      </Button>
+      {/* Search Button */}
+      <div className="mt-4">
+        <Button
+          onClick={handleSearch}
+          className="w-full bg-blue-600 text-white h-12 text-lg"
+          disabled={!pickupLocation || !pickupDate}
+        >
+          <Search className="mr-2 h-5 w-5" />
+          {t("searchForm.search")}
+        </Button>
+      </div>
     </div>
   );
 };

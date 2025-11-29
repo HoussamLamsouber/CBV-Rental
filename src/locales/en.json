@@ -511,22 +511,31 @@
         "admin_count": "admin(s)",
         "client_count": "client(s)",
         
+        "table": {
+            "name": "Name",
+            "email": "Email",
+            "phone": "Phone",
+            "role": "Role",
+            "registration_date": "Registration Date",
+            "actions": "Actions"
+        },
+        
         "modals": {
             "add_admin": {
-            "title": "Promote client to administrator",
-            "info": "Select a client to give them administrator rights.",
-            "select_client": "Select a client",
-            "choose_client": "Choose a client...",
-            "no_clients_available": "No clients available",
-            "clients_available": "client(s) available for promotion",
-            "new_full_name": "New full name (optional)",
-            "keep_current_name": "Leave empty to keep current name",
-            "new_phone": "New phone (optional)",
-            "keep_current_phone": "Leave empty to keep current phone",
-            "cancel": "Cancel",
-            "promote_to_admin": "Promote to admin",
-            "search_client": "Search client by email or name...",
-            "no_clients_found": "No clients found"
+                "title": "Promote client to administrator",
+                "info": "Select a client to give them administrator rights.",
+                "select_client": "Select a client",
+                "choose_client": "Choose a client...",
+                "no_clients_available": "No clients available",
+                "clients_available": "client(s) available for promotion",
+                "new_full_name": "New full name (optional)",
+                "keep_current_name": "Leave empty to keep current name",
+                "new_phone": "New phone (optional)",
+                "keep_current_phone": "Leave empty to keep current phone",
+                "cancel": "Cancel",
+                "promote_to_admin": "Promote to admin",
+                "search_client": "Search client by email or name...",
+                "no_clients_found": "No clients found"
             }
         },
         
@@ -557,7 +566,7 @@
             "registered_on": "Registered on:"
         }
     },
-
+    
     "admin_dashboard": {
         "title": "Dashboard",
         "subtitle": "Overview of your rental activity",
@@ -845,11 +854,23 @@
             "refused": "Refused",
             "cancelled": "Cancelled"
         },
+
+        "table": {
+            "vehicle": "Vehicle",
+            "dates": "Dates",
+            "locations": "Locations",
+            "client": "Client",
+            "status": "Status",
+            "price": "Price",
+            "actions": "Actions"
+        },
         
         "actions": {
             "view_vehicles": "View vehicles",
             "cancel_reservation": "Cancel reservation",
-            "cancelling": "Cancelling..."
+            "cancelling": "Cancelling...",
+            "view_details": "View details",
+            "cancel": "Cancel"
         },
         
         "messages": {
@@ -899,6 +920,16 @@
         "noSpecialOffers": "No special offers available",
         "checkStandardRates": "Check our standard rates",
         "bookNow": "Book now",
+
+        "vehicle": "Vehicle",
+        "category": "Category",
+        "specifications": "Specifications",
+        "price": "Price",
+        "offers": "Offers",
+        "actions": "Actions",
+        "offers_available": "special offer(s)",
+        "from": "From",
+        "noOffers": "No offers",
 
         "periods": {
             "period_1_3_days": "1-3 days",
@@ -972,8 +1003,41 @@
         "returnDate": "Return date",
         "pickupTime": "Pickup time",
         "returnTime": "Return time",
-        "searchButton": "Search",
-        "swap": "Same locations"
+        "search": "Search",
+        "swap": "Same locations",
+        "filters": "Filters",
+        "category": "Category",
+        "transmission": "Transmission",
+        "fuel": "Fuel",
+        "all": "All",
+        "allFuel": "All",
+        "resetFilters": "Reset filters",
+        "select": "Select",
+        "selectTime": "Select time",
+        "hours": "Hours",
+        "minutes": "Minutes",
+        "noLocations": "No locations found",
+        "loadingLocations": "Loading...",
+        "errorRequired": "Please fill in all required fields",
+
+        "categories": {
+            "category_electric": "Electric",
+            "category_suv": "SUV",
+            "category_urban_suv": "Urban SUV", 
+            "category_sedan": "Sedan"
+        },
+
+        "fuel_types": {
+            "fuel_gasoline": "Gasoline",
+            "fuel_electric": "Electric",
+            "fuel_diesel": "Diesel",
+            "fuel_hybrid": "Hybrid"
+        },
+
+        "transmission_types": {
+            "transmission_manual": "Manual",
+            "transmission_automatic": "Automatic"
+        }
     },
 
     "airports": {
@@ -1071,7 +1135,7 @@
             "phone": "Your phone number"
         },
         
-        "guest_info": {
+        "user_info": {
             "title": "Your information"
         },
         

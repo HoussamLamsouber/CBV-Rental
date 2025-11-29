@@ -4,7 +4,6 @@ import { Footer } from "@/components/Footer";
 import { supabase } from "@/integrations/supabase/client";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Car, Tag, Calendar, X, ArrowRight, Clock } from "lucide-react";
 
@@ -120,63 +119,127 @@ const Offres = () => {
           </p>
         </div>
 
-        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 mb-10">
-          {cars.map((car) => (
-            <Card key={car.id} className="overflow-hidden hover:shadow-lg transition-shadow duration-300">
-              <div className="relative">
-                <img src={car.image_url} alt={car.name} className="w-full h-40 sm:h-48 object-cover" />
-                {offers[car.id] && offers[car.id].length > 0 && (
-                  <Badge className="absolute top-2 left-2 bg-green-600 hover:bg-green-700">
-                    <Tag className="h-3 w-3 mr-1" />
-                    {offers[car.id].length} {t("offers_page.offers_plural", { count: offers[car.id].length })}
-                  </Badge>
-                )}
-              </div>
+        <section className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden mb-10">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    {t("offers_page.vehicle", "Véhicule")}
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    {t("offers_page.category", "Catégorie")}
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    {t("offers_page.specifications", "Spécifications")}
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    {t("offers_page.price", "Prix")}
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    {t("offers_page.offers", "Offres")}
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    {t("offers_page.actions", "Actions")}
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {cars.map((car) => (
+                  <tr key={car.id} className="hover:bg-gray-50/50 transition-colors">
+                    {/* Colonne Véhicule */}
+                    <td className="px-4 py-4">
+                      <div className="flex items-center gap-3">
+                        <img 
+                          src={car.image_url} 
+                          alt={car.name} 
+                          className="w-16 h-12 object-cover rounded-lg"
+                        />
+                        <div>
+                          <h3 className="font-semibold text-gray-900 text-sm">{car.name}</h3>
+                          {offers[car.id] && offers[car.id].length > 0 && (
+                            <Badge className="bg-green-100 text-green-800 hover:bg-green-200 text-xs mt-1">
+                              <Tag className="h-3 w-3 mr-1" />
+                              {offers[car.id].length} {t("offers_page.offers_plural", { count: offers[car.id].length })}
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    </td>
 
-              <CardContent className="p-4">
-                <div className="space-y-3">
-                  <div>
-                    <h3 className="font-bold text-gray-900 text-base sm:text-lg line-clamp-1">
-                      {car.name}
-                    </h3>
-                    <div className="flex flex-wrap items-center gap-1 mt-1">
+                    {/* Colonne Catégorie */}
+                    <td className="px-4 py-4">
                       <Badge variant="secondary" className="text-xs">
                         {t(`offers_page.categories.${car.category}`)}
                       </Badge>
-                      <Badge variant="outline" className="text-xs">
-                        {t(`car_card.transmission_types.${car.transmission}`)}
-                      </Badge>
-                    </div>
-                  </div>
+                    </td>
 
-                  <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
-                    <div className="flex items-center gap-1">
-                      <span>⛽</span>
-                      <span>{t(`car_card.fuel_types.${car.fuel}`)}</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <span>👤</span>
-                      <span>{car.seats || 5} {t("offers_page.seats")}</span>
-                    </div>
-                  </div>
+                    {/* Colonne Spécifications */}
+                    <td className="px-4 py-4">
+                      <div className="space-y-1 text-sm text-gray-600">
+                        <div className="flex items-center gap-1">
+                          <span>⛽</span>
+                          <span>{t(`car_card.fuel_types.${car.fuel}`)}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <span>⚙️</span>
+                          <span>{t(`car_card.transmission_types.${car.transmission}`)}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <span>👤</span>
+                          <span>{car.seats || 5} {t("offers_page.seats")}</span>
+                        </div>
+                      </div>
+                    </td>
 
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-gray-600">{t("offers_page.startFrom")}</p>
-                      <p className="text-lg font-bold text-primary">
-                        {car.price} Dhs/{t("offers_page.perDay")}
-                      </p>
-                    </div>
+                    {/* Colonne Prix */}
+                    <td className="px-4 py-4">
+                      <div>
+                        <p className="text-lg font-bold text-primary">
+                          {car.price} Dhs
+                        </p>
+                        <p className="text-xs text-gray-500">{t("offers_page.perDay")}</p>
+                      </div>
+                    </td>
 
-                    <Button onClick={() => openOffersModal(car.id)} size="sm" className="flex items-center gap-1">
-                      <span className="hidden sm:inline">{t("offers_page.view")}</span>
-                      <ArrowRight className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                    {/* Colonne Offres */}
+                    <td className="px-4 py-4">
+                      {offers[car.id] && offers[car.id].length > 0 ? (
+                        <div className="text-sm text-gray-600">
+                          <p className="font-medium">{offers[car.id].length} {t("offers_page.offers_available", "offre(s) spéciale(s)")}</p>
+                          <p className="text-xs text-gray-500 mt-1">
+                            {t("offers_page.from", "À partir de")} {Math.min(...offers[car.id].map(o => parseInt(o.price)))}
+                          </p>
+                        </div>
+                      ) : (
+                        <p className="text-sm text-gray-400">{t("offers_page.noOffers", "Aucune offre")}</p>
+                      )}
+                    </td>
+
+                    {/* Colonne Actions */}
+                    <td className="px-4 py-4">
+                      <div className="flex gap-2">
+                        <Button 
+                          onClick={() => openOffersModal(car.id)} 
+                          size="sm" 
+                          className="flex items-center gap-1"
+                        >
+                          <span>{t("offers_page.view")}</span>
+                          <ArrowRight className="h-4 w-4" />
+                        </Button>
+                        <Link
+                          to="/"
+                          className="inline-flex items-center justify-center px-3 py-2 bg-primary text-white text-sm font-medium rounded-md hover:bg-primary/90 transition-colors"
+                        >
+                          {t("offers_page.bookNow")}
+                        </Link>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </section>
 
         {cars.length === 0 && (

@@ -62,57 +62,16 @@ export const Header = () => {
           <img src="/logo-white.webp" alt="Logo" className="h-8 md:h-16" />
         </Link>
 
-        {/* Navigation principale */}
+        {/* Navigation principale - Uniquement pour les pages publiques */}
         <nav className="hidden md:flex items-center gap-8">
           {navLink("/", t("home"))}
           {navLink("/offres", t("offers"))}
-          {navLink("/ma-reservation", t("my_reservations"))}
           {navLink("/about", t("about"))}
-
-          {/* Menu admin */}
-          {isUserAdmin && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button
-                  className={`flex items-center gap-1 p-2 rounded-md ${
-                    location.pathname.startsWith("/admin")
-                      ? "text-white font-semibold"
-                      : "text-blue-200 hover:text-white transition"
-                  }`}
-                >
-                  {t("admin")}
-                  <ChevronDown className="h-4 w-4" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start">
-                <DropdownMenuItem asChild>
-                  <Link to="/admin/dashboard">{t("admindashboard")}</Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/admin/vehicles">{t("manage_vehicles")}</Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/admin/reservations">
-                    {t("manage_reservations")}
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/admin/users">{t("manage_users")}</Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                <Link to="/admin/locations">Gestion des locations</Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                <Link to="/admin/depots">Gestion des depots</Link>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
+          {navLink("/contact", t("contact"))}
         </nav>
 
         {/* Espace utilisateur + bouton langue */}
         <div className="flex items-center gap-3">
-
           {/* Zone utilisateur desktop */}
           {!authLoading && (
             <div className="hidden md:flex items-center">
@@ -146,6 +105,9 @@ export const Header = () => {
                   <DropdownMenuContent align="end" className="w-48">
                     <DropdownMenuItem asChild>
                       <Link to="/mon-compte">{t("profile")}</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/ma-reservation">{t("my_reservations")}</Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
                       <Link to="/changer-mot-de-passe">{t("change_password")}</Link>
@@ -196,30 +158,16 @@ export const Header = () => {
           <div className="flex flex-col space-y-3 px-4 py-3">
             {navLink("/", t("home"))}
             {navLink("/offres", t("offers"))}
-            {navLink("/ma-reservation", t("my_reservations"))}
             {navLink("/about", t("about"))}
 
             {isUserAdmin && (
-              <div className="flex flex-col space-y-1">
-                <span className="font-semibold text-sm text-blue-200 mt-2">
-                  {t("admin")}
-                </span>
-                <Link to="/admin/dashboard" onClick={() => setIsMenuOpen(false)}>
-                  {t("admindashboard")}
-                </Link>
-                <Link to="/admin/vehicles" onClick={() => setIsMenuOpen(false)}>
-                  {t("manage_vehicles")}
-                </Link>
-                <Link
-                  to="/admin/reservations"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  {t("manage_reservations")}
-                </Link>
-                <Link to="/admin/users" onClick={() => setIsMenuOpen(false)}>
-                  {t("manage_users")}
-                </Link>
-              </div>
+              <Link 
+                to="/admin/dashboard" 
+                onClick={() => setIsMenuOpen(false)}
+                className="text-blue-200 hover:text-white"
+              >
+                {t("admin")}
+              </Link>
             )}
 
             {!authLoading && isAuthenticated ? (
@@ -228,7 +176,13 @@ export const Header = () => {
                   to="/mon-compte"
                   onClick={() => setIsMenuOpen(false)}
                 >
-                  {t("my_account")}
+                  {t("profile")}
+                </Link>
+                <Link 
+                  to="/ma-reservation"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  {t("my_reservations")}
                 </Link>
                 <Link 
                   to="/changer-mot-de-passe"

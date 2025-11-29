@@ -27,11 +27,21 @@ import ResetPassword from "./pages/ResetPassword";
 import "@/i18n.ts";
 import AdminLocations from "./pages/AdminLocations";
 import AdminDepots from "./pages/AdminDepots";
+import { AdminLayout } from './components/AdminLayout';
+import Contact from "./pages/Contact";
 
 const queryClient = new QueryClient();
 
 const AppProviders = ({ children }: { children: React.ReactNode }) => (
   <AuthProvider>{children}</AuthProvider>
+);
+
+// Layout pour les pages publiques avec Header
+const PublicLayout = ({ children }: { children: React.ReactNode }) => (
+  <div className="min-h-screen bg-gray-50">
+    <Header />
+    {children}
+  </div>
 );
 
 function App() {
@@ -42,26 +52,46 @@ function App() {
           <TooltipProvider>
             <Toaster />
             <Sonner />
-            <Header />
             <Routes>
-              {/* Site client */}
-              <Route path="/" element={<Index />} />
-              <Route path="/offres" element={<Offres />} />
-              <Route path="/ma-reservation" element={<MaReservation />} />
-              <Route path="/mon-compte" element={<MonCompte />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/about" element={<About />} />
-              <Route path="/changer-mot-de-passe" element={<ProtectedRoute> <ChangePassword /> </ProtectedRoute>} />
-              <Route path="/forgot-password" element={<ForgotPassword />} />
-              <Route path="/reset-password" element={<ResetPassword />} />
+              {/* Site client - avec Header public */}
+              <Route path="/" element={<PublicLayout><Index /></PublicLayout>} />
+              <Route path="/offres" element={<PublicLayout><Offres /></PublicLayout>} />
+              <Route path="/ma-reservation" element={<PublicLayout><MaReservation /></PublicLayout>} />
+              <Route path="/about" element={<PublicLayout><About /></PublicLayout>} />
+              <Route path="/contact" element={<PublicLayout><Contact /></PublicLayout>} />
+              <Route path="/auth" element={<PublicLayout><Auth /></PublicLayout>} />
+              <Route path="/forgot-password" element={<PublicLayout><ForgotPassword /></PublicLayout>} />
+              <Route path="/reset-password" element={<PublicLayout><ResetPassword /></PublicLayout>} />
 
-              {/* Admin */}
+              {/* Route spéciale pour MonCompte - sans PublicLayout car géré dans le composant */}
+              <Route 
+                path="/mon-compte" 
+                element={
+                  <ProtectedRoute>
+                    <MonCompte />
+                  </ProtectedRoute>
+                } 
+              />
+
+              {/* Route spéciale pour Changer mot de passe - sans PublicLayout car géré dans le composant */}
+              <Route 
+                path="/changer-mot-de-passe" 
+                element={
+                  <ProtectedRoute>
+                    <ChangePassword />
+                  </ProtectedRoute>
+                } 
+              />
+
+              {/* Admin - avec AdminLayout */}
               <Route path="/admin" element={<AdminAuth />} />
               <Route 
                 path="/admin/dashboard" 
                 element={
                   <ProtectedRoute adminOnly={true}>
-                    <AdminDashboard />
+                    <AdminLayout>
+                      <AdminDashboard />
+                    </AdminLayout>
                   </ProtectedRoute>
                 } 
               />
@@ -69,7 +99,9 @@ function App() {
                 path="/admin/vehicles" 
                 element={
                   <ProtectedRoute adminOnly={true}>
-                    <AdminVehicles />
+                    <AdminLayout>
+                      <AdminVehicles />
+                    </AdminLayout>
                   </ProtectedRoute>
                 } 
               />
@@ -77,7 +109,9 @@ function App() {
                 path="/admin/vehicle/:id" 
                 element={
                   <ProtectedRoute adminOnly={true}>
-                    <AdminCarDetails />
+                    <AdminLayout>
+                      <AdminCarDetails />
+                    </AdminLayout>
                   </ProtectedRoute>
                 } 
               />
@@ -85,7 +119,9 @@ function App() {
                 path="/admin/reservations" 
                 element={
                   <ProtectedRoute adminOnly={true}>
-                    <AdminReservations />
+                    <AdminLayout>
+                      <AdminReservations />
+                    </AdminLayout>
                   </ProtectedRoute>
                 } 
               />
@@ -93,7 +129,9 @@ function App() {
                 path="/admin/users" 
                 element={
                   <ProtectedRoute adminOnly={true}>
-                    <AdminUsers />
+                    <AdminLayout>
+                      <AdminUsers />
+                    </AdminLayout>
                   </ProtectedRoute>
                 } 
               />
@@ -101,7 +139,9 @@ function App() {
                 path="/admin/locations" 
                 element={
                   <ProtectedRoute adminOnly={true}>
-                    <AdminLocations />
+                    <AdminLayout>
+                      <AdminLocations />
+                    </AdminLayout>
                   </ProtectedRoute>
                 } 
               />
@@ -109,12 +149,14 @@ function App() {
                 path="/admin/depots" 
                 element={
                   <ProtectedRoute adminOnly={true}>
-                    <AdminDepots />
+                    <AdminLayout>
+                      <AdminDepots />
+                    </AdminLayout>
                   </ProtectedRoute>
                 } 
               />
 
-              <Route path="*" element={<NotFound />} />
+              <Route path="*" element={<PublicLayout><NotFound /></PublicLayout>} />
             </Routes>
           </TooltipProvider>
         </AppProviders>

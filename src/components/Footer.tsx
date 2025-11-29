@@ -80,6 +80,15 @@ export const Footer = () => {
                   {t("about")}
                 </Link>
               </li>
+              <li>
+                <Link
+                  to="/contact"
+                  className="text-blue-100 hover:text-white transition-colors duration-200 flex items-center group"
+                >
+                  <span className="w-2 h-2 bg-blue-400 rounded-full mr-3 group-hover:scale-125 transition-transform"></span>
+                  {t("contact")}
+                </Link>
+              </li>
             </ul>
           </div>
 

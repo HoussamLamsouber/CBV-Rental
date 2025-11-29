@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Search, Filter, X, ArrowLeft, Phone, Mail, Calendar, Car, User, Rows3, StretchHorizontal, MapPin, Navigation, Check } from "lucide-react";
+import { Search, Filter, X, ArrowLeft, Phone, Mail, Calendar, Car, User, Rows3, MapPin, Navigation, Check } from "lucide-react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { emailJSService } from "@/services/emailJSService";
 import { toast } from "@/hooks/use-toast";
@@ -17,7 +17,6 @@ export default function ReservationsAdmin() {
     vehicleModel: "",
     status: ""
   });
-  const [viewMode, setViewMode] = useState("cards");
   
   const [rejectModal, setRejectModal] = useState({
     isOpen: false,
@@ -36,11 +35,6 @@ export default function ReservationsAdmin() {
   useEffect(() => {
     // Vérifier immédiatement au chargement
     checkAndUpdateVehicleStatus();
-
-    // Vérifier toutes les minutes
-    const interval = setInterval(checkAndUpdateVehicleStatus, 60000);
-
-    return () => clearInterval(interval);
   }, []);
   
   const [searchParams] = useSearchParams();
@@ -263,70 +257,6 @@ export default function ReservationsAdmin() {
       setLoading(false);
     }
   }
-
-  // Composant pour afficher les informations du véhicule attribué
-const VehicleInfoCard = ({ reservation }) => {
-  if (!reservation.assigned_vehicle_id || !reservation.vehicle_info) {
-    return null;
-  }
-
-  return (
-    <div className="mt-3 p-4 bg-white rounded-xl border border-green-300 shadow-md">
-      <div className="flex items-center gap-2 mb-4 border-b pb-2">
-        <Car className="h-5 w-5 text-green-700" />
-        <span className="font-semibold text-green-800">
-          {translate('admin_reservations.vehicle_info.assigned_vehicle', 'Véhicule attribué')}
-        </span>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        
-        {/* --- VEHICLE DETAILS --- */}
-        <div className="space-y-2">
-          <h3 className="text-gray-700 text-xs font-semibold uppercase tracking-wide">
-            {translate('admin_reservations.vehicle_info.details', 'Détails du véhicule')}
-          </h3>
-
-          <div className="text-sm">
-            <span className="text-gray-500 text-xs">Immatriculation</span>
-            <div className="font-mono font-semibold text-gray-900 bg-gray-100 px-2 py-1 rounded">
-              {reservation.vehicle_info.registration_number}
-            </div>
-          </div>
-        </div>
-
-        {/* --- DEPOT --- */}
-        {reservation.depot_info && (
-          <div className="space-y-2">
-            <h3 className="text-gray-700 text-xs font-semibold uppercase tracking-wide flex items-center gap-1">
-              <MapPin className="h-3 w-3 text-green-600" />
-              {translate('admin_reservations.vehicle_info.depot', 'Dépôt')}
-            </h3>
-
-            <div className="text-sm space-y-1">
-              <div className="font-semibold text-gray-900">
-                {reservation.depot_info.name}
-              </div>
-
-              <div className="text-gray-600 text-xs flex items-center gap-1">
-                📍 {reservation.depot_info.city}
-                {reservation.depot_info.address && ` • ${reservation.depot_info.address}`}
-              </div>
-
-              {reservation.depot_info.phone && (
-                <div className="flex items-center gap-1 text-gray-600 text-xs">
-                  <Phone className="h-3 w-3" />
-                  {reservation.depot_info.phone}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
-
 
   function calculateBusinessStatus(reservation: any) {
     const now = new Date();
@@ -1925,31 +1855,6 @@ const finalizeReservationAcceptance = async () => {
               ))}
             </div>
           </div>
-
-          <div className="flex items-center gap-2 bg-white rounded-lg border border-gray-300 p-1 flex-shrink-0">
-            <button
-              onClick={() => setViewMode("cards")}
-              className={`p-2 rounded-md transition-colors ${
-                viewMode === "cards" 
-                  ? "bg-blue-100 text-blue-600" 
-                  : "text-gray-500 hover:text-gray-700"
-              }`}
-              title={translate('admin_reservations.view_mode.cards_tooltip', 'Vue cartes')}
-            >
-              <StretchHorizontal className="h-4 w-4" />
-            </button>
-            <button
-              onClick={() => setViewMode("table")}
-              className={`p-2 rounded-md transition-colors ${
-                viewMode === "table" 
-                  ? "bg-blue-100 text-blue-600" 
-                  : "text-gray-500 hover:text-gray-700"
-              }`}
-              title={translate('admin_reservations.view_mode.table_tooltip', 'Vue tableau')}
-            >
-              <Rows3 className="h-4 w-4" />
-            </button>
-          </div>
         </div>
 
         {filteredReservations.length === 0 ? (
@@ -1980,210 +1885,6 @@ const finalizeReservationAcceptance = async () => {
                 {userId ? translate('admin_reservations.actions.see_all', 'Voir toutes les réservations') : translate('admin_reservations.filters.reset', 'Réinitialiser')}
               </button>
             )}
-          </div>
-        ) : viewMode === "cards" ? (
-          <div className="space-y-4">
-            {filteredReservations.map((reservation) => (
-              <div key={reservation.id} className="bg-white rounded-lg shadow-sm border overflow-hidden">
-                <div className="p-4 sm:p-6">
-                  <div className="flex flex-col gap-4 mb-4">
-                    <div className="flex items-start gap-3">
-                      <div className="flex-shrink-0">
-                        {reservation.car_image ? (
-                          <img
-                            src={reservation.car_image}
-                            alt={reservation.car_name}
-                            className="w-16 h-12 sm:w-20 sm:h-14 object-cover rounded-lg"
-                          />
-                        ) : (
-                          <div className="w-16 h-12 sm:w-20 sm:h-14 bg-gray-200 rounded-lg flex items-center justify-center">
-                            <Car className="h-4 w-4 sm:h-6 sm:w-6 text-gray-400" />
-                          </div>
-                        )}
-                      </div>
-                      
-                      <div className="flex-1 min-w-0">
-                        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
-                          <div className="flex-1 min-w-0">
-                            <h3 className="text-base sm:text-lg font-semibold text-gray-900 truncate">
-                              {reservation.car_name}
-                            </h3>
-                            <p className="text-gray-600 text-sm mb-2">{translateCategory(reservation.car_category)}</p>
-                            
-                            <div className="flex items-center gap-2 text-sm text-gray-600">
-                              <User className="h-4 w-4 text-gray-400" />
-                              <span className="truncate">
-                                {reservation.profiles?.full_name || reservation.guest_name || translate('admin_reservations.reservation.unidentified', 'Client non identifié')}
-                              </span>
-                              {reservation.guest_name && (
-                                <span className="text-xs bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">{translate('admin_reservations.reservation.guest', 'Invité')}</span>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* Section informations du véhicule attribué */}
-                          <VehicleInfoCard reservation={reservation} />
-                          
-                          <div className="flex items-center justify-between sm:flex-col sm:items-end gap-2">
-                          <div className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                            reservation.business_status === "pending" 
-                              ? "bg-yellow-100 text-yellow-800"
-                              : reservation.business_status === "accepted"
-                              ? "bg-blue-100 text-blue-800"
-                              : reservation.business_status === "active"
-                              ? "bg-green-100 text-green-800"
-                              : reservation.business_status === "completed"
-                              ? "bg-gray-100 text-gray-800"
-                              : reservation.business_status === "expired"
-                              ? "bg-orange-100 text-orange-800"
-                              : reservation.status === "cancelled"
-                              ? "bg-purple-100 text-purple-800"
-                              : "bg-red-100 text-red-800"
-                          }`}>
-                            {reservation.business_status === "pending" && "⏳ " + translate('admin_reservations.status.pending', 'En attente')}
-                            {reservation.business_status === "accepted" && "✅ " + translate('admin_reservations.status.accepted', 'Acceptée')}
-                            {reservation.business_status === "active" && "🚗 " + translate('admin_reservations.status.active', 'Active')}
-                            {reservation.business_status === "completed" && "🏁 " + translate('admin_reservations.status.completed', 'Terminée')}
-                            {reservation.business_status === "expired" && "💀 " + translate('admin_reservations.status.expired', 'Expirée')}
-                            {reservation.status === "cancelled" && "🚫 " + translate('admin_reservations.status.cancelled', 'Annulée')}
-                            {reservation.business_status === "refused" && "❌ " + translate('admin_reservations.status.refused', 'Refusée')}
-                          </div>
-                            <div className="text-base sm:text-lg font-bold text-gray-900">
-                              {formatPrice(reservation.total_price)}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 gap-3 py-4 border-t border-b">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <div className="flex items-center gap-1 text-sm font-medium text-gray-900 mb-1">
-                          <Calendar className="h-3 w-3" />
-                          {translate('admin_reservations.reservation.pickup', 'Départ')}
-                        </div>
-                        <p className="text-sm text-gray-600">{translateLocation(reservation.pickup_location)}</p>
-                        <p className="text-xs text-gray-500">
-                          {formatDate(reservation.pickup_date)}
-                        </p>
-                      </div>
-                      
-                      <div>
-                        <div className="flex items-center gap-1 text-sm font-medium text-gray-900 mb-1">
-                          <Calendar className="h-3 w-3" />
-                          {translate('admin_reservations.reservation.return', 'Retour')}
-                        </div>
-                        <p className="text-sm text-gray-600">{translateLocation(reservation.return_location)}</p>
-                        <p className="text-xs text-gray-500">
-                          {formatDate(reservation.return_date)}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <div className="flex items-center gap-1 text-sm font-medium text-gray-900 mb-1">
-                          <Phone className="h-3 w-3" />
-                          {translate('admin_reservations.reservation.phone', 'Téléphone')}
-                        </div>
-                        <p className="text-sm text-gray-600 truncate">
-                          {reservation.guest_phone || reservation.profiles?.telephone || translate('admin_reservations.reservation.not_provided', 'Non renseigné')}
-                        </p>
-                      </div>
-                      
-                      <div>
-                        <div className="flex items-center gap-1 text-sm font-medium text-gray-900 mb-1">
-                          <Mail className="h-3 w-3" />
-                          {translate('admin_reservations.reservation.email', 'Email')}
-                        </div>
-                        <p className="text-sm text-gray-600 truncate">
-                          {reservation.guest_email || reservation.profiles?.email}
-                        </p>
-                      </div>
-                    </div>
-
-                    {reservation.rejection_reason && (
-                      <div className="col-span-2">
-                        <div className="flex items-center gap-1 text-sm font-medium text-red-900 mb-1">
-                          ❌ {translate('admin_reservations.reject_modal.reason', 'Raison du refus')}
-                        </div>
-                        <p className="text-sm text-red-700 bg-red-50 p-2 rounded border border-red-200">
-                          {reservation.rejection_reason}
-                        </p>
-                      </div>
-                    )}
-
-                    {reservation.business_status === "expired" && (
-                      <div className="col-span-2">
-                        <div className="flex items-center gap-1 text-sm font-medium text-orange-900 mb-1">
-                          ⚠️ {translate('admin_reservations.messages.expired_reservation', 'Réservation expirée')}
-                        </div>
-                        <p className="text-sm text-orange-700 bg-orange-50 p-2 rounded border border-orange-200">
-                          {translate('admin_reservations.messages.expired_description', 'Cette réservation n\'a pas été traitée à temps et est maintenant expirée.')}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex flex-col sm:flex-row sm:justify-end sm:items-end gap-3 pt-4 w-full">
-                    {reservation.status === "pending" && reservation.business_status !== "expired" && (
-                      <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto justify-end">
-                        <button
-                          onClick={() => handleAcceptReservation(reservation)}
-                          className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors font-medium text-sm text-center"
-                        >
-                          {translate('admin_reservations.actions.accept', 'Accepter')}
-                        </button>
-                        <button
-                          onClick={() => openRejectModal(reservation)}
-                          className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors font-medium text-sm text-center"
-                        >
-                          {translate('admin_reservations.actions.reject', 'Refuser')}
-                        </button>
-                      </div>
-                    )}
-
-                    {/* Bouton pour changer de véhicule - SEULEMENT pour les réservations acceptées mais pas encore actives */}
-                    {reservation.status === "accepted" && reservation.business_status === "accepted" && reservation.assigned_vehicle_id && (
-                      <button
-                        onClick={() => handleChangeVehicle(reservation)}
-                        className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm text-center"
-                      >
-                        {translate('admin_reservations.actions.change_vehicle', 'Changer véhicule')}
-                      </button>
-                    )}
-
-                    {/* Bouton pour libérer manuellement le véhicule */}
-                    {reservation.business_status === "completed" && reservation.assigned_vehicle_id && (
-                      <button
-                        onClick={() => handleForceReleaseVehicle(reservation)}
-                        className="bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition-colors font-medium text-sm text-center"
-                      >
-                        {translate('admin_reservations.actions.release_vehicle', 'Libérer véhicule')}
-                      </button>
-                    )}
-
-                    {reservation.business_status === "expired" && (
-                      <div className="text-xs text-orange-600 italic text-right w-full sm:w-auto">
-                        {translate('admin_reservations.messages.expired_on', 'Expirée le')} {formatDateTime(reservation.pickup_date)}
-                      </div>
-                    )}
-
-                    {(reservation.status !== "pending" && reservation.business_status !== "expired" && reservation.business_status !== "completed") && (
-                      <div className="text-xs text-gray-500 italic text-right w-full sm:w-auto">
-                        {translate('admin_reservations.reservation.status', 'Statut')}{' '}
-                        {reservation.status === "accepted"
-                          ? translate('admin_reservations.reservation.accepted_on', 'acceptée le')
-                          : translate('admin_reservations.reservation.rejected_on', 'refusée le')}{' '}
-                        {formatDateTime(reservation.updated_at || reservation.created_at)}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))}
           </div>
         ) : (
           <TableView reservations={filteredReservations} />

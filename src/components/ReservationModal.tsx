@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useTranslation } from "react-i18next";
 import { formatDisplayDate, calculateDaysDifference, formatDateForDB } from "@/utils/dateUtils";
+import { useNavigate } from "react-router-dom";
 
 type Car = Database["public"]["Tables"]["cars"]["Row"];
 type SearchData = {
@@ -43,14 +44,10 @@ export const ReservationModal = ({
   onReserved,
 }: ReservationModalProps) => {
   const [isAvailable, setIsAvailable] = useState(true);
-  const [guestInfo, setGuestInfo] = useState({
-    full_name: "",
-    email: "",
-    telephone: ""
-  });
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
 
   // Fonction pour traduire les lieux (aéroports et gares)
   const getTranslatedLocation = (locationValue: string) => {
@@ -74,12 +71,23 @@ export const ReservationModal = ({
 
   useEffect(() => {
     if (isOpen) {
-      setGuestInfo({ full_name: "", email: "", telephone: "" });
+      // Vérifier si l'utilisateur est connecté
+      if (!user) {
+        toast({
+          title: t('reservation_modal.messages.authentication_required'),
+          description: t('reservation_modal.messages.please_login_to_reserve'),
+          variant: "destructive",
+        });
+        navigate('/auth');
+        onClose();
+        return;
+      }
+
       if (car && searchData) {
         checkAvailability();
       }
     }
-  }, [isOpen, car, searchData]);
+  }, [isOpen, car, searchData, user, navigate, toast, t, onClose]);
 
   const checkAvailability = async () => {
     const available = await checkRealTimeAvailability();
@@ -132,42 +140,8 @@ export const ReservationModal = ({
     return car.price * numberOfDays;
   };
 
-  const validateGuestInfo = () => {
-    if (!guestInfo.full_name.trim()) {
-      toast({
-        title: t('reservation_modal.messages.missing_information'),
-        description: t('reservation_modal.messages.enter_full_name'),
-        variant: "destructive",
-      });
-      return false;
-    }
-
-    if (!guestInfo.email.trim()) {
-      toast({
-        title: t('reservation_modal.messages.missing_information'),
-        description: t('reservation_modal.messages.enter_email'),
-        variant: "destructive",
-      });
-      return false;
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(guestInfo.email)) {
-      toast({
-        title: t('reservation_modal.messages.invalid_email'),
-        description: t('reservation_modal.messages.enter_valid_email'),
-        variant: "destructive",
-      });
-      return false;
-    }
-
-    return true;
-  };
-
   const handleConfirm = async () => {
-    if (!car || !searchData) return;
-
-    if (!user && !validateGuestInfo()) return;
+    if (!car || !searchData || !user) return;
 
     const isAvailable = await checkRealTimeAvailability();
     if (!isAvailable) {
@@ -186,12 +160,7 @@ export const ReservationModal = ({
       const returnDateStr = formatDateForDB(searchData.returnDate);
       const totalPrice = calculateTotalPrice();
 
-      let newReservationId;
-      let clientEmail = "";
-      let clientName = "";
-      let clientPhone = "";
-
-      const reservationData: any = {
+      const reservationData = {
         car_id: car.id,
         car_name: car.name,
         car_category: car.category,
@@ -208,59 +177,33 @@ export const ReservationModal = ({
         total_price: totalPrice,
         status: "pending",
         date: formatDateForDB(new Date()),
+        user_id: user.id, // Maintenant obligatoire
       };
 
-      if (user) {
-        reservationData.user_id = user.id;
-        
-        const { data: newReservation, error } = await supabase
-          .from("reservations")
-          .insert([reservationData])
-          .select()
-          .single();
+      const { data: newReservation, error } = await supabase
+        .from("reservations")
+        .insert([reservationData])
+        .select()
+        .single();
 
-        if (error) throw error;
-        newReservationId = newReservation.id;
+      if (error) throw error;
 
-        const { data: userProfile } = await supabase
-          .from("profiles")
-          .select("full_name, telephone, email")
-          .eq("id", user.id)
-          .single();
+      // Récupérer les informations du profil utilisateur
+      const { data: userProfile } = await supabase
+        .from("profiles")
+        .select("full_name, telephone, email")
+        .eq("id", user.id)
+        .single();
 
-        clientEmail = userProfile?.email || user.email;
-        clientName = userProfile?.full_name || user.email;
-        clientPhone = userProfile?.telephone || t('reservation_modal.messages.not_provided');
-
-      } else {
-        reservationData.guest_name = guestInfo.full_name;
-        reservationData.guest_email = guestInfo.email.toLowerCase();
-        reservationData.guest_phone = guestInfo.telephone || '';
-
-        const { data: newReservation, error } = await supabase
-          .from("reservations")
-          .insert([reservationData])
-          .select()
-          .single();
-
-        if (error) throw error;
-        newReservationId = newReservation.id;
-
-        clientEmail = guestInfo.email;
-        clientName = guestInfo.full_name;
-        clientPhone = guestInfo.telephone || t('reservation_modal.messages.not_provided');
-
-        const guestReservations = localStorage.getItem("guest_reservations");
-        const reservationsArray = guestReservations ? JSON.parse(guestReservations) : [];
-        reservationsArray.push(newReservationId);
-        localStorage.setItem("guest_reservations", JSON.stringify(reservationsArray));
-      }
+      const clientEmail = userProfile?.email || user.email;
+      const clientName = userProfile?.full_name || user.email;
+      const clientPhone = userProfile?.telephone || t('reservation_modal.messages.not_provided');
 
       // AJOUT: Récupérer la langue actuelle
       const currentLanguage = i18n.language;
 
       await emailJSService.sendNewReservationAdminEmail({
-        reservationId: newReservationId,
+        reservationId: newReservation.id,
         clientName,
         clientEmail,
         clientPhone,
@@ -297,7 +240,7 @@ export const ReservationModal = ({
     }
   };
 
-  if (!car || !searchData) return null;
+  if (!car || !searchData || !user) return null;
 
   const totalPrice = calculateTotalPrice();
 
@@ -318,7 +261,6 @@ export const ReservationModal = ({
           className="w-full h-48 object-cover rounded mb-4"
         />
 
-        {/* CORRECTION : Utilisation de getTranslatedCategory pour afficher la catégorie traduite */}
         <p className="mb-2 text-sm text-gray-600">{t(`offers_page.categories.${car.category}`)}</p>
         <p className="mb-4 font-semibold">{car.price} {t('reservation_modal.currency_per_day')}</p>
 
@@ -329,44 +271,16 @@ export const ReservationModal = ({
           <p><strong>{t('reservation_modal.fields.return_date')}:</strong> {formatDisplayDate(searchData.returnDate.toString())} {t('reservation_modal.at_time')} {searchData.returnTime}</p>
         </div>
 
-        {!user && (
-          <div className="mb-4 space-y-3">
-            <h4 className="font-medium text-sm">{t('reservation_modal.guest_info.title')}</h4>
-            <div>
-              <Label htmlFor="full_name">{t('reservation_modal.fields.full_name')} *</Label>
-              <Input
-                id="full_name"
-                value={guestInfo.full_name}
-                onChange={(e) => setGuestInfo({...guestInfo, full_name: e.target.value})}
-                placeholder={t('reservation_modal.placeholders.full_name')}
-                className="mt-1"
-                required
-              />
-            </div>
-            <div>
-              <Label htmlFor="email">{t('reservation_modal.fields.email')} *</Label>
-              <Input
-                id="email"
-                type="email"
-                value={guestInfo.email}
-                onChange={(e) => setGuestInfo({...guestInfo, email: e.target.value})}
-                placeholder={t('reservation_modal.placeholders.email')}
-                className="mt-1"
-                required
-              />
-            </div>
-            <div>
-              <Label htmlFor="telephone">{t('reservation_modal.fields.phone')}</Label>
-              <Input
-                id="telephone"
-                value={guestInfo.telephone}
-                onChange={(e) => setGuestInfo({...guestInfo, telephone: e.target.value})}
-                placeholder={t('reservation_modal.placeholders.phone')}
-                className="mt-1"
-              />
-            </div>
-          </div>
-        )}
+        {/* Section informations utilisateur */}
+        <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded">
+          <h4 className="font-medium text-sm mb-2">{t('reservation_modal.user_info.title')}</h4>
+          <p className="text-sm text-blue-700">
+            <strong>{t('reservation_modal.fields.full_name')}:</strong> {user.user_metadata?.full_name || user.email}
+          </p>
+          <p className="text-sm text-blue-700">
+            <strong>{t('reservation_modal.fields.email')}:</strong> {user.email}
+          </p>
+        </div>
 
         {!isAvailable && (
           <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded">
@@ -376,11 +290,11 @@ export const ReservationModal = ({
           </div>
         )}
 
-        <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded">
-          <p className="text-blue-700 text-sm">
+        <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded">
+          <p className="text-green-700 text-sm">
             <strong>{t('reservation_modal.total_price')}:</strong> <span className="font-semibold text-lg">{totalPrice} {t('reservation_modal.currency')}</span>
           </p>
-          <p className="text-blue-600 text-xs mt-1">
+          <p className="text-green-600 text-xs mt-1">
             {t('reservation_modal.reservation_confirmation_note')}
           </p>
         </div>

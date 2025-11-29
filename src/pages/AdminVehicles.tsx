@@ -7,10 +7,9 @@ import { Dialog } from "@headlessui/react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Car, ArrowRight, Upload, X, Table, Grid, Search, Filter, Edit, Trash2 } from "lucide-react";
+import { Plus, Car, ArrowRight, Upload, X, Table, Search, Filter, Edit, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { Footer } from "@/components/Footer";
-import { motion } from "framer-motion";
+
 
 interface Vehicle {
   id: string;
@@ -28,87 +27,6 @@ interface Vehicle {
   maintenance_count?: number;
 }
 
-interface VehicleCardProps {
-  vehicle: Vehicle;
-  getAvailabilityColor: (available_now: number, quantity: number) => string;
-  t: any;
-  onEdit: (vehicle: Vehicle) => void;
-  onDelete: (vehicle: Vehicle) => void;
-}
-
-// Composant VehicleCard séparé
-function VehicleCard({ vehicle, getAvailabilityColor, t, onEdit, onDelete }: VehicleCardProps) {
-  return (
-    <motion.div
-      key={vehicle.id}
-      whileHover={{ scale: 1.03, boxShadow: "0px 4px 15px rgba(0,0,0,0.1)" }}
-      className="bg-white border border-gray-200 rounded-xl overflow-hidden transition-all group"
-    >
-      <Link to={`/admin/vehicle/${vehicle.id}`}>
-        <img
-          src={vehicle.image_url || "/placeholder-car.jpg"}
-          alt={vehicle.name}
-          className="w-full h-40 object-cover group-hover:scale-105 transition-transform duration-300"
-        />
-        <div className="p-4">
-          <div className="flex items-start justify-between mb-2">
-            <h2 className="text-lg font-semibold text-gray-900 truncate flex-1">{vehicle.name}</h2>
-            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-              <button 
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  onEdit(vehicle);
-                }}
-                className="p-1 text-gray-400 hover:text-blue-600 transition-colors"
-                title="Modifier"
-              >
-                <Edit className="h-4 w-4" />
-              </button>
-              <button 
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  onDelete(vehicle);
-                }}
-                className="p-1 text-gray-400 hover:text-red-600 transition-colors"
-                title="Supprimer"
-              >
-                <Trash2 className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-2 mb-3">
-            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-              {t(`admin_vehicles.categories.${vehicle.category}`)}
-            </span>
-
-            <span
-              className={`inline-flex items-center px-3 py-1 text-xs font-medium rounded-full border ${getAvailabilityColor(vehicle.available_now ?? 0, vehicle.quantity)}`}
-            >
-              {vehicle.available_now === 0
-                ? t('admin_vehicles.status.fully_booked')
-                : `${vehicle.available_now}/${vehicle.quantity} ${t('admin_vehicles.messages.available')}`}
-            </span>
-          </div>
-          
-          <div className="space-y-2 text-sm text-gray-600">
-            <div className="flex justify-between">
-              <span>{vehicle.seats} {t('admin_vehicles.messages.seats')}</span>
-              <span className="font-semibold text-gray-900">{vehicle.price} MAD</span>
-            </div>
-            <div className="flex justify-between text-xs">
-              <span>{t(`admin_vehicles.fuel_types.${vehicle.fuel}`)}</span>
-              <span>{t(`admin_vehicles.transmission_types.${vehicle.transmission}`)}</span>
-            </div>
-          </div>
-        </div>
-      </Link>
-    </motion.div>
-  );
-}
-
 export default function AdminVehicles() {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -116,7 +34,6 @@ export default function AdminVehicles() {
   const [editingVehicle, setEditingVehicle] = useState<Vehicle | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [imageUploading, setImageUploading] = useState(false);
-  const [viewMode, setViewMode] = useState<"cards" | "table">("cards");
   const [searchTerm, setSearchTerm] = useState("");
   const [filterCategory, setFilterCategory] = useState("all");
   const { toast } = useToast();
@@ -526,11 +443,6 @@ export default function AdminVehicles() {
     return matchesSearch && matchesCategory;
   });
 
-  // Calcul des statistiques
-  const totalVehicles = vehicles.length;
-  const availableVehicles = vehicles.reduce((sum, vehicle) => sum + (vehicle.available_now || 0), 0);
-  const reservedVehicles = vehicles.reduce((sum, vehicle) => sum + (vehicle.reservation_count || 0), 0);
-
   return (
     <>
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50/30 p-4 sm:p-6">
@@ -553,31 +465,6 @@ export default function AdminVehicles() {
               </div>
               
               <div className="flex items-center gap-3">
-                <div className="flex bg-white rounded-lg border border-gray-200 p-1">
-                  <button
-                    onClick={() => setViewMode("cards")}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-md transition-all ${
-                      viewMode === "cards" 
-                        ? "bg-blue-600 text-white shadow-sm" 
-                        : "text-gray-600 hover:text-gray-900"
-                    }`}
-                    title="Mode cartes"
-                  >
-                    <Grid className="h-4 w-4" />
-                  </button>
-                  <button
-                    onClick={() => setViewMode("table")}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-md transition-all ${
-                      viewMode === "table" 
-                        ? "bg-blue-600 text-white shadow-sm" 
-                        : "text-gray-600 hover:text-gray-900"
-                    }`}
-                    title="Mode tableau"
-                  >
-                    <Table className="h-4 w-4" />
-                  </button>
-                </div>
-
                 <button
                   onClick={() => setIsCreateModalOpen(true)}
                   className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-2.5 rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all shadow-sm hover:shadow-md"
@@ -676,8 +563,8 @@ export default function AdminVehicles() {
                 </button>
               )}
             </div>
-          ) : viewMode === "table" ? (
-            // Vue tableau
+          ) : (
+            // Vue tableau uniquement
             <div className="overflow-hidden bg-white rounded-xl shadow-sm border border-gray-100">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
@@ -768,30 +655,6 @@ export default function AdminVehicles() {
                   ))}
                 </tbody>
               </table>
-            </div>
-          ) : (
-            // Vue cartes
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredVehicles.map(vehicle => (
-                <VehicleCard 
-                  key={vehicle.id}
-                  vehicle={vehicle}
-                  getAvailabilityColor={getAvailabilityColor}
-                  t={t}
-                  onEdit={handleEditVehicle}
-                  onDelete={handleDeleteVehicle}
-                />
-              ))}
-
-              {/* Card pour ajouter un nouveau véhicule */}
-              <motion.div
-                onClick={() => setIsCreateModalOpen(true)}
-                whileHover={{ scale: 1.03, backgroundColor: "#ebf8ff" }}
-                className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer transition-colors bg-white"
-              >
-                <Plus className="h-8 w-8 text-blue-400 mb-2" />
-                <p className="text-gray-600 font-medium">{t('admin_vehicles.actions.add_vehicle')}</p>
-              </motion.div>
             </div>
           )}
 
@@ -1305,7 +1168,6 @@ export default function AdminVehicles() {
           </Dialog>
         </div>
       </div>
-      <Footer />
     </>
   );
 }

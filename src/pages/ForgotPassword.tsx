@@ -6,7 +6,6 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Mail } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { Footer } from "@/components/Footer";
 
 export default function ForgotPassword() {
   const { toast } = useToast();
@@ -81,8 +80,6 @@ export default function ForgotPassword() {
           </CardContent>
         </Card>
       </div>
-
-      <Footer />
     </>
   );
 }

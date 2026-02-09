@@ -14,6 +14,7 @@ import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/contexts/AuthContext";
 import { AdminLayout } from "@/components/AdminLayout";
+import { Header } from '@/components/Header';
 
 interface UserProfile {
   id: string;
@@ -144,6 +145,13 @@ const MonCompte = () => {
     const { id, value } = e.target;
     setUserInfo(prev => ({ ...prev, [id as keyof UserProfile]: value }));
   };
+
+  const PublicLayout = ({ children }: { children: React.ReactNode }) => (
+    <div className="min-h-screen bg-gray-50">
+      <Header />
+      {children}
+    </div>
+  );
 
   // Contenu de la page profil
   const ProfileContent = () => {
@@ -354,7 +362,11 @@ const MonCompte = () => {
   }
 
   // Pour les clients, afficher seulement le contenu (le Header est géré par App.tsx)
-  return <ProfileContent />;
+  return (
+    <PublicLayout>
+      <ProfileContent />
+    </PublicLayout>
+  );
 };
 
 export default MonCompte;

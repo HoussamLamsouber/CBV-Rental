@@ -128,7 +128,7 @@
             "date": "Specific date",
             "date_help": "Pickup, return or creation date",
             "vehicle_model": "Vehicle model",
-            "vehicle_placeholder": "Ex: Tesla, SUV, BMW...",
+            "vehicle_placeholder": "Ex: Volvo XC60",
             "status": "Status",
             "all_status": "All statuses"
         },
@@ -683,7 +683,10 @@
         
         "actions": {
             "add_vehicle": "Add vehicle",
-            "see_all": "See all"
+            "see_all": "See all",
+            "view_details": "View details",
+            "edit": "Edit",
+            "delete": "Delete"
         },
         
         "modals": {
@@ -713,7 +716,32 @@
                 "url_placeholder": "https://example.com/image.jpg",
                 "image_preview_alt": "Vehicle preview",
                 "reset": "Reset"
+            },
+
+            "edit_vehicle": {
+                "title": "Edit Model",
+                "updating": "Updating...",
+                "update_model": "Update Model"
             }
+        },
+
+        "table": {
+            "vehicle": "Vehicle",
+            "category": "Category",
+            "price": "Price",
+            "availability": "Availability",
+            "seats": "Seats",
+            "fuel": "Fuel",
+            "actions": "Actions"
+        },
+        
+        "search": {
+            "placeholder": "Search by name, category...",
+            "reset": "Reset"
+        },
+        
+        "filters": {
+            "all_categories": "All categories"
         },
         
         "messages": {
@@ -739,7 +767,20 @@
             "image_uploaded": "Image uploaded",
             "image_upload_success": "Image has been successfully uploaded",
             "cannot_upload_image": "Unable to upload image",
-            "available": "available"
+            "available": "available",
+            "no_results_title": "No results found",
+            "no_results_description": "Try adjusting your search criteria.",
+            "no_vehicles_title": "No vehicles",
+            "no_vehicles_description": "Create your first vehicle to get started.",
+            "delete_confirm": "Are you sure you want to delete the model \"{{name}}\"?",
+            "file_too_large": "File too large",
+            "file_too_large_description": "Image must not exceed 5MB",
+            "invalid_price": "Invalid price",
+            "invalid_price_description": "Price must be a positive number",
+            "invalid_quantity": "Invalid quantity",
+            "invalid_quantity_description": "Quantity must be a positive number",
+            "invalid_seats": "Invalid seats",
+            "invalid_seats_description": "Number of seats must be between 1 and 9"
         }
     },
 
@@ -826,7 +867,8 @@
             "suggestions": "Suggestions",
             "try_different_dates": "Try different dates",
             "expand_search_categories": "Expand your search to other categories",
-            "check_other_locations": "Check other pickup locations"
+            "check_other_locations": "Check other pickup locations",
+            "start_search_placeholder": "Start by performing a search to see available vehicles."
         }
     },
 
@@ -1159,7 +1201,9 @@
             "not_provided": "Not provided",
             "request_sent": "Request sent!",
             "request_sent_description": "Your request has been sent to our team. You will receive a confirmation email after processing.",
-            "cannot_make_reservation": "Unable to make reservation."
+            "cannot_make_reservation": "Unable to make reservation.",
+            "authentication_required": "Authentication required",
+            "please_login_to_reserve": "Please login first to be able to reserve."
         },
         
         "categories": {
@@ -1401,6 +1445,91 @@
             "email": "Email",
             "status": "Status",
             "actions": "Actions"
+        }
+    },
+
+    "admin_localisations": {
+        "title": "Localisations Management",
+        "subtitle": "Select the localisations that will appear in the homepage search",
+        
+        "stats": {
+            "total": "Total",
+            "active": "Active",
+            "airports": "Airports",
+            "stations": "Stations"
+        },
+        
+        "search": {
+            "placeholder": "Search for a localisation..."
+        },
+        
+        "filters": {
+            "all_types": "All types",
+            "airports": "Airports",
+            "stations": "Stations"
+        },
+        
+        "types": {
+            "airport": "Airport",
+            "station": "Station"
+        },
+        
+        "status": {
+            "active": "Active",
+            "inactive": "Inactive"
+        },
+        
+        "actions": {
+            "add_localisation": "Add localisation",
+            "activate": "Activate",
+            "deactivate": "Desactivate",
+            "cancel": "Cancel",
+            "add": "Add"
+        },
+        
+        "table": {
+            "localisation": "Localisation",
+            "type": "Type",
+            "technical_value": "Technical value",
+            "status": "Status",
+            "action": "Action"
+        },
+        
+        "add_form": {
+            "title": "Add new localisation",
+            "type": "Type",
+            "display_name": "Display name",
+            "display_name_placeholder": "ex: New Airport",
+            "display_name_help": "The name that will be displayed to users",
+            "technical_value": "Technical value",
+            "technical_value_placeholder": "Generated automatically",
+            "technical_value_help": "This value is used in the system",
+            "preview": "Preview",
+            "conflict_detected": "Conflict detected",
+            "conflict_message": "This technical value already exists. Please modify the display name."
+        },
+        
+        "messages": {
+            "loading": "Loading localisations...",
+            "no_localisations": "No localisations found",
+            "no_results": "No results for \"{searchTerm}\"",
+            "localisation_added": "Localisation added",
+            "localisation_added_success": "{name} has been successfully added",
+            "missing_field": "Missing field",
+            "missing_display_name": "Please enter a display name",
+            "conflict_detected": "Conflict detected",
+            "conflict_description": "This technical value already exists. Please modify the display name.",
+            "duplicate": "Duplicate",
+            "duplicate_description": "A localisation with this technical value already exists",
+            "error": "Error",
+            "cannot_load": "Unable to load localisations",
+            "cannot_add": "Unable to add localisation",
+            "cannot_update": "Unable to update status"
+        },
+        
+        "validation": {
+            "duplicate": "This value already exists in the system",
+            "generated_automatically": "Generated automatically"
         }
     }
 }

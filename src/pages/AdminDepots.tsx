@@ -45,15 +45,6 @@ export default function AdminDepots() {
   
   const { t } = useTranslation();
 
-  const translate = (key: string, fallback: string, options?: any): string => {
-    try {
-      const result = t(key, options);
-      return typeof result === 'string' ? result : fallback;
-    } catch (error) {
-      return fallback;
-    }
-  };
-
   const [formData, setFormData] = useState({
     name: "",
     address: "",
@@ -80,8 +71,8 @@ export default function AdminDepots() {
     } catch (error: any) {
       console.error('Erreur chargement dépôts:', error);
       toast({
-        title: translate('admin_depots.toast.error_loading', 'Erreur de chargement'),
-        description: error.message || translate('admin_depots.toast.loading_error_desc', 'Impossible de charger les dépôts.'),
+        title: t('admin_depots.toast.error_loading'),
+        description: error.message || t('admin_depots.toast.loading_error_desc'),
         variant: "destructive",
       });
     } finally {
@@ -116,8 +107,8 @@ export default function AdminDepots() {
     } catch (error: any) {
       console.error('Erreur chargement véhicules:', error);
       toast({
-        title: translate('admin_depots.toast.error_loading_vehicles', 'Erreur de chargement'),
-        description: translate('admin_depots.toast.loading_vehicles_error_desc', 'Impossible de charger les véhicules du dépôt.'),
+        title: t('admin_depots.toast.error_loading_vehicles'),
+        description: t('admin_depots.toast.loading_vehicles_error_desc'),
         variant: "destructive",
       });
     }
@@ -150,8 +141,8 @@ export default function AdminDepots() {
     } catch (error: any) {
       console.error('Erreur chargement véhicules disponibles:', error);
       toast({
-        title: translate('admin_depots.toast.error_loading_available', 'Erreur de chargement'),
-        description: translate('admin_depots.toast.loading_available_error_desc', 'Impossible de charger les véhicules disponibles.'),
+        title: t('admin_depots.toast.error_loading_available'),
+        description: t('admin_depots.toast.loading_available_error_desc'),
         variant: "destructive",
       });
     }
@@ -181,8 +172,8 @@ export default function AdminDepots() {
       }
 
       toast({
-        title: translate('admin_depots.toast.depot_created', '✅ Dépôt créé'),
-        description: translate('admin_depots.toast.depot_created_desc', 'Le dépôt a été créé avec succès.'),
+        title: t('admin_depots.toast.depot_created'),
+        description: t('admin_depots.toast.depot_created_desc'),
       });
 
       setShowCreateModal(false);
@@ -192,8 +183,8 @@ export default function AdminDepots() {
     } catch (error: any) {
       console.error('Erreur création dépôt:', error);
       toast({
-        title: translate('admin_depots.toast.creation_error', 'Erreur de création'),
-        description: error.message || translate('admin_depots.toast.creation_error_desc', 'Impossible de créer le dépôt.'),
+        title: t('admin_depots.toast.creation_error'),
+        description: error.message || t('admin_depots.toast.creation_error_desc'),
         variant: "destructive",
       });
     }
@@ -223,8 +214,8 @@ export default function AdminDepots() {
       }
 
       toast({
-        title: translate('admin_depots.toast.depot_updated', '✅ Dépôt modifié'),
-        description: translate('admin_depots.toast.depot_updated_desc', 'Le dépôt a été modifié avec succès.'),
+        title: t('admin_depots.toast.depot_updated'),
+        description: t('admin_depots.toast.depot_updated_desc'),
       });
 
       setShowEditModal(false);
@@ -234,15 +225,15 @@ export default function AdminDepots() {
     } catch (error: any) {
       console.error('Erreur modification dépôt:', error);
       toast({
-        title: translate('admin_depots.toast.update_error', 'Erreur de modification'),
-        description: error.message || translate('admin_depots.toast.update_error_desc', 'Impossible de modifier le dépôt.'),
+        title: t('admin_depots.toast.update_error'),
+        description: error.message || t('admin_depots.toast.update_error_desc'),
         variant: "destructive",
       });
     }
   };
 
   const handleDeleteDepot = async (depotId: string) => {
-    if (!confirm(translate('admin_depots.messages.confirm_delete', 'Êtes-vous sûr de vouloir supprimer ce dépôt ? Cette action le rendra inaccessible mais pourra être annulée.'))) {
+    if (!confirm(t('admin_depots.messages.confirm_delete'))) {
       return;
     }
 
@@ -260,8 +251,8 @@ export default function AdminDepots() {
 
       if (vehicles && vehicles.length > 0) {
         toast({
-          title: translate('admin_depots.toast.delete_error', 'Erreur de suppression'),
-          description: translate('admin_depots.toast.depot_has_vehicles', 'Impossible de supprimer le dépôt car il contient des véhicules. Veuillez d\'abord retirer tous les véhicules.'),
+          title: t('admin_depots.toast.delete_error'),
+          description: t('admin_depots.toast.depot_has_vehicles'),
           variant: "destructive",
         });
         return;
@@ -281,8 +272,8 @@ export default function AdminDepots() {
       }
 
       toast({
-        title: translate('admin_depots.toast.depot_deleted', '✅ Dépôt supprimé'),
-        description: translate('admin_depots.toast.depot_deleted_desc', 'Le dépôt a été supprimé avec succès.'),
+        title: t('admin_depots.toast.depot_deleted'),
+        description: t('admin_depots.toast.depot_deleted_desc'),
       });
 
       await fetchDepots();
@@ -290,8 +281,8 @@ export default function AdminDepots() {
     } catch (error: any) {
       console.error('Erreur suppression dépôt:', error);
       toast({
-        title: translate('admin_depots.toast.delete_error', 'Erreur de suppression'),
-        description: error.message || translate('admin_depots.toast.delete_error_desc', 'Impossible de supprimer le dépôt.'),
+        title: t('admin_depots.toast.delete_error'),
+        description: error.message || t('admin_depots.toast.delete_error_desc'),
         variant: "destructive",
       });
     }
@@ -314,8 +305,8 @@ export default function AdminDepots() {
       }
 
       toast({
-        title: translate('admin_depots.toast.vehicles_assigned', '✅ Véhicules assignés'),
-        description: translate('admin_depots.toast.vehicles_assigned_desc', '{{count}} véhicule(s) assigné(s) au dépôt avec succès.', {
+        title: t('admin_depots.toast.vehicles_assigned'),
+        description: t('admin_depots.toast.vehicles_assigned_desc', {
           count: selectedVehicles.length
         }),
       });
@@ -331,8 +322,8 @@ export default function AdminDepots() {
     } catch (error: any) {
       console.error('Erreur assignation véhicules:', error);
       toast({
-        title: translate('admin_depots.toast.assignment_error', 'Erreur d\'assignation'),
-        description: error.message || translate('admin_depots.toast.assignment_error_desc', 'Impossible d\'assigner les véhicules au dépôt.'),
+        title: t('admin_depots.toast.assignment_error'),
+        description: error.message || t('admin_depots.toast.assignment_error_desc'),
         variant: "destructive",
       });
     }
@@ -354,8 +345,8 @@ export default function AdminDepots() {
       }
 
       toast({
-        title: translate('admin_depots.toast.vehicle_removed', '✅ Véhicule retiré'),
-        description: translate('admin_depots.toast.vehicle_removed_desc', 'Le véhicule a été retiré du dépôt avec succès.'),
+        title: t('admin_depots.toast.vehicle_removed'),
+        description: t('admin_depots.toast.vehicle_removed_desc'),
       });
 
       if (selectedDepot) {
@@ -366,8 +357,8 @@ export default function AdminDepots() {
     } catch (error: any) {
       console.error('Erreur retrait véhicule:', error);
       toast({
-        title: translate('admin_depots.toast.remove_error', 'Erreur de retrait'),
-        description: error.message || translate('admin_depots.toast.remove_error_desc', 'Impossible de retirer le véhicule du dépôt.'),
+        title: t('admin_depots.toast.remove_error'),
+        description: error.message || t('admin_depots.toast.remove_error_desc'),
         variant: "destructive",
       });
     }
@@ -456,7 +447,7 @@ export default function AdminDepots() {
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <div className="text-gray-600">
-            {translate('admin_depots.messages.loading', 'Chargement des dépôts...')}
+            {t('admin_depots.messages.loading')}
           </div>
         </div>
       </div>
@@ -475,10 +466,10 @@ export default function AdminDepots() {
               </div>
               <div>
                 <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
-                  {translate('admin_depots.title', 'Gestion des Dépôts')}
+                  {t('admin_depots.title')}
                 </h1>
                 <p className="text-gray-600 text-sm sm:text-base">
-                  {translate('admin_depots.subtitle', '{{total}} dépôt(s) au total • {{active}} actif(s) • {{inactive}} inactif(s)', {
+                  {t('admin_depots.subtitle', {
                     total: depots.length,
                     active: activeDepotsCount,
                     inactive: inactiveDepotsCount
@@ -493,7 +484,7 @@ export default function AdminDepots() {
                 className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-2.5 rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all shadow-sm hover:shadow-md"
               >
                 <Plus className="h-4 w-4" />
-                {translate('admin_depots.actions.create', 'Nouveau dépôt')}
+                {t('admin_depots.actions.create')}
               </button>
             </div>
           </div>
@@ -506,7 +497,7 @@ export default function AdminDepots() {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <input
                 type="text"
-                placeholder={translate('admin_depots.search.placeholder', 'Rechercher par nom, ville, adresse...')}
+                placeholder={t('admin_depots.search.placeholder')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-gray-50/50 transition-colors"
@@ -521,9 +512,9 @@ export default function AdminDepots() {
                   onChange={(e) => setFilterActive(e.target.value as "all" | "active" | "inactive")}
                   className="pl-10 pr-8 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-gray-50/50 appearance-none cursor-pointer"
                 >
-                  <option value="all">{translate('admin_depots.filters.all', 'Tous les statuts')}</option>
-                  <option value="active">{translate('admin_depots.filters.active', 'Actifs')}</option>
-                  <option value="inactive">{translate('admin_depots.filters.inactive', 'Inactifs')}</option>
+                  <option value="all">{t('admin_depots.filters.all')}</option>
+                  <option value="active">{t('admin_depots.filters.active')}</option>
+                  <option value="inactive">{t('admin_depots.filters.inactive')}</option>
                 </select>
               </div>
 
@@ -536,7 +527,7 @@ export default function AdminDepots() {
                   className="flex items-center gap-2 px-4 py-3 border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors text-sm"
                 >
                   <X className="h-4 w-4" />
-                  {translate('admin_depots.filters.reset', 'Réinitialiser')}
+                  {t('admin_depots.filters.reset')}
                 </button>
               )}
             </div>
@@ -549,14 +540,14 @@ export default function AdminDepots() {
             <div className="text-gray-300 text-6xl mb-4">🏢</div>
             <h3 className="text-lg font-semibold text-gray-900 mb-3">
               {searchTerm || filterActive !== "all" 
-                ? translate('admin_depots.messages.no_results', 'Aucun résultat trouvé')
-                : translate('admin_depots.messages.no_depots', 'Aucun dépôt')
+                ? t('admin_depots.messages.no_results')
+                : t('admin_depots.messages.no_depots')
               }
             </h3>
             <p className="text-gray-600 max-w-md mx-auto mb-6">
               {searchTerm || filterActive !== "all"
-                ? translate('admin_depots.messages.try_search', 'Essayez de modifier vos critères de recherche.')
-                : translate('admin_depots.messages.create_first', 'Créez votre premier dépôt pour commencer.')
+                ? t('admin_depots.messages.try_search')
+                : t('admin_depots.messages.create_first')
               }
             </p>
             {(searchTerm || filterActive !== "all") ? (
@@ -567,7 +558,7 @@ export default function AdminDepots() {
                 }}
                 className="bg-blue-600 text-white px-6 py-2.5 rounded-lg hover:bg-blue-700 transition-colors"
               >
-                {translate('admin_depots.filters.reset', 'Réinitialiser')}
+                {t('admin_depots.filters.reset')}
               </button>
             ) : (
               <button
@@ -575,7 +566,7 @@ export default function AdminDepots() {
                 className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-2.5 rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all"
               >
                 <Plus className="h-4 w-4 inline mr-2" />
-                {translate('admin_depots.actions.create', 'Créer un dépôt')}
+                {t('admin_depots.actions.create')}
               </button>
             )}
           </div>
@@ -586,25 +577,25 @@ export default function AdminDepots() {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                    {translate('admin_depots.table.name', 'Nom')}
+                    {t('admin_depots.table.name')}
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                    {translate('admin_depots.table.city', 'Ville')}
+                    {t('admin_depots.table.city')}
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                    {translate('admin_depots.table.address', 'Adresse')}
+                    {t('admin_depots.table.address')}
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                    {translate('admin_depots.table.phone', 'Téléphone')}
+                    {t('admin_depots.table.phone')}
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                    {translate('admin_depots.table.email', 'Email')}
+                    {t('admin_depots.table.email')}
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                    {translate('admin_depots.table.status', 'Statut')}
+                    {t('admin_depots.table.status')}
                   </th>
                   <th className="px-6 py-4 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                    {translate('admin_depots.table.actions', 'Actions')}
+                    {t('admin_depots.table.actions')}
                   </th>
                 </tr>
               </thead>
@@ -632,8 +623,8 @@ export default function AdminDepots() {
                           : 'bg-gray-50 text-gray-600 border border-gray-200'
                       }`}>
                         {depot.is_active 
-                          ? translate('admin_depots.status.active', 'Actif')
-                          : translate('admin_depots.status.inactive', 'Inactif')}
+                          ? t('admin_depots.status.active')
+                          : t('admin_depots.status.inactive')}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -641,21 +632,21 @@ export default function AdminDepots() {
                         <button
                           onClick={() => openEditModal(depot)}
                           className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                          title={translate('admin_depots.actions.edit', 'Modifier')}
+                          title={t('admin_depots.actions.edit')}
                         >
                           <Edit className="h-4 w-4" />
                         </button>
                         <button
                           onClick={() => handleDeleteDepot(depot.id)}
                           className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                          title={translate('admin_depots.actions.delete', 'Supprimer')}
+                          title={t('admin_depots.actions.delete')}
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
                         <button
                           onClick={() => openVehiclesModal(depot)}
                           className="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                          title={translate('admin_depots.actions.view_vehicles', 'Véhicules')}
+                          title={t('admin_depots.actions.view_vehicles')}
                         >
                           <Car className="h-4 w-4" />
                         </button>
@@ -672,24 +663,24 @@ export default function AdminDepots() {
       {/* Modal de création */}
       {showCreateModal && (
         <DepotModal
-          title={translate('admin_depots.modal.create_title', 'Créer un nouveau dépôt')}
+          title={t('admin_depots.modal.create_title')}
           formData={formData}
           setFormData={setFormData}
           onSubmit={handleCreateDepot}
           onClose={() => setShowCreateModal(false)}
-          submitText={translate('admin_depots.actions.create', 'Créer')}
+          submitText={t('admin_depots.actions.create')}
         />
       )}
 
       {/* Modal de modification */}
       {showEditModal && selectedDepot && (
         <DepotModal
-          title={translate('admin_depots.modal.edit_title', 'Modifier le dépôt')}
+          title={t('admin_depots.modal.edit_title')}
           formData={formData}
           setFormData={setFormData}
           onSubmit={handleEditDepot}
           onClose={() => setShowEditModal(false)}
-          submitText={translate('admin_depots.actions.update', 'Modifier')}
+          submitText={t('admin_depots.actions.update')}
         />
       )}
 
@@ -727,15 +718,6 @@ export default function AdminDepots() {
 function DepotModal({ title, formData, setFormData, onSubmit, onClose, submitText }: any) {
   const { t } = useTranslation();
 
-  const translate = (key: string, fallback: string, options?: any): string => {
-    try {
-      const result = t(key, options);
-      return typeof result === 'string' ? result : fallback;
-    } catch (error) {
-      return fallback;
-    }
-  };
-
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-xl max-w-md w-full p-6 shadow-xl">
@@ -749,7 +731,7 @@ function DepotModal({ title, formData, setFormData, onSubmit, onClose, submitTex
         <form onSubmit={onSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              {translate('admin_depots.form.name', 'Nom du dépôt *')}
+              {t('admin_depots.form.name')}
             </label>
             <input
               type="text"
@@ -757,13 +739,13 @@ function DepotModal({ title, formData, setFormData, onSubmit, onClose, submitTex
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-gray-50/50 transition-colors"
-              placeholder={translate('admin_depots.form.name_placeholder', 'Ex: Agence Principale Casablanca')}
+              placeholder={t('admin_depots.form.name_placeholder')}
             />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              {translate('admin_depots.form.address', 'Adresse *')}
+              {t('admin_depots.form.address')}
             </label>
             <input
               type="text"
@@ -771,13 +753,13 @@ function DepotModal({ title, formData, setFormData, onSubmit, onClose, submitTex
               value={formData.address}
               onChange={(e) => setFormData({ ...formData, address: e.target.value })}
               className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-gray-50/50 transition-colors"
-              placeholder={translate('admin_depots.form.address_placeholder', 'Ex: 123 Boulevard Mohammed V')}
+              placeholder={t('admin_depots.form.address_placeholder')}
             />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              {translate('admin_depots.form.city', 'Ville *')}
+              {t('admin_depots.form.city')}
             </label>
             <input
               type="text"
@@ -785,33 +767,33 @@ function DepotModal({ title, formData, setFormData, onSubmit, onClose, submitTex
               value={formData.city}
               onChange={(e) => setFormData({ ...formData, city: e.target.value })}
               className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-gray-50/50 transition-colors"
-              placeholder={translate('admin_depots.form.city_placeholder', 'Ex: Casablanca')}
+              placeholder={t('admin_depots.form.city_placeholder')}
             />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              {translate('admin_depots.form.phone', 'Téléphone')}
+              {t('admin_depots.form.phone')}
             </label>
             <input
               type="tel"
               value={formData.phone}
               onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
               className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-gray-50/50 transition-colors"
-              placeholder={translate('admin_depots.form.phone_placeholder', 'Ex: +212 522-123456')}
+              placeholder={t('admin_depots.form.phone_placeholder')}
             />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              {translate('admin_depots.form.email', 'Email')}
+              {t('admin_depots.form.email')}
             </label>
             <input
               type="email"
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-gray-50/50 transition-colors"
-              placeholder={translate('admin_depots.form.email_placeholder', 'Ex: agence@location.ma')}
+              placeholder={t('admin_depots.form.email_placeholder')}
             />
           </div>
 
@@ -824,7 +806,7 @@ function DepotModal({ title, formData, setFormData, onSubmit, onClose, submitTex
               className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
             />
             <label htmlFor="is_active" className="text-sm text-gray-700 font-medium">
-              {translate('admin_depots.form.active', 'Dépôt actif')}
+              {t('admin_depots.form.active')}
             </label>
           </div>
 
@@ -834,7 +816,7 @@ function DepotModal({ title, formData, setFormData, onSubmit, onClose, submitTex
               onClick={onClose}
               className="px-4 py-2.5 text-gray-600 hover:text-gray-800 transition-colors font-medium"
             >
-              {translate('admin_depots.actions.cancel', 'Annuler')}
+              {t('admin_depots.actions.cancel')}
             </button>
             <button
               type="submit"
@@ -853,15 +835,6 @@ function DepotModal({ title, formData, setFormData, onSubmit, onClose, submitTex
 function VehiclesModal({ depot, vehicles, onRemoveVehicle, onClose, onAddVehicle }: any) {
   const { t } = useTranslation();
 
-  const translate = (key: string, fallback: string, options?: any): string => {
-    try {
-      const result = t(key, options);
-      return typeof result === 'string' ? result : fallback;
-    } catch (error) {
-      return fallback;
-    }
-  };
-
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-xl max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col shadow-xl">
@@ -873,10 +846,10 @@ function VehiclesModal({ depot, vehicles, onRemoveVehicle, onClose, onAddVehicle
               </div>
               <div>
                 <h3 className="text-lg font-semibold text-gray-900">
-                  {translate('admin_depots.vehicles_modal.title', 'Véhicules du dépôt')}
+                  {t('admin_depots.vehicles_modal.title')}
                 </h3>
                 <p className="text-sm text-gray-600">
-                  {depot.name} - {vehicles.length} {translate('admin_depots.vehicles_modal.vehicles_count', 'véhicule(s)')}
+                  {depot.name} - {vehicles.length} {t('admin_depots.vehicles_modal.vehicles_count')}
                 </p>
               </div>
             </div>
@@ -885,7 +858,7 @@ function VehiclesModal({ depot, vehicles, onRemoveVehicle, onClose, onAddVehicle
               className="flex items-center gap-2 bg-gradient-to-r from-green-600 to-green-700 text-white px-3 py-2 rounded-lg hover:from-green-700 hover:to-green-800 transition-all text-sm shadow-sm"
             >
               <Plus className="h-4 w-4" />
-              {translate('admin_depots.actions.add_vehicle', 'Ajouter véhicule')}
+              {t('admin_depots.actions.add_vehicle')}
             </button>
           </div>
         </div>
@@ -895,10 +868,10 @@ function VehiclesModal({ depot, vehicles, onRemoveVehicle, onClose, onAddVehicle
             <div className="text-center py-8">
               <Car className="h-16 w-16 text-gray-300 mx-auto mb-4" />
               <h4 className="text-lg font-medium text-gray-900 mb-2">
-                {translate('admin_depots.vehicles_modal.no_vehicles', 'Aucun véhicule')}
+                {t('admin_depots.vehicles_modal.no_vehicles')}
               </h4>
               <p className="text-gray-600">
-                {translate('admin_depots.vehicles_modal.no_vehicles_desc', 'Aucun véhicule n\'est assigné à ce dépôt.')}
+                {t('admin_depots.vehicles_modal.no_vehicles_desc')}
               </p>
             </div>
           ) : (
@@ -931,9 +904,9 @@ function VehiclesModal({ depot, vehicles, onRemoveVehicle, onClose, onAddVehicle
                           ? 'bg-orange-50 text-orange-700 border border-orange-200'
                           : 'bg-gray-50 text-gray-600 border border-gray-200'
                       }`}>
-                        {vehicle.status === 'available' && translate('admin_depots.vehicle_status.available', 'Disponible')}
-                        {vehicle.status === 'reserved' && translate('admin_depots.vehicle_status.reserved', 'Réservé')}
-                        {vehicle.status === 'maintenance' && translate('admin_depots.vehicle_status.maintenance', 'Maintenance')}
+                        {vehicle.status === 'available' && t('admin_depots.vehicle_status.available')}
+                        {vehicle.status === 'reserved' && t('admin_depots.vehicle_status.reserved')}
+                        {vehicle.status === 'maintenance' && t('admin_depots.vehicle_status.maintenance')}
                       </div>
                     </div>
                   </div>
@@ -941,7 +914,7 @@ function VehiclesModal({ depot, vehicles, onRemoveVehicle, onClose, onAddVehicle
                   <button
                     onClick={() => onRemoveVehicle(vehicle.id)}
                     className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                    title={translate('admin_depots.actions.remove_vehicle', 'Retirer du dépôt')}
+                    title={t('admin_depots.actions.remove_vehicle')}
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>
@@ -957,7 +930,7 @@ function VehiclesModal({ depot, vehicles, onRemoveVehicle, onClose, onAddVehicle
               onClick={onClose}
               className="px-4 py-2.5 text-gray-600 hover:text-gray-800 transition-colors font-medium"
             >
-              {translate('admin_depots.actions.close', 'Fermer')}
+              {t('admin_depots.actions.close')}
             </button>
           </div>
         </div>
@@ -978,15 +951,6 @@ function AssignVehicleModal({
 }: any) {
   const { t } = useTranslation();
 
-  const translate = (key: string, fallback: string, options?: any): string => {
-    try {
-      const result = t(key, options);
-      return typeof result === 'string' ? result : fallback;
-    } catch (error) {
-      return fallback;
-    }
-  };
-
   const allSelected = availableVehicles.length > 0 && selectedVehicles.length === availableVehicles.length;
 
   return (
@@ -1000,16 +964,16 @@ function AssignVehicleModal({
               </div>
               <div>
                 <h3 className="text-lg font-semibold text-gray-900">
-                  {translate('admin_depots.assign_modal.title', 'Assigner des véhicules au dépôt')}
+                  {t('admin_depots.assign_modal.title')}
                 </h3>
                 <p className="text-sm text-gray-600">
-                  {depot.name} - {selectedVehicles.length} {translate('admin_depots.assign_modal.selected', 'sélectionné(s)')}
+                  {depot.name} - {selectedVehicles.length} {t('admin_depots.assign_modal.selected')}
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-4">
               <div className="text-sm text-gray-600 bg-gray-50 px-3 py-1.5 rounded-lg">
-                {translate('admin_depots.assign_modal.available', '{{count}} véhicule(s) disponible(s)', {
+                {t('admin_depots.assign_modal.available', {
                   count: availableVehicles.length
                 })}
               </div>
@@ -1020,8 +984,8 @@ function AssignVehicleModal({
                 >
                   <Check className={`h-4 w-4 ${allSelected ? 'text-green-600' : 'text-gray-400'}`} />
                   {allSelected 
-                    ? translate('admin_depots.actions.deselect_all', 'Tout désélectionner')
-                    : translate('admin_depots.actions.select_all', 'Tout sélectionner')
+                    ? t('admin_depots.actions.deselect_all')
+                    : t('admin_depots.actions.select_all')
                   }
                 </button>
               )}
@@ -1034,10 +998,10 @@ function AssignVehicleModal({
             <div className="text-center py-8">
               <Car className="h-16 w-16 text-gray-300 mx-auto mb-4" />
               <h4 className="text-lg font-medium text-gray-900 mb-2">
-                {translate('admin_depots.assign_modal.no_available_vehicles', 'Aucun véhicule disponible')}
+                {t('admin_depots.assign_modal.no_available_vehicles')}
               </h4>
               <p className="text-gray-600">
-                {translate('admin_depots.assign_modal.no_available_vehicles_desc', 'Tous les véhicules sont déjà assignés à des dépôts.')}
+                {t('admin_depots.assign_modal.no_available_vehicles_desc')}
               </p>
             </div>
           ) : (
@@ -1089,9 +1053,9 @@ function AssignVehicleModal({
                           ? 'bg-orange-50 text-orange-700 border border-orange-200'
                           : 'bg-gray-50 text-gray-600 border border-gray-200'
                       }`}>
-                        {vehicle.status === 'available' && translate('admin_depots.vehicle_status.available', 'Disponible')}
-                        {vehicle.status === 'reserved' && translate('admin_depots.vehicle_status.reserved', 'Réservé')}
-                        {vehicle.status === 'maintenance' && translate('admin_depots.vehicle_status.maintenance', 'Maintenance')}
+                        {vehicle.status === 'available' && t('admin_depots.vehicle_status.available')}
+                        {vehicle.status === 'reserved' && t('admin_depots.vehicle_status.reserved')}
+                        {vehicle.status === 'maintenance' && t('admin_depots.vehicle_status.maintenance')}
                       </div>
                     </div>
                   </div>
@@ -1104,21 +1068,21 @@ function AssignVehicleModal({
         <div className="p-6 border-t border-gray-200 bg-gray-50">
           <div className="flex justify-between items-center">
             <div className="text-sm text-gray-600 bg-white px-3 py-1.5 rounded-lg border border-gray-200">
-              {selectedVehicles.length} {translate('admin_depots.assign_modal.selected', 'sélectionné(s)')}
+              {selectedVehicles.length} {t('admin_depots.assign_modal.selected')}
             </div>
             <div className="flex gap-3">
               <button
                 onClick={onClose}
                 className="px-4 py-2.5 text-gray-600 hover:text-gray-800 transition-colors font-medium"
               >
-                {translate('admin_depots.actions.cancel', 'Annuler')}
+                {t('admin_depots.actions.cancel')}
               </button>
               <button
                 onClick={onAssignVehicles}
                 disabled={selectedVehicles.length === 0}
                 className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-2.5 rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all font-medium shadow-sm disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed"
               >
-                {translate('admin_depots.actions.assign_selected', 'Assigner {{count}} véhicule(s)', {
+                {t('admin_depots.actions.assign_selected', {
                   count: selectedVehicles.length
                 })}
               </button>

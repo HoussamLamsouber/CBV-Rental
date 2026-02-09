@@ -78,7 +78,7 @@ export const AdminHeader = () => {
       icon: Users,
     },
     {
-      path: "/admin/locations",
+      path: "/admin/localisations",
       label: i18n.language === "fr" ? "Gestion des locations" : "Locations Management",
       icon: MapPin,
     },

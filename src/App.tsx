@@ -25,7 +25,7 @@ import ChangePassword from "./pages/ChangePassword";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import "@/i18n.ts";
-import AdminLocations from "./pages/AdminLocations";
+import AdminLocalisations from "./pages/AdminLocalisations";
 import AdminDepots from "./pages/AdminDepots";
 import { AdminLayout } from './components/AdminLayout';
 import Contact from "./pages/Contact";
@@ -136,11 +136,11 @@ function App() {
                 } 
               />
               <Route 
-                path="/admin/locations" 
+                path="/admin/localisations" 
                 element={
                   <ProtectedRoute adminOnly={true}>
                     <AdminLayout>
-                      <AdminLocations />
+                      <AdminLocalisations />
                     </AdminLayout>
                   </ProtectedRoute>
                 } 

@@ -110,8 +110,8 @@ export default function AdminVehicles() {
       // Vérifier la taille du fichier (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
         toast({
-          title: "Fichier trop volumineux",
-          description: "L'image ne doit pas dépasser 5MB",
+          title: t('admin_vehicles.messages.file_too_large'),
+          description: t('admin_vehicles.messages.file_too_large_description'),
           variant: "destructive",
         });
         return;
@@ -142,8 +142,8 @@ export default function AdminVehicles() {
       setNewVehicle(prev => ({ ...prev, image_url: publicUrl }));
       
       toast({
-        title: "Image téléchargée",
-        description: "L'image a été téléchargée avec succès",
+        title: t('admin_vehicles.messages.image_uploaded'),
+        description: t('admin_vehicles.messages.image_upload_success'),
       });
     } catch (error: any) {
       console.error("Erreur upload image:", error);
@@ -202,8 +202,8 @@ export default function AdminVehicles() {
 
     if (isNaN(price) || price <= 0) {
       toast({
-        title: "Prix invalide",
-        description: "Le prix doit être un nombre positif",
+        title: t('admin_vehicles.messages.invalid_price'),
+        description: t('admin_vehicles.messages.invalid_price_description'),
         variant: "destructive",
       });
       return;
@@ -211,8 +211,8 @@ export default function AdminVehicles() {
 
     if (isNaN(quantity) || quantity <= 0) {
       toast({
-        title: "Quantité invalide",
-        description: "La quantité doit être un nombre positif",
+        title: t('admin_vehicles.messages.invalid_quantity'),
+        description: t('admin_vehicles.messages.invalid_quantity_description'),
         variant: "destructive",
       });
       return;
@@ -220,8 +220,8 @@ export default function AdminVehicles() {
 
     if (isNaN(seats) || seats < 1 || seats > 9) {
       toast({
-        title: "Sièges invalides",
-        description: "Le nombre de sièges doit être entre 1 et 9",
+        title: t('admin_vehicles.messages.invalid_seats'),
+        description: t('admin_vehicles.messages.invalid_seats_description'),
         variant: "destructive",
       });
       return;
@@ -388,7 +388,7 @@ export default function AdminVehicles() {
   };
 
   const handleDeleteVehicle = async (vehicle: Vehicle) => {
-    if (!confirm(`Êtes-vous sûr de vouloir supprimer le modèle "${vehicle.name}" ?`)) {
+    if (!confirm(t('admin_vehicles.messages.delete_confirm', { name: vehicle.name }))) {
       return;
     }
 
@@ -483,7 +483,7 @@ export default function AdminVehicles() {
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                 <input
                   type="text"
-                  placeholder="Rechercher par nom, catégorie..."
+                  placeholder={t('admin_vehicles.search.placeholder')}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-gray-50/50 transition-colors"
@@ -498,7 +498,7 @@ export default function AdminVehicles() {
                     onChange={(e) => setFilterCategory(e.target.value)}
                     className="pl-10 pr-8 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-gray-50/50 appearance-none cursor-pointer"
                   >
-                    <option value="all">Toutes les catégories</option>
+                    <option value="all">{t('admin_vehicles.filters.all_categories')}</option>
                     <option value="category_electric">{t('admin_vehicles.categories.category_electric')}</option>
                     <option value="category_suv">{t('admin_vehicles.categories.category_suv')}</option>
                     <option value="category_urban_suv">{t('admin_vehicles.categories.category_urban_suv')}</option>
@@ -515,7 +515,7 @@ export default function AdminVehicles() {
                     className="flex items-center gap-2 px-4 py-3 border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors text-sm"
                   >
                     <X className="h-4 w-4" />
-                    Réinitialiser
+                    {t('admin_vehicles.search.reset')} 
                   </button>
                 )}
               </div>
@@ -533,14 +533,14 @@ export default function AdminVehicles() {
               <div className="text-gray-300 text-6xl mb-4">🚗</div>
               <h3 className="text-lg font-semibold text-gray-900 mb-3">
                 {searchTerm || filterCategory !== "all" 
-                  ? "Aucun résultat trouvé"
-                  : "Aucun véhicule"
+                  ? t('admin_vehicles.messages.no_results_title')
+                  : t('admin_vehicles.messages.no_vehicles_title')
                 }
               </h3>
               <p className="text-gray-600 max-w-md mx-auto mb-6">
                 {searchTerm || filterCategory !== "all"
-                  ? "Essayez de modifier vos critères de recherche."
-                  : "Créez votre premier véhicule pour commencer."
+                  ? t('admin_vehicles.messages.no_results_description')
+                  : t('admin_vehicles.messages.no_vehicles_description')
                 }
               </p>
               {(searchTerm || filterCategory !== "all") ? (
@@ -551,7 +551,7 @@ export default function AdminVehicles() {
                   }}
                   className="bg-blue-600 text-white px-6 py-2.5 rounded-lg hover:bg-blue-700 transition-colors"
                 >
-                  Réinitialiser
+                  {t('admin_vehicles.search.reset')}
                 </button>
               ) : (
                 <button
@@ -570,25 +570,25 @@ export default function AdminVehicles() {
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                      Véhicule
+                      {t('admin_vehicles.table.vehicle')}
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                      Catégorie
+                      {t('admin_vehicles.table.category')}
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                      Prix
+                      {t('admin_vehicles.table.price')}
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                      Disponibilité
+                      {t('admin_vehicles.table.availability')}
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                      Sièges
+                      {t('admin_vehicles.table.seats')}
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                      Carburant
+                      {t('admin_vehicles.table.fuel')}
                     </th>
                     <th className="px-6 py-4 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                      Actions
+                      {t('admin_vehicles.table.actions')}
                     </th>
                   </tr>
                 </thead>
@@ -631,21 +631,21 @@ export default function AdminVehicles() {
                           <Link
                             to={`/admin/vehicle/${vehicle.id}`}
                             className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                            title="Voir détails"
+                            title={t('admin_vehicles.actions.view_details')}
                           >
                             <Car className="h-4 w-4" />
                           </Link>
                           <button
                             onClick={() => handleEditVehicle(vehicle)}
                             className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                            title="Modifier"
+                            title={t('admin_vehicles.actions.edit')}
                           >
                             <Edit className="h-4 w-4" />
                           </button>
                           <button
                             onClick={() => handleDeleteVehicle(vehicle)}
                             className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                            title="Supprimer"
+                            title={t('admin_vehicles.actions.delete')}
                           >
                             <Trash2 className="h-4 w-4" />
                           </button>
@@ -914,7 +914,7 @@ export default function AdminVehicles() {
               <Dialog.Panel className="bg-white rounded-xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
                 <Dialog.Title className="text-xl font-semibold mb-6 flex items-center gap-2">
                   <Edit className="h-5 w-5" />
-                  Modifier le modèle - {editingVehicle?.name}
+                  {t('admin_vehicles.modals.edit_vehicle.title')} - {editingVehicle?.name}
                 </Dialog.Title>
                 
                 <form onSubmit={(e) => { e.preventDefault(); handleUpdateVehicle(); }} className="space-y-6">
@@ -1158,7 +1158,10 @@ export default function AdminVehicles() {
                         disabled={isLoading}
                         className="bg-blue-600 hover:bg-blue-700"
                       >
-                        {isLoading ? "Modification..." : "Modifier le modèle"}
+                        {isLoading 
+                          ? t('admin_vehicles.modals.edit_vehicle.updating')
+                          : t('admin_vehicles.modals.edit_vehicle.update_model')
+                        }
                       </Button>
                     </div>
                   </div>

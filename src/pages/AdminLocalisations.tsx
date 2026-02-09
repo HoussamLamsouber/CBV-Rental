@@ -1,4 +1,4 @@
-// src/pages/AdminLocations.tsx
+// src/pages/AdminLocalisations.tsx
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -9,10 +9,10 @@ import { useTranslation } from "react-i18next";
 import { Search, MapPin, Building, Train, Plane, ToggleLeft, ToggleRight, Plus, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-interface Location {
+interface Localisation {
   id: string;
-  location_value: string;
-  location_type: string;
+  localisation_value: string;
+  localisation_type: string;
   display_name: string;
   is_active: boolean;
   translation_key?: string;
@@ -20,18 +20,18 @@ interface Location {
   updated_at?: string;
 }
 
-export default function AdminLocations() {
-  const [locations, setLocations] = useState<Location[]>([]);
-  const [filteredLocations, setFilteredLocations] = useState<Location[]>([]);
+export default function AdminLocalisations() {
+  const [localisations, setLocalisations] = useState<Localisation[]>([]);
+  const [filteredLocalisations, setFilteredLocalisations] = useState<Localisation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState<string>("all");
   const { toast } = useToast();
   const { t } = useTranslation();
 
-  const [newLocation, setNewLocation] = useState({
-    location_value: "",
-    location_type: "airport",
+  const [newLocalisation, setNewLocalisation] = useState({
+    localisation_value: "",
+    localisation_type: "airport",
     display_name: ""
   });
   const [showAddForm, setShowAddForm] = useState(false);
@@ -42,31 +42,31 @@ export default function AdminLocations() {
   });
 
   useEffect(() => {
-    fetchLocations();
+    fetchLocalisations();
   }, []);
 
   useEffect(() => {
-    filterLocations();
-  }, [locations, searchTerm, filterType]);
+    filterLocalisations();
+  }, [localisations, searchTerm, filterType]);
 
-  const fetchLocations = async () => {
+  const fetchLocalisations = async () => {
     try {
       setIsLoading(true);
       const { data, error } = await supabase
-        .from("active_locations")
+        .from("active_localisations")
         .select("*")
-        .order("location_type")
+        .order("localisation_type")
         .order("display_name");
   
       if (error) throw error;
       
       // Simplifier le typage - accepter les données telles quelles
-      setLocations((data as Location[]) || []);
+      setLocalisations((data as Localisation[]) || []);
     } catch (error: any) {
-      console.error("Erreur chargement locations:", error);
+      console.error("Erreur chargement localisations:", error);
       toast({
         title: t("error"),
-        description: "Impossible de charger les locations",
+        description: "Impossible de charger les localisations",
         variant: "destructive",
       });
     } finally {
@@ -74,52 +74,52 @@ export default function AdminLocations() {
     }
   };
 
-  const filterLocations = () => {
-    let filtered = locations;
+  const filterLocalisations = () => {
+    let filtered = localisations;
 
     // Filtre par recherche
     if (searchTerm) {
-      filtered = filtered.filter(location => {
-        const displayName = getTranslatedDisplayName(location);
+      filtered = filtered.filter(localisation => {
+        const displayName = getTranslatedDisplayName(localisation);
         return displayName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-               location.location_value.toLowerCase().includes(searchTerm.toLowerCase());
+               localisation.localisation_value.toLowerCase().includes(searchTerm.toLowerCase());
       });
     }
 
     // Filtre par type
     if (filterType !== "all") {
-      filtered = filtered.filter(location => location.location_type === filterType);
+      filtered = filtered.filter(localisation => localisation.localisation_type === filterType);
     }
 
-    setFilteredLocations(filtered);
+    setFilteredLocalisations(filtered);
   };
 
   // Fonction pour obtenir le nom affiché traduit
-  const getTranslatedDisplayName = (location: Location) => {
-    if (location.translation_key) {
-      const translationNamespace = location.location_type === 'airport' ? 'airports' : 'stations';
-      const translation = t(`${translationNamespace}.${location.translation_key}`);
+  const getTranslatedDisplayName = (localisation: Localisation) => {
+    if (localisation.translation_key) {
+      const translationNamespace = localisation.localisation_type === 'airport' ? 'airports' : 'stations';
+      const translation = t(`${translationNamespace}.${localisation.translation_key}`);
       if (translation && !translation.startsWith(translationNamespace + '.')) {
         return translation;
       }
     }
-    return location.display_name;
+    return localisation.display_name;
   };
 
-  const toggleLocationActive = async (location: Location) => {
+  const toggleLocalisationActive = async (localisation: Localisation) => {
     try {
       const { error } = await supabase
-        .from("active_locations")
-        .update({ is_active: !location.is_active })
-        .eq("id", location.id);
+        .from("active_localisations")
+        .update({ is_active: !localisation.is_active })
+        .eq("id", localisation.id);
   
       if (error) throw error;
   
       // Mise à jour locale sans toast
-      setLocations(prevLocations => 
-        prevLocations.map(loc => 
-          loc.id === location.id 
-            ? { ...loc, is_active: !location.is_active }
+      setLocalisations(prevLocalisations => 
+        prevLocalisations.map(loc => 
+          loc.id === localisation.id 
+            ? { ...loc, is_active: !localisation.is_active }
             : loc
         )
       );
@@ -134,8 +134,8 @@ export default function AdminLocations() {
     }
   };
 
-  const handleAddLocation = async () => {
-    if (!newLocation.display_name) {
+  const handleAddLocalisation = async () => {
+    if (!newLocalisation.display_name) {
       toast({
         title: "Champ manquant",
         description: "Veuillez saisir un nom d'affichage",
@@ -155,7 +155,7 @@ export default function AdminLocations() {
   
     try {
       // Générer la clé de traduction
-      const translationKey = newLocation.display_name
+      const translationKey = newLocalisation.display_name
         .toLowerCase()
         .normalize('NFD')
         .replace(/[\u0300-\u036f]/g, '')
@@ -164,11 +164,11 @@ export default function AdminLocations() {
         .trim();
   
       const { data, error } = await supabase
-        .from("active_locations")
+        .from("active_localisations")
         .insert([{
-          location_value: newLocation.location_value,
-          location_type: newLocation.location_type,
-          display_name: newLocation.display_name,
+          localisation_value: newLocalisation.localisation_value,
+          localisation_type: newLocalisation.localisation_type,
+          display_name: newLocalisation.display_name,
           translation_key: translationKey,
           is_active: true
         }])
@@ -177,21 +177,21 @@ export default function AdminLocations() {
       if (error) throw error;
   
       // Accepter directement les données retournées
-      const addedLocation = data?.[0] as Location;
+      const addedLocalisation = data?.[0] as Localisation;
       
-      if (addedLocation) {
-        setLocations(prevLocations => [...prevLocations, addedLocation]);
+      if (addedLocalisation) {
+        setLocalisations(prevLocalisations => [...prevLocalisations, addedLocalisation]);
       }
   
       toast({
-        title: "Location ajoutée",
-        description: `${newLocation.display_name} a été ajouté avec succès`,
+        title: "Localisation ajoutée",
+        description: `${newLocalisation.display_name} a été ajouté avec succès`,
       });
   
       // Réinitialiser le formulaire
-      setNewLocation({
-        location_value: "",
-        location_type: "airport",
+      setNewLocalisation({
+        localisation_value: "",
+        localisation_type: "airport",
         display_name: ""
       });
       setValidation({
@@ -205,19 +205,19 @@ export default function AdminLocations() {
       if (error.code === '23505') {
         toast({
           title: "Duplicata",
-          description: "Une location avec cette valeur technique existe déjà",
+          description: "Une localisation avec cette valeur technique existe déjà",
           variant: "destructive",
         });
       } else {
         toast({
           title: "Erreur",
-          description: "Impossible d'ajouter la location",
+          description: "Impossible d'ajouter la localisation",
           variant: "destructive",
         });
       }
     }
   };
-  const getLocationIcon = (type: string) => {
+  const getLocalisationIcon = (type: string) => {
     switch (type) {
       case 'airport':
         return <Plane className="h-4 w-4" />;
@@ -228,7 +228,7 @@ export default function AdminLocations() {
     }
   };
 
-  const getLocationTypeLabel = (type: string) => {
+  const getLocalisationTypeLabel = (type: string) => {
     switch (type) {
       case 'airport':
         return "Aéroport";
@@ -246,7 +246,7 @@ export default function AdminLocations() {
           <div className="max-w-6xl mx-auto">
             <div className="text-center py-24">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-              <p className="text-gray-600">Chargement des locations...</p>
+              <p className="text-gray-600">{t('admin_localisations.messages.loading')}</p>
             </div>
           </div>
         </div>
@@ -254,8 +254,8 @@ export default function AdminLocations() {
     );
   }
 
-  // Fonction pour générer le location_value à partir du display_name
-  const generateLocationValue = (displayName: string, type: string) => {
+  // Fonction pour générer le localisation_value à partir du display_name
+  const generateLocalisationValue = (displayName: string, type: string) => {
     if (!displayName) return "";
     
     // Nettoyer le nom : minuscules, remplacer espaces par underscores, supprimer accents
@@ -273,15 +273,15 @@ export default function AdminLocations() {
     return prefix + cleanName;
   };
 
-  // Fonction pour vérifier si un location_value existe déjà
-  const checkLocationValueExists = async (locationValue: string): Promise<boolean> => {
-    if (!locationValue) return false;
+  // Fonction pour vérifier si un localisation_value existe déjà
+  const checkLocalisationValueExists = async (localisationValue: string): Promise<boolean> => {
+    if (!localisationValue) return false;
     
     try {
       const { data, error } = await supabase
-        .from("active_locations")
-        .select("location_value")
-        .eq("location_value", locationValue)
+        .from("active_localisations")
+        .select("localisation_value")
+        .eq("localisation_value", localisationValue)
         .single();
 
       return !error && data !== null;
@@ -292,13 +292,13 @@ export default function AdminLocations() {
 
   // Fonction pour gérer le changement du nom d'affichage
   const handleDisplayNameChange = async (displayName: string) => {
-    const locationValue = generateLocationValue(displayName, newLocation.location_type);
-    const isDuplicate = locationValue ? await checkLocationValueExists(locationValue) : false;
+    const localisationValue = generateLocalisationValue(displayName, newLocalisation.localisation_type);
+    const isDuplicate = localisationValue ? await checkLocalisationValueExists(localisationValue) : false;
 
-    setNewLocation(prev => ({
+    setNewLocalisation(prev => ({
       ...prev, 
       display_name: displayName,
-      location_value: locationValue
+      localisation_value: localisationValue
     }));
 
     setValidation({
@@ -308,19 +308,19 @@ export default function AdminLocations() {
   };
 
   // Fonction pour gérer le changement de type
-  const handleLocationTypeChange = async (type: string) => {
-    const locationValue = generateLocationValue(newLocation.display_name, type);
-    const isDuplicate = locationValue ? await checkLocationValueExists(locationValue) : false;
+  const handleLocalisationTypeChange = async (type: string) => {
+    const localisationValue = generateLocalisationValue(newLocalisation.display_name, type);
+    const isDuplicate = localisationValue ? await checkLocalisationValueExists(localisationValue) : false;
 
-    setNewLocation(prev => ({
+    setNewLocalisation(prev => ({
       ...prev, 
-      location_type: type,
-      location_value: locationValue
+      localisation_type: type,
+      localisation_value: localisationValue
     }));
 
     setValidation({
       isDuplicate,
-      isValid: !isDuplicate && !!newLocation.display_name
+      isValid: !isDuplicate && !!newLocalisation.display_name
     });
   };
 
@@ -331,10 +331,10 @@ export default function AdminLocations() {
           {/* En-tête */}
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              Gestion des Locations
+              {t('admin_localisations.title')}
             </h1>
             <p className="text-gray-600">
-              Sélectionnez les locations qui apparaîtront dans la recherche de la page d'accueil
+              {t('admin_localisations.subtitle')}
             </p>
           </div>
 
@@ -345,7 +345,7 @@ export default function AdminLocations() {
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                 <Input
                   type="text"
-                  placeholder="Rechercher une location..."
+                  placeholder={t('admin_localisations.search.placeholder')}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10"
@@ -357,9 +357,9 @@ export default function AdminLocations() {
                 onChange={(e) => setFilterType(e.target.value)}
                 className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
-                <option value="all">Tous les types</option>
-                <option value="airport">Aéroports</option>
-                <option value="station">Gares</option>
+                <option value="all">{t('admin_localisations.filters.all_types')}</option>
+                <option value="airport">{t('admin_localisations.filters.airports')}</option>
+                <option value="station">{t('admin_localisations.filters.stations')}</option>
               </select>
 
               <Button
@@ -367,58 +367,58 @@ export default function AdminLocations() {
                 className="bg-blue-600 hover:bg-blue-700"
               >
                 <Plus className="h-4 w-4 mr-2" />
-                Ajouter une location
+                {t('admin_localisations.actions.add_localisation')}
               </Button>
             </div>
 
             {/* Statistiques */}
             <div className="flex flex-wrap gap-4 text-sm text-gray-600">
-              <span>Total: {locations.length}</span>
-              <span>Actives: {locations.filter(l => l.is_active).length}</span>
-              <span>Aéroports: {locations.filter(l => l.location_type === 'airport').length}</span>
-              <span>Gares: {locations.filter(l => l.location_type === 'station').length}</span>
+              <span>{t('admin_localisations.stats.total')}: {localisations.length}</span>
+              <span>{t('admin_localisations.stats.active')}: {localisations.filter(l => l.is_active).length}</span>
+              <span>{t('admin_localisations.stats.airports')}: {localisations.filter(l => l.localisation_type === 'airport').length}</span>
+              <span>{t('admin_localisations.stats.stations')}: {localisations.filter(l => l.localisation_type === 'station').length}</span>
             </div>
           </div>
 
           {/* Formulaire d'ajout */}
           {showAddForm && (
             <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
-              <h3 className="text-lg font-semibold mb-4">Ajouter une nouvelle location</h3>
+              <h3 className="text-lg font-semibold mb-4">{t('admin_localisations.add_form.title')}</h3>
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                 <div>
-                  <Label htmlFor="location_type">Type *</Label>
+                  <Label htmlFor="localisation_type">{t('admin_localisations.add_form.type')} *</Label>
                   <select
-                    id="location_type"
-                    value={newLocation.location_type}
-                    onChange={(e) => handleLocationTypeChange(e.target.value)}
+                    id="localisation_type"
+                    value={newLocalisation.localisation_type}
+                    onChange={(e) => handleLocalisationTypeChange(e.target.value)}
                     className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   >
-                    <option value="airport">Aéroport</option>
-                    <option value="station">Gare</option>
+                    <option value="airport">{t('admin_localisations.types.airport')}</option>
+                    <option value="station">{t('admin_localisations.types.station')}</option>
                   </select>
                 </div>
 
                 <div>
-                  <Label htmlFor="display_name">Nom d'affichage *</Label>
+                  <Label htmlFor="display_name">{t('admin_localisations.add_form.display_name')} *</Label>
                   <Input
                     id="display_name"
-                    value={newLocation.display_name}
+                    value={newLocalisation.display_name}
                     onChange={(e) => handleDisplayNameChange(e.target.value)}
-                    placeholder="ex: Nouvel Aéroport"
+                    placeholder={t('admin_localisations.add_form.display_name_placeholder')}
                     className="mt-1"
                   />
                   <p className="text-xs text-gray-500 mt-1">
-                    Le nom qui sera affiché aux utilisateurs
+                    {t('admin_localisations.add_form.display_name_help')}
                   </p>
                 </div>
 
                 <div>
-                  <Label htmlFor="location_value">Valeur technique</Label>
+                  <Label htmlFor="localisation_value">{t('admin_localisations.add_form.technical_value')}</Label>
                   <div className="relative">
                     <Input
-                      id="location_value"
-                      value={newLocation.location_value}
+                      id="localisation_value"
+                      value={newLocalisation.localisation_value}
                       readOnly
                       className={cn(
                         "mt-1 pr-10",
@@ -426,7 +426,7 @@ export default function AdminLocations() {
                           ? "bg-red-50 border-red-300 text-red-900" 
                           : "bg-gray-50 border-gray-200 text-gray-700"
                       )}
-                      placeholder="Généré automatiquement"
+                      placeholder={t('admin_localisations.add_form.technical_value_placeholder')}
                     />
                     {validation.isDuplicate && (
                       <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
@@ -436,15 +436,15 @@ export default function AdminLocations() {
                   </div>
                   <p className="text-xs text-gray-500 mt-1">
                     {validation.isDuplicate 
-                      ? "Cette valeur existe déjà dans le système" 
-                      : "Cette valeur est utilisée dans le système"
+                      ? t('admin_localisations.validation.duplicate')
+                      : t('admin_localisations.add_form.technical_value_help')
                     }
                   </p>
                 </div>
               </div>
 
               {/* Aperçu en temps réel */}
-              {newLocation.display_name && (
+              {newLocalisation.display_name && (
                 <div className={cn(
                   "border rounded-lg p-4 mb-4",
                   validation.isDuplicate 
@@ -455,7 +455,10 @@ export default function AdminLocations() {
                     "text-sm font-medium mb-2",
                     validation.isDuplicate ? "text-red-900" : "text-blue-900"
                   )}>
-                    {validation.isDuplicate ? "⚠️ Conflit détecté" : "Aperçu"}
+                    {validation.isDuplicate 
+                      ? t('admin_localisations.add_form.conflict_detected')
+                      : t('admin_localisations.add_form.preview')
+                    }
                   </h4>
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
@@ -464,7 +467,7 @@ export default function AdminLocations() {
                         "mt-1",
                         validation.isDuplicate ? "text-red-700" : "text-blue-700"
                       )}>
-                        {newLocation.display_name}
+                        {newLocalisation.display_name}
                       </div>
                     </div>
                     <div>
@@ -475,13 +478,13 @@ export default function AdminLocations() {
                           ? "bg-red-100 text-red-700" 
                           : "bg-blue-100 text-blue-700"
                       )}>
-                        {newLocation.location_value}
+                        {newLocalisation.localisation_value}
                       </div>
                     </div>
                   </div>
                   {validation.isDuplicate && (
                     <p className="text-red-600 text-xs mt-2">
-                      Cette valeur technique existe déjà. Veuillez modifier le nom d'affichage.
+                      {t('admin_localisations.add_form.conflict_message')}
                     </p>
                   )}
                 </div>
@@ -489,17 +492,17 @@ export default function AdminLocations() {
 
               <div className="flex gap-3">
                 <Button 
-                  onClick={handleAddLocation} 
+                  onClick={handleAddLocalisation} 
                   className="bg-green-600 hover:bg-green-700"
-                  disabled={!newLocation.display_name || !newLocation.location_value || validation.isDuplicate}
+                  disabled={!newLocalisation.display_name || !newLocalisation.localisation_value || validation.isDuplicate}
                 >
-                  Ajouter la location
+                  {t('admin_localisations.actions.add')} {t('admin_localisations.add_form.technical_value')}
                 </Button>
                 <Button variant="outline" onClick={() => {
                   setShowAddForm(false);
-                  setNewLocation({
-                    location_value: "",
-                    location_type: "airport",
+                  setNewLocalisation({
+                    localisation_value: "",
+                    localisation_type: "airport",
                     display_name: ""
                   });
                   setValidation({
@@ -507,44 +510,44 @@ export default function AdminLocations() {
                     isValid: true
                   });
                 }}>
-                  Annuler
+                  {t('admin_localisations.actions.cancel')}
                 </Button>
               </div>
             </div>
           )}
 
-          {/* Liste des locations */}
+          {/* Liste des localisations */}
           <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead className="bg-gray-50 border-b">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Location
+                      {t('admin_localisations.table.localisation')}
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Type
+                      {t('admin_localisations.table.type')}
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Valeur technique
+                      {t('admin_localisations.table.technical_value')}
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Statut
+                      {t('admin_localisations.table.status')}
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Action
+                      {t('admin_localisations.table.action')}
                     </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
-                  {filteredLocations.map((location) => {
-                    const displayName = getTranslatedDisplayName(location);
+                  {filteredLocalisations.map((localisation) => {
+                    const displayName = getTranslatedDisplayName(localisation);
                     
                     return (
-                      <tr key={location.id} className="hover:bg-gray-50">
+                      <tr key={localisation.id} className="hover:bg-gray-50">
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
-                            {getLocationIcon(location.location_type)}
+                            {getLocalisationIcon(localisation.localisation_type)}
                             <span className="font-medium text-gray-900">
                               {displayName}
                             </span>
@@ -552,43 +555,46 @@ export default function AdminLocations() {
                         </td>
                         <td className="px-6 py-4">
                           <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                            location.location_type === 'airport' 
+                            localisation.localisation_type === 'airport' 
                               ? 'bg-blue-100 text-blue-800'
                               : 'bg-green-100 text-green-800'
                           }`}>
-                            {getLocationTypeLabel(location.location_type)}
+                            {t(`admin_localisations.types.${localisation.localisation_type}`)}
                           </span>
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-500 font-mono">
-                          {location.location_value}
+                          {localisation.localisation_value}
                         </td>
                         <td className="px-6 py-4">
                           <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                            location.is_active 
+                            localisation.is_active 
                               ? 'bg-green-100 text-green-800'
                               : 'bg-red-100 text-red-800'
                           }`}>
-                            {location.is_active ? 'Active' : 'Inactive'}
+                            {localisation.is_active 
+                              ? t('admin_localisations.status.active')
+                              : t('admin_localisations.status.inactive')
+                            }
                           </span>
                         </td>
                         <td className="px-6 py-4">
                           <button
-                            onClick={() => toggleLocationActive(location)}
+                            onClick={() => toggleLocalisationActive(localisation)}
                             className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                              location.is_active
+                              localisation.is_active
                                 ? 'bg-red-100 text-red-700 hover:bg-red-200'
                                 : 'bg-green-100 text-green-700 hover:bg-green-200'
                             }`}
                           >
-                            {location.is_active ? (
+                            {localisation.is_active ? (
                               <>
                                 <ToggleLeft className="h-4 w-4" />
-                                Désactiver
+                                {t('admin_localisations.actions.deactivate')}
                               </>
                             ) : (
                               <>
                                 <ToggleRight className="h-4 w-4" />
-                                Activer
+                                {t('admin_localisations.actions.activate')}
                               </>
                             )}
                           </button>
@@ -599,13 +605,13 @@ export default function AdminLocations() {
                 </tbody>
               </table>
 
-              {filteredLocations.length === 0 && (
+              {filteredLocalisations.length === 0 && (
                 <div className="text-center py-12">
                   <MapPin className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-500">Aucune location trouvée</p>
+                  <p className="text-gray-500">{t('admin_localisations.messages.no_localisations')}</p>
                   {searchTerm && (
                     <p className="text-gray-400 text-sm mt-2">
-                      Aucun résultat pour "{searchTerm}"
+                      {t('admin_localisations.messages.no_results', { searchTerm })}
                     </p>
                   )}
                 </div>

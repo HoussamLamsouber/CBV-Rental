@@ -128,7 +128,7 @@
             "date": "Date spécifique",
             "date_help": "Date de départ, retour ou création",
             "vehicle_model": "Modèle de véhicule",
-            "vehicle_placeholder": "Ex: Tesla, SUV, BMW...",
+            "vehicle_placeholder": "Ex: Volvo XC60",
             "status": "Statut",
             "all_status": "Tous les statuts"
         },
@@ -683,7 +683,10 @@
         
         "actions": {
             "add_vehicle": "Ajouter un véhicule",
-            "see_all": "Voir tout"
+            "see_all": "Voir tout",
+            "view_details": "Voir détails",
+            "edit": "Modifier",
+            "delete": "Supprimer"
         },
         
         "modals": {
@@ -713,7 +716,32 @@
                 "url_placeholder": "https://example.com/image.jpg",
                 "image_preview_alt": "Aperçu du véhicule",
                 "reset": "Réinitialiser"
+            },
+
+            "edit_vehicle": {
+                "title": "Modifier le modèle",
+                "updating": "Modification...",
+                "update_model": "Modifier le modèle"
             }
+        },
+
+        "table": {
+            "vehicle": "Véhicule",
+            "category": "Catégorie",
+            "price": "Prix",
+            "availability": "Disponibilité",
+            "seats": "Sièges",
+            "fuel": "Carburant",
+            "actions": "Actions"
+        },
+        
+        "search": {
+            "placeholder": "Rechercher par nom, catégorie...",
+            "reset": "Réinitialiser"
+        },
+        
+        "filters": {
+            "all_categories": "Toutes les catégories"
         },
         
         "messages": {
@@ -739,7 +767,20 @@
             "image_uploaded": "Image téléchargée",
             "image_upload_success": "L'image a été téléchargée avec succès",
             "cannot_upload_image": "Impossible de télécharger l'image",
-            "available": "disponible(s)"
+            "available": "disponible(s)",
+            "no_results_title": "Aucun résultat trouvé",
+            "no_results_description": "Essayez de modifier vos critères de recherche.",
+            "no_vehicles_title": "Aucun véhicule",
+            "no_vehicles_description": "Créez votre premier véhicule pour commencer.",
+            "delete_confirm": "Êtes-vous sûr de vouloir supprimer le modèle \"{{name}}\" ?",
+            "file_too_large": "Fichier trop volumineux",
+            "file_too_large_description": "L'image ne doit pas dépasser 5MB",
+            "invalid_price": "Prix invalide",
+            "invalid_price_description": "Le prix doit être un nombre positif",
+            "invalid_quantity": "Quantité invalide",
+            "invalid_quantity_description": "La quantité doit être un nombre positif",
+            "invalid_seats": "Sièges invalides",
+            "invalid_seats_description": "Le nombre de sièges doit être entre 1 et 9"
         }
     },
 
@@ -826,7 +867,8 @@
             "suggestions": "Suggestions",
             "try_different_dates": "Essayez des dates différentes",
             "expand_search_categories": "Élargissez votre recherche à d'autres catégories",
-            "check_other_locations": "Vérifiez d'autres lieux de retrait"
+            "check_other_locations": "Vérifiez d'autres lieux de retrait",
+            "start_search_placeholder": "Commencez par effectuer une recherche pour voir les véhicules disponibles."
         }
     },
 
@@ -1403,6 +1445,91 @@
             "email": "Email",
             "status": "Statut",
             "actions": "Actions"
+        }
+    },
+
+    "admin_localisations": {
+        "title": "Gestion des Localisations",
+        "subtitle": "Sélectionnez les localisations qui apparaîtront dans la recherche de la page d'accueil",
+        
+        "stats": {
+            "total": "Total",
+            "active": "Actives",
+            "airports": "Aéroports",
+            "stations": "Gares"
+        },
+        
+        "search": {
+            "placeholder": "Rechercher une localisation..."
+        },
+        
+        "filters": {
+            "all_types": "Tous les types",
+            "airports": "Aéroports",
+            "stations": "Gares"
+        },
+        
+        "types": {
+            "airport": "Aéroport",
+            "station": "Gare"
+        },
+        
+        "status": {
+            "active": "Active",
+            "inactive": "Inactive"
+        },
+        
+        "actions": {
+            "add_localisation": "Ajouter une localisation",
+            "activate": "Activer",
+            "deactivate": "Désactiver",
+            "cancel": "Annuler",
+            "add": "Ajouter"
+        },
+        
+        "table": {
+            "localisation": "Localisation",
+            "type": "Type",
+            "technical_value": "Valeur technique",
+            "status": "Statut",
+            "action": "Action"
+        },
+        
+        "add_form": {
+            "title": "Ajouter une nouvelle localisation",
+            "type": "Type",
+            "display_name": "Nom d'affichage",
+            "display_name_placeholder": "ex: Nouvel Aéroport",
+            "display_name_help": "Le nom qui sera affiché aux utilisateurs",
+            "technical_value": "Valeur technique",
+            "technical_value_placeholder": "Généré automatiquement",
+            "technical_value_help": "Cette valeur est utilisée dans le système",
+            "preview": "Aperçu",
+            "conflict_detected": "Conflit détecté",
+            "conflict_message": "Cette valeur technique existe déjà. Veuillez modifier le nom d'affichage."
+        },
+        
+        "messages": {
+            "loading": "Chargement des localisations...",
+            "no_localisations": "Aucune localisation trouvée",
+            "no_results": "Aucun résultat pour \"{searchTerm}\"",
+            "localisation_added": "Location ajoutée",
+            "localisation_added_success": "{name} a été ajouté avec succès",
+            "missing_field": "Champ manquant",
+            "missing_display_name": "Veuillez saisir un nom d'affichage",
+            "conflict_detected": "Conflit détecté",
+            "conflict_description": "Cette valeur technique existe déjà. Veuillez modifier le nom d'affichage.",
+            "duplicate": "Duplicata",
+            "duplicate_description": "Une localisation avec cette valeur technique existe déjà",
+            "error": "Erreur",
+            "cannot_load": "Impossible de charger les localisations",
+            "cannot_add": "Impossible d'ajouter la localisation",
+            "cannot_update": "Impossible de modifier le statut"
+        },
+        
+        "validation": {
+            "duplicate": "Cette valeur existe déjà dans le système",
+            "generated_automatically": "Généré automatiquement"
         }
     }
 }

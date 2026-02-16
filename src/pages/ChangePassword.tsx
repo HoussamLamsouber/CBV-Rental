@@ -13,6 +13,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "react-i18next";
 import { Eye, EyeOff, Lock } from "lucide-react";
 import { Footer } from "@/components/Footer";
+import { useNavigate } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
+
 
 export default function ChangePassword() {
   const { toast } = useToast();
@@ -27,6 +30,8 @@ export default function ChangePassword() {
   const [showCurrent, setShowCurrent] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+
+  const navigate = useNavigate();
 
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -74,10 +79,30 @@ export default function ChangePassword() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-12">
         {/* Carte à fond bleu clair */}
         <Card className="w-full max-w-md bg-[#e8f1ff] shadow-md border border-blue-100 rounded-2xl">
-          <CardHeader className="text-center space-y-1">
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
+            className="
+              absolute left-4 top-4
+              h-9 w-9
+              flex items-center justify-center
+              rounded-full
+              bg-blue-700
+              text-white
+              hover:bg-white
+              hover:text-blue-700
+              outline-none ring-2 ring-blue-700
+              transition
+            "
+            aria-label={t("back")}
+          >
+            <ArrowLeft size={18} />
+          </button>
+          <CardHeader className="text-center space-y-1 relative">
             <div className="flex justify-center mb-2">
               <Lock className="h-10 w-10 text-blue-700" />
             </div>
+
             <CardTitle className="text-2xl font-semibold text-blue-900">
               {t("changepassword")}
             </CardTitle>
@@ -167,9 +192,6 @@ export default function ChangePassword() {
           </CardContent>
         </Card>
       </div>
-
-      {/* Footer en bas de page */}
-      <Footer />
     </>
   );
 }

@@ -79,12 +79,12 @@ export const AdminHeader = () => {
     },
     {
       path: "/admin/localisations",
-      label: i18n.language === "fr" ? "Gestion des locations" : "Locations Management",
+      label: t("manage_localisations"),
       icon: MapPin,
     },
     {
       path: "/admin/depots",
-      label: i18n.language === "fr" ? "Gestion des dépôts" : "Depots Management",
+      label: t("manage_depots"),
       icon: Warehouse,
     },
   ];

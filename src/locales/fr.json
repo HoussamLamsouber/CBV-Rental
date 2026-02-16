@@ -8,6 +8,8 @@
     "manage_vehicles": "Gestion des véhicules",
     "manage_reservations": "Gestion des réservations",
     "manage_users": "Gestion des utilisateurs",
+    "manage_localisations": "Gestion des localisations",
+    "manage_depots": "Gestions des dépôts",
     "my_account": "Mon compte",
     "profile": "Profil",
     "change_password": "Changer de mot de passe",
@@ -1082,77 +1084,6 @@
         }
     },
 
-    "airports": {
-        "agadir": "Aéroport d'Agadir-Al Massira (AGA)",
-        "al_hoceima": "Aéroport d'Al Hoceïma-Cherif Al Idrissi (AHU)",
-        "beni_mellal": "Aéroport de Béni Mellal (BEM)",
-        "casablanca": "Aéroport de Casablanca-Mohammed V (CMN)",
-        "dakhla": "Aéroport de Dakhla (VIL)",
-        "errachidia": "Aéroport d'Errachidia-Moulay Ali Chérif (ERH)",
-        "essaouira": "Aéroport d'Essaouira-Mogador (ESU)",
-        "fes": "Aéroport de Fès-Saïss (FEZ)",
-        "guelmim": "Aéroport de Guelmim (GLN)",
-        "laayoune": "Aéroport de Laayoune (EUN)",
-        "marrakech": "Aéroport de Marrakech-Ménara (RAK)",
-        "nador": "Aéroport de Nador (NDR)",
-        "ouarzazate": "Aéroport de Ouarzazate (OZZ)",
-        "oujda": "Aéroport d'Oujda-Angads (OUD)",
-        "rabat": "Aéroport de Rabat-Salé (RBA)",
-        "tanger": "Aéroport de Tanger-Ibn Battouta (TNG)",
-        "tetouan": "Aéroport de Tétouan-Sania Rmel (TTU)",
-        "zagora": "Aéroport de Zagora",
-        "tan_tan": "Aéroport de Tan Tan (TTA)",
-        "smara": "Aéroport de Smara",
-        "bouarfa": "Aéroport de Bouarfa",
-        "benslimane": "Aéroport de Benslimane",
-        "ifrane": "Aéroport d'Ifrane",
-        "casablanca_tit_mellil": "Aéroport de Casablanca-Tit Mellil"
-    },
-    
-    "stations": {
-        "mohammed_v": "Gare Aéroport Mohammed V",
-        "agadir": "Gare d'Agadir",
-        "assilah": "Gare d'Assilah",
-        "ben_guerir": "Gare de Ben Guerir",
-        "berrechid": "Gare de Berrechid",
-        "kenitra": "Gare de Kenitra",
-        "khouribga": "Gare de Khouribga",
-        "marrakech": "Gare de Marrakech",
-        "meknes": "Gare de Meknes",
-        "mohammedia": "Gare de Mohammedia",
-        "nador_ville": "Gare de Nador Ville",
-        "oujda": "Gare d'Oujda",
-        "rabat_agdal": "Gare de Rabat Agdal",
-        "rabat_ville": "Gare de Rabat Ville",
-        "sale_tabriquet": "Gare de Salé Tabriquet",
-        "sale_ville": "Gare de Salé Ville",
-        "safi": "Gare de Safi",
-        "tanger_ville": "Gare de Tanger Ville",
-        "tanger_med": "Gare de Tanger Med",
-        "taourirt": "Gare de Taourirt",
-        "temara": "Gare de Témara",
-        "casa_voyageurs": "Gare de Casa-Voyageurs",
-        "casa_port": "Gare de Casa-Port",
-        "casa_oasis": "Gare de Casa-Oasis",
-        "casa_mers_sultan": "Gare Mers Sultan",
-        "el_jadida": "Gare d'El Jadida",
-        "settat": "Gare de Settat",
-        "skhirat": "Gare de Skhirat",
-        "bouznika": "Gare de Bouznika",
-        "zenata": "Gare de Zenata",
-        "ain_sebaa": "Gare d'Ain Sebaâ",
-        "bouskoura": "Gare de Bouskoura",
-        "facultes": "Gare des Facultés",
-        "ennassim": "Gare d'Ennassim",
-        "sidi_kacem": "Gare de Sidi Kacem",
-        "sidi_slimane": "Gare de Sidi Slimane",
-        "sidi_yahya_el_gharb": "Gare de Sidi Yahya El Gharb",
-        "ksar_el_kebir": "Gare de Ksar El Kébir",
-        "souk_el_arbaa": "Gare de Souk El Arbaa",
-        "melloussa": "Gare de Melloussa",
-        "ksar_sghir": "Gare de Ksar Sghir"
-    },
-
     "reservation_modal": {
         "title": "Réserver {carName}",
         "currency": "MAD",
@@ -1484,7 +1415,8 @@
             "activate": "Activer",
             "deactivate": "Désactiver",
             "cancel": "Annuler",
-            "add": "Ajouter"
+            "add": "Ajouter",
+            "delete": "Supprimer"
         },
         
         "table": {
@@ -1498,6 +1430,7 @@
         "add_form": {
             "title": "Ajouter une nouvelle localisation",
             "type": "Type",
+            "name":"Nom en ",
             "display_name": "Nom d'affichage",
             "display_name_placeholder": "ex: Nouvel Aéroport",
             "display_name_help": "Le nom qui sera affiché aux utilisateurs",
@@ -1506,7 +1439,9 @@
             "technical_value_help": "Cette valeur est utilisée dans le système",
             "preview": "Aperçu",
             "conflict_detected": "Conflit détecté",
-            "conflict_message": "Cette valeur technique existe déjà. Veuillez modifier le nom d'affichage."
+            "conflict_message": "Cette valeur technique existe déjà. Veuillez modifier le nom d'affichage.",
+            "display_name_label": "Nom affiché",
+            "technical_value_label": "Valeur technique"
         },
         
         "messages": {
@@ -1524,7 +1459,11 @@
             "error": "Erreur",
             "cannot_load": "Impossible de charger les localisations",
             "cannot_add": "Impossible d'ajouter la localisation",
-            "cannot_update": "Impossible de modifier le statut"
+            "cannot_update": "Impossible de modifier le statut",
+            "confirm_delete": "Voulez-vous vraiment supprimer cette localisation ?",
+            "deleted": "Supprimé",
+            "deleted_success": "Localisation supprimée avec succès",
+            "cannot_delete": "Impossible de supprimer"
         },
         
         "validation": {

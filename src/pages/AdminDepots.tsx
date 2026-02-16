@@ -5,17 +5,22 @@ import { Plus, Edit, Trash2, MapPin, Phone, Mail, Search, Filter, X, Car, Check,
 import { toast } from "@/hooks/use-toast";
 import { useTranslation } from "react-i18next";
 
+
 interface Depot {
   id: string;
-  name: string;
-  address: string;
-  city: string;
   phone?: string;
   email?: string;
   is_active: boolean;
   created_at: string;
   updated_at: string;
+  depot_translations: {
+    language_code: string;
+    name: string;
+    address: string;
+    city: string;
+  }[];
 }
+
 
 interface Vehicle {
   id: string;
@@ -43,42 +48,72 @@ export default function AdminDepots() {
   const [selectedVehicles, setSelectedVehicles] = useState<string[]>([]);
   const [filterActive, setFilterActive] = useState<"all" | "active" | "inactive">("all");
   
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+
+
+  const [activeLang, setActiveLang] = useState<"fr" | "en">("fr");
 
   const [formData, setFormData] = useState({
-    name: "",
-    address: "",
-    city: "",
+    translations: {
+      fr: {
+        name: "",
+        address: "",
+        city: "",
+      },
+      en: {
+        name: "",
+        address: "",
+        city: "",
+      }
+    },
     phone: "",
     email: "",
     is_active: true
   });
 
+
   const fetchDepots = async () => {
     setLoading(true);
+
     try {
       const { data, error } = await supabase
         .from('depots')
-        .select('*')
-        .is('deleted_at', null) // Exclure les dépôts supprimés
+        .select(`
+          *,
+          depot_translations (
+            language_code,
+            name,
+            address,
+            city
+          )
+        `)
+        .is('deleted_at', null)
         .order('created_at', { ascending: false });
 
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
 
       setDepots(data || []);
     } catch (error: any) {
-      console.error('Erreur chargement dépôts:', error);
       toast({
         title: t('admin_depots.toast.error_loading'),
-        description: error.message || t('admin_depots.toast.loading_error_desc'),
+        description: error.message,
         variant: "destructive",
       });
     } finally {
       setLoading(false);
     }
   };
+
+  const getTranslation = (depot: Depot) => {
+    const lang = i18n.language || "fr";
+
+    return (
+      depot.depot_translations.find(t => t.language_code === lang) ||
+      depot.depot_translations.find(t => t.language_code === "fr") ||
+      depot.depot_translations[0]
+    );
+  };
+
 
   const fetchDepotVehicles = async (depotId: string) => {
     try {
@@ -154,22 +189,35 @@ export default function AdminDepots() {
 
   const handleCreateDepot = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
-      const { error } = await supabase
+      // 1️⃣ Création du dépôt
+      const { data: depotData, error: depotError } = await supabase
         .from('depots')
         .insert([{
-          name: formData.name,
-          address: formData.address,
-          city: formData.city,
           phone: formData.phone || null,
           email: formData.email || null,
           is_active: formData.is_active
-        }]);
+        }])
+        .select()
+        .single();
 
-      if (error) {
-        throw error;
-      }
+      if (depotError) throw depotError;
+
+      // 2️⃣ Création des traductions
+      const translationsToInsert = ["fr", "en"].map((lang) => ({
+        depot_id: depotData.id,
+        language_code: lang,
+        name: formData.translations[lang].name,
+        address: formData.translations[lang].address,
+        city: formData.translations[lang].city,
+      }));
+
+      const { error: translationError } = await supabase
+        .from('depot_translations')
+        .insert(translationsToInsert);
+
+      if (translationError) throw translationError;
 
       toast({
         title: t('admin_depots.toast.depot_created'),
@@ -179,12 +227,11 @@ export default function AdminDepots() {
       setShowCreateModal(false);
       resetForm();
       await fetchDepots();
-      
+
     } catch (error: any) {
-      console.error('Erreur création dépôt:', error);
       toast({
         title: t('admin_depots.toast.creation_error'),
-        description: error.message || t('admin_depots.toast.creation_error_desc'),
+        description: error.message,
         variant: "destructive",
       });
     }
@@ -192,25 +239,35 @@ export default function AdminDepots() {
 
   const handleEditDepot = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!selectedDepot) return;
 
     try {
-      const { error } = await supabase
+      // 1️⃣ Update depot
+      const { error: depotError } = await supabase
         .from('depots')
         .update({
-          name: formData.name,
-          address: formData.address,
-          city: formData.city,
           phone: formData.phone || null,
           email: formData.email || null,
           is_active: formData.is_active,
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         })
         .eq('id', selectedDepot.id);
 
-      if (error) {
-        throw error;
+      if (depotError) throw depotError;
+
+      // 2️⃣ Update translations
+      for (const lang of ["fr", "en"]) {
+        await supabase
+          .from('depot_translations')
+          .update({
+            name: formData.translations[lang].name,
+            address: formData.translations[lang].address,
+            city: formData.translations[lang].city,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('depot_id', selectedDepot.id)
+          .eq('language_code', lang);
       }
 
       toast({
@@ -221,16 +278,16 @@ export default function AdminDepots() {
       setShowEditModal(false);
       resetForm();
       await fetchDepots();
-      
+
     } catch (error: any) {
-      console.error('Erreur modification dépôt:', error);
       toast({
         title: t('admin_depots.toast.update_error'),
-        description: error.message || t('admin_depots.toast.update_error_desc'),
+        description: error.message,
         variant: "destructive",
       });
     }
   };
+
 
   const handleDeleteDepot = async (depotId: string) => {
     if (!confirm(t('admin_depots.messages.confirm_delete'))) {
@@ -382,29 +439,47 @@ export default function AdminDepots() {
 
   const resetForm = () => {
     setFormData({
-      name: "",
-      address: "",
-      city: "",
+      translations: {
+        fr: { name: "", address: "", city: "" },
+        en: { name: "", address: "", city: "" },
+      },
       phone: "",
       email: "",
-      is_active: true
+      is_active: true,
     });
+
     setSelectedDepot(null);
     setSelectedVehicles([]);
   };
 
+
   const openEditModal = (depot: Depot) => {
     setSelectedDepot(depot);
+
+    const fr = depot.depot_translations.find(t => t.language_code === "fr");
+    const en = depot.depot_translations.find(t => t.language_code === "en");
+
     setFormData({
-      name: depot.name,
-      address: depot.address,
-      city: depot.city,
+      translations: {
+        fr: {
+          name: fr?.name || "",
+          address: fr?.address || "",
+          city: fr?.city || "",
+        },
+        en: {
+          name: en?.name || "",
+          address: en?.address || "",
+          city: en?.city || "",
+        },
+      },
       phone: depot.phone || "",
       email: depot.email || "",
-      is_active: depot.is_active
+      is_active: depot.is_active,
     });
+
     setShowEditModal(true);
   };
+
 
   const openCreateModal = () => {
     resetForm();
@@ -424,14 +499,17 @@ export default function AdminDepots() {
     setShowAssignVehicleModal(true);
   };
 
-  const filteredDepots = depots.filter(depot => {
-    const matchesSearch = searchTerm === "" || 
-      depot.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      depot.city.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      depot.address.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredDepots = depots.filter((depot) => {
+    const translation = getTranslation(depot);
 
-    const matchesFilter = 
-      filterActive === "all" || 
+    const matchesSearch =
+      searchTerm === "" ||
+      translation?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      translation?.city?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      translation?.address?.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesFilter =
+      filterActive === "all" ||
       (filterActive === "active" && depot.is_active) ||
       (filterActive === "inactive" && !depot.is_active);
 
@@ -600,60 +678,79 @@ export default function AdminDepots() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {filteredDepots.map((depot) => (
-                  <tr key={depot.id} className="hover:bg-gray-50/50 transition-colors">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center gap-3">
-                        <div className={`p-2 rounded-lg ${
-                          depot.is_active ? 'bg-blue-50 text-blue-600' : 'bg-gray-50 text-gray-400'
-                        }`}>
-                          <Building2 className="h-4 w-4" />
+                {filteredDepots.map((depot) => {
+                  const translation = getTranslation(depot);
+
+                  return (
+                    <tr key={depot.id} className="hover:bg-gray-50/50 transition-colors">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center gap-3">
+                          <div className={`p-2 rounded-lg ${
+                            depot.is_active ? 'bg-blue-50 text-blue-600' : 'bg-gray-50 text-gray-400'
+                          }`}>
+                            <Building2 className="h-4 w-4" />
+                          </div>
+                          <span className="text-sm font-medium text-gray-900">
+                            {translation?.name}
+                          </span>
                         </div>
-                        <span className="text-sm font-medium text-gray-900">{depot.name}</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{depot.city}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{depot.address}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{depot.phone || '-'}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{depot.email || '-'}</td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        depot.is_active 
-                          ? 'bg-green-50 text-green-700 border border-green-200'
-                          : 'bg-gray-50 text-gray-600 border border-gray-200'
-                      }`}>
-                        {depot.is_active 
-                          ? t('admin_depots.status.active')
-                          : t('admin_depots.status.inactive')}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex justify-center gap-1">
-                        <button
-                          onClick={() => openEditModal(depot)}
-                          className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                          title={t('admin_depots.actions.edit')}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteDepot(depot.id)}
-                          className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                          title={t('admin_depots.actions.delete')}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => openVehiclesModal(depot)}
-                          className="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                          title={t('admin_depots.actions.view_vehicles')}
-                        >
-                          <Car className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                        {translation?.city}
+                      </td>
+
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                        {translation?.address}
+                      </td>
+
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                        {depot.phone || "-"}
+                      </td>
+
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                        {depot.email || "-"}
+                      </td>
+
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          depot.is_active 
+                            ? 'bg-green-50 text-green-700 border border-green-200'
+                            : 'bg-gray-50 text-gray-600 border border-gray-200'
+                        }`}>
+                          {depot.is_active 
+                            ? t('admin_depots.status.active')
+                            : t('admin_depots.status.inactive')}
+                        </span>
+                      </td>
+
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex justify-center gap-1">
+                          <button
+                            onClick={() => openEditModal(depot)}
+                            className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </button>
+
+                          <button
+                            onClick={() => handleDeleteDepot(depot.id)}
+                            className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+
+                          <button
+                            onClick={() => openVehiclesModal(depot)}
+                            className="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                          >
+                            <Car className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -717,114 +814,139 @@ export default function AdminDepots() {
 // Composant modal pour les dépôts avec design amélioré
 function DepotModal({ title, formData, setFormData, onSubmit, onClose, submitText }: any) {
   const { t } = useTranslation();
+  const [activeLang, setActiveLang] = useState<"fr" | "en">("fr");
+
+  const updateTranslation = (field: string, value: string) => {
+    setFormData((prev: any) => ({
+      ...prev,
+      translations: {
+        ...prev.translations,
+        [activeLang]: {
+          ...prev.translations[activeLang],
+          [field]: value
+        }
+      }
+    }));
+  };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-xl max-w-md w-full p-6 shadow-xl">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="p-2 bg-blue-50 rounded-lg">
-            <Building2 className="h-5 w-5 text-blue-600" />
-          </div>
-          <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
+
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">{title}</h3>
+
+        {/* Tabs langues */}
+        <div className="flex gap-2 mb-4">
+          {["fr", "en"].map((lang) => (
+            <button
+              key={lang}
+              type="button"
+              onClick={() => setActiveLang(lang as any)}
+              className={`px-3 py-1 rounded-lg text-sm font-medium transition ${
+                activeLang === lang
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-100 text-gray-700"
+              }`}
+            >
+              {lang.toUpperCase()}
+            </button>
+          ))}
         </div>
-        
+
         <form onSubmit={onSubmit} className="space-y-4">
+
+          {/* Champs traduits */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              {t('admin_depots.form.name')}
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              {t('admin_depots.form.name')} ({activeLang.toUpperCase()})
             </label>
             <input
               type="text"
               required
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-gray-50/50 transition-colors"
-              placeholder={t('admin_depots.form.name_placeholder')}
+              value={formData.translations[activeLang].name}
+              onChange={(e) => updateTranslation("name", e.target.value)}
+              className="w-full px-3 py-2 border rounded-lg"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              {t('admin_depots.form.address')}
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              {t('admin_depots.form.address')} ({activeLang.toUpperCase()})
             </label>
             <input
               type="text"
               required
-              value={formData.address}
-              onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-gray-50/50 transition-colors"
-              placeholder={t('admin_depots.form.address_placeholder')}
+              value={formData.translations[activeLang].address}
+              onChange={(e) => updateTranslation("address", e.target.value)}
+              className="w-full px-3 py-2 border rounded-lg"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              {t('admin_depots.form.city')}
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              {t('admin_depots.form.city')} ({activeLang.toUpperCase()})
             </label>
             <input
               type="text"
               required
-              value={formData.city}
-              onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-gray-50/50 transition-colors"
-              placeholder={t('admin_depots.form.city_placeholder')}
+              value={formData.translations[activeLang].city}
+              onChange={(e) => updateTranslation("city", e.target.value)}
+              className="w-full px-3 py-2 border rounded-lg"
             />
           </div>
 
+          {/* Champs non traduits */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
               {t('admin_depots.form.phone')}
             </label>
             <input
               type="tel"
               value={formData.phone}
-              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-gray-50/50 transition-colors"
-              placeholder={t('admin_depots.form.phone_placeholder')}
+              onChange={(e) =>
+                setFormData({ ...formData, phone: e.target.value })
+              }
+              className="w-full px-3 py-2 border rounded-lg"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
               {t('admin_depots.form.email')}
             </label>
             <input
               type="email"
               value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-gray-50/50 transition-colors"
-              placeholder={t('admin_depots.form.email_placeholder')}
+              onChange={(e) =>
+                setFormData({ ...formData, email: e.target.value })
+              }
+              className="w-full px-3 py-2 border rounded-lg"
             />
           </div>
 
-          <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+          <div className="flex items-center gap-2">
             <input
               type="checkbox"
-              id="is_active"
               checked={formData.is_active}
-              onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
-              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              onChange={(e) =>
+                setFormData({ ...formData, is_active: e.target.checked })
+              }
             />
-            <label htmlFor="is_active" className="text-sm text-gray-700 font-medium">
-              {t('admin_depots.form.active')}
-            </label>
+            <label>{t('admin_depots.form.active')}</label>
           </div>
 
-          <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2.5 text-gray-600 hover:text-gray-800 transition-colors font-medium"
-            >
+          <div className="flex justify-end gap-3 pt-4 border-t">
+            <button type="button" onClick={onClose}>
               {t('admin_depots.actions.cancel')}
             </button>
             <button
               type="submit"
-              className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-2.5 rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all font-medium shadow-sm"
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg"
             >
               {submitText}
             </button>
           </div>
+
         </form>
       </div>
     </div>
